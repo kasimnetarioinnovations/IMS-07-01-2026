@@ -586,3 +586,36 @@ exports.getDebitNoteSummary = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+exports.getDebitNotes = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = "" } = req.query;
+
+    const query = {
+      $or: [
+        { debitNoteId: { $regex: search, $options: "i" } },
+        { referenceNumber: { $regex: search, $options: "i" } },
+      ],
+    };
+
+    const total = await DebitNote.countDocuments(query);
+
+    const notes = await DebitNote.find(query)
+      .populate("billFrom", "supplierName")
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(Number(limit));
+
+    res.json({
+      success: true,
+      data: notes,
+      total,
+      pagination: {
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
