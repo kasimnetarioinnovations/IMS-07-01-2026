@@ -8,7 +8,7 @@ const debitNoteSchema = new mongoose.Schema({
   },
   invoiceId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'SupplierInvoice',
+    ref: 'CreatePurchaseOrder',
   },
   supplierInvoiceNo: {
     type: String
