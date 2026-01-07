@@ -483,7 +483,7 @@ const Users = () => {
     if (!selectedRole) return;
 
     try {
-      await api.delete(`/api/role/deleteRole/${selectedRole._id}`);
+      await api.delete(`/api/role/delete/${selectedRole._id}`);
       toast.success("Role deleted successfully!");
       fetchRoles();
     } catch (error) {

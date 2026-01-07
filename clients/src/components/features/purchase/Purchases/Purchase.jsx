@@ -1036,8 +1036,8 @@ const fetchPurchaseOrders = async (page = 1, status = "") => {
           {!loading && purchaseOrders.length > 0 && (
             <Pagination 
               currentPage={currentPage}
-              total={totalPages}
-              totalCount={totalCount}
+             itemsPerPage={10}
+              total={totalCount}
               onPageChange={handlePageChange}
             />
           )}

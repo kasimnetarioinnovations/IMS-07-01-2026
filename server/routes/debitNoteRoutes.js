@@ -13,5 +13,6 @@ router.get('/summary', authMiddleware, controller.getDebitNoteSummary);
 router.get('/:id', authMiddleware, controller.getDebitNoteById);
 router.put('/:id', authMiddleware, controller.updateDebitNote);
 router.delete('/:id', authMiddleware, controller.deleteDebitNote);
+router.get("/debit-notes", controller.getDebitNotes);
 
 module.exports = router;
