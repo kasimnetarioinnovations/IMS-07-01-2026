@@ -4,7 +4,6 @@ import Login from "../components/auth/Login/Login";
 import Register from "../components/auth/Register/Register";
 import ForgotPassword from "../components/auth/ForgotPassword/ForgotPassword";
 import Dashboard from "../components/Dashboard/Admin/AdminDashboard";
-import AuthLayout from "../components/layouts/autlayout/AuthLayout";
 import Setting from "../settings/Setting";
 import ResetPassword from "../components/auth/ResetPassword/ResetPassword";
 import ChangePassword from "../components/auth/ChangePassword/ChangePassword";
@@ -249,7 +248,7 @@ const AppRoutes = () => {
       <Route
         element={
           <PrivateRoute>
-            {/* <AuthLayout /> */}
+          
             <MainLayouts/>
           </PrivateRoute>
         }

@@ -138,6 +138,14 @@ const canAccess = (module, action = "read") => {
   canAccess("Chat", "read") ||
   canAccess("Mail", "read") 
 
+  const hasCustomerAccess =
+   canAccess("Customer", "read") ||
+  canAccess("Dues&Advance", "read") 
+ 
+  const hasSuppliersAccess =
+canAccess("Supplier", "read") 
+
+
   return (
     <div>
       <div
@@ -318,16 +326,7 @@ const canAccess = (module, action = "read") => {
                   openDropdown === "inventory" ? "open" : ""
                 }`}
               >
-                {/* {canAccess("AddProduct", "read") &&( */}
-                <li>
-                  <NavLink to="add-product">
-                    <img src={all_p} alt="all_p" />
-                    Add Products
-                  </NavLink>
-                </li>
-               {/* )} */}
-                
-                
+               
                 {canAccess("Product" , "read") && (
                 <li>
                   <NavLink to="product">
@@ -383,7 +382,8 @@ const canAccess = (module, action = "read") => {
           </ul>
            )} 
           {/* Customers */}
-          <ul className="sidebarmenu" style={{ paddingBottom: "18px" }}>
+          {hasCustomerAccess && (
+             <ul className="sidebarmenu" style={{ paddingBottom: "18px" }}>
             <li
               className="sidebarmenu-item"
               onClick={() => handleToggle("customers")}
@@ -428,8 +428,10 @@ const canAccess = (module, action = "read") => {
             </li>
             {/* <hr style={{height:"1px", color:"#979797ff"}}/> */}
           </ul>
+          )}
           {/* Supplires */}
-          <ul className="sidebarmenu" style={{ paddingBottom: "18px" }}>
+          {hasSuppliersAccess && (
+              <ul className="sidebarmenu" style={{ paddingBottom: "18px" }}>
             <li
               className="sidebarmenu-item"
               onClick={() => handleToggle("suppliers")}
@@ -467,6 +469,7 @@ const canAccess = (module, action = "read") => {
             </li>
             {/* <hr style={{height:"1px", color:"#979797ff"}}/> */}
           </ul>
+          )}
           {/* Purchase Order */}
           <ul className="sidebarmenu" style={{ paddingBottom: "18px" }}>
             <li
@@ -556,17 +559,14 @@ const canAccess = (module, action = "read") => {
                   </NavLink>
                 </li>
                )}
-               {/* {canAccess("Invoices", "read") && ( */}
+             
                 <li>
                   <NavLink to="/quotation-list">
                     <BiLogoWhatsapp size={16} />
                      Quotaion
                   </NavLink>
                 </li>
-               {/* )} */}
-                {/* <li>
-                <NavLink to="/reports"><BiLogoWhatsapp size={16}/>Sales History</NavLink>
-              </li> */}
+               
               {canAccess("CreditNote", "read") && (
                 <li>
                   <NavLink to="credit-note">
@@ -577,82 +577,13 @@ const canAccess = (module, action = "read") => {
               )}
               </ul>
             </li>
-            {/* <hr style={{height:"1px", color:"#979797ff"}}/> */}
+          
 
             <hr style={{ height: "1px", color: "#979797ff" }} />
           </ul>
-          {/* My Online Store */}
-          {/* {canAccess("Myonlinestore" , "read") &&( */}
-          <ul className="sidebarmenu" style={{ paddingBottom: "0px" }}>
-            <div
-              className="sidebarmenu-title"
-              style={{ color: "black", fontSize: "14px" }}
-            >
-              <span>My Online Store</span>
-              <button
-                style={{
-                  border: "1px solid #4105F5",
-                  borderRadius: "50px",
-                  backgroundColor: "transparent",
-                  fontSize: "12px",
-                  fontFamily: "Inter",
-                  color: "#4105F5",
-                  fontWeight: "500",
-                }}
-              >
-                UPCOMING
-              </button>
-            </div>
-            <hr style={{ height: "1px", color: "#979797ff" }} />
-          </ul>
-          {/* )} */}
-          {/* Warehouse */}
-          <ul className="sidebarmenu" style={{ paddingBottom: "0px" }}>
-            <li
-              className="sidebarmenu-item"
-              onClick={() => handleToggle("warehouse")}
-            >
-              <div
-                className="sidebarmenu-title"
-                style={{ color: "black", fontSize: "14px" }}
-              >
-                <span>Warehouse</span>
-                <MdOutlineKeyboardArrowRight
-                  size={14}
-                  className={`dropdown-icon ${
-                    openDropdown === "warehouse" ? "rotate" : ""
-                  }`}
-                />
-              </div>
-
-              {/* Dropdown items */}
-
-              <ul
-                className={`dropdown ${
-                  openDropdown === "warehouse" ? "open" : ""
-                }`}
-              >
-                 {canAccess("Warehouse","read") &&(
-                <li>
-                  <NavLink to="warehouse">
-                    <RiDashboardHorizontalLine size={16} />
-                    All Warehouse
-                  </NavLink>
-                </li>
-                 )}
-                <li>
-                  <NavLink to="stock-movement-log">
-                    <BiLogoWhatsapp size={16} />
-                    Stock Movement
-                  </NavLink>
-                </li>
-              </ul>
-            </li>
-            {/* <hr style={{height:"1px", color:"#979797ff"}}/> */}
-
-            <hr style={{ height: "1px", color: "#979797ff" }} />
-          </ul>
-          {/* Payment Adjustment */}
+        
+         
+          {/* Expenses */}
           <ul className="sidebarmenu" style={{ paddingBottom: "0px" }}>
             <li
               className="expenses-li"
@@ -669,45 +600,8 @@ const canAccess = (module, action = "read") => {
                 Expenses
               </NavLink>
             </li>
-            <li
-              className="sidebarmenu-item"
-              onClick={() => handleToggle("payment")}
-            >
-              <div
-                className="sidebarmenu-title"
-                style={{ color: "black", fontSize: "14px" }}
-              >
-                <span>Payment Adjustment</span>
-                <MdOutlineKeyboardArrowRight
-                  size={14}
-                  className={`dropdown-icon ${
-                    openDropdown === "payment" ? "rotate" : ""
-                  }`}
-                />
-              </div>
-
-              {/* Dropdown items */}
-
-              <ul
-                className={`dropdown ${
-                  openDropdown === "payment" ? "open" : ""
-                }`}
-              >
-                <li>
-                  <NavLink to="/dashboard">
-                    <RiDashboardHorizontalLine size={16} />
-                    Payment In
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="/reports">
-                    <BiLogoWhatsapp size={16} />
-                    Payment Out
-                  </NavLink>
-                </li>
-              </ul>
-            </li>
-            {/* <hr style={{height:"1px", color:"#979797ff"}}/> */}
+          
+             
 
             <hr style={{ height: "1px", color: "#979797ff" }} />
           </ul>
@@ -784,72 +678,7 @@ const canAccess = (module, action = "read") => {
             </li>
             {/* <hr style={{height:"1px", color:"#979797ff"}}/> */}
           </ul>
-          {/* Accounting */}
-          <ul className="sidebarmenu" style={{ paddingBottom: "18px" }}>
-            <li
-              className="sidebarmenu-item"
-              onClick={() => handleToggle("accounting")}
-            >
-              <div
-                className="sidebarmenu-title"
-                style={{ color: "black", fontSize: "14px" }}
-              >
-                <span>Accounting</span>
-                 <MdOutlineKeyboardArrowRight
-                  size={14}
-                  className={`dropdown-icon ${
-                    openDropdown === "accounting" ? "rotate" : ""
-                  }`}
-                />
-              </div>
-
-              {/* Dropdown items */}
-
-              <ul
-                className={`dropdown ${
-                  openDropdown === "accounting" ? "open" : ""
-                }`}
-              >
-                <li>
-                  <NavLink to="/dashboard">
-                    <RiDashboardHorizontalLine size={16} />
-                    Balance Sheet
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="/reports">
-                    <BiLogoWhatsapp size={16} />
-                    Profit & Loss
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="/reports">
-                    <BiLogoWhatsapp size={16} />
-                    Overdue Report
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="/reports">
-                    <BiLogoWhatsapp size={16} />
-                    Expense Report
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="/reports">
-                    <BiLogoWhatsapp size={16} />
-                    B2B & B2C
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="/reports">
-                    <BiLogoWhatsapp size={16} />
-                    Payment History
-                  </NavLink>
-                </li>
-              </ul>
-            </li>
-            {/* <hr style={{height:"1px", color:"#979797ff"}}/> */}
-          </ul>
+        
            {/* User Role and managemnt */}
          
            <li
