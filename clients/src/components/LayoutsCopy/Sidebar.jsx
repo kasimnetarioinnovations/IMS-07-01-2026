@@ -20,13 +20,14 @@ import { useAuth } from "../../components/auth/AuthContext";
 import { IoLogOutOutline } from "react-icons/io5";
 import api from "../../pages/config/axiosInstance"
 import { read } from "xlsx";
+import { RxCross2 } from "react-icons/rx";
 
 
 const Sidebar = () => {
  const { user: authUser, logout } = useAuth();
    const userData = authUser;
    console.log("usersrs", userData);
-   
+   const [loginPop, setloginPop] = useState(false)
     const [users, setUser] = useState(null);
      const userObj = authUser;
   const userId = authUser?._id
@@ -668,6 +669,7 @@ canAccess("Settings", read)
          )}
         
            {/* User Role and managemnt */}
+            {canAccess("Users", "read")  && (
             <ul className="sidebarmenu" style={{ paddingBottom: "10px" }}>
            <li
               className="user-role-li"
@@ -686,6 +688,7 @@ canAccess("Settings", read)
               </NavLink>
             </li>
             </ul>
+            )}
            
           {/* Settings */}
           {hasSettingsAccess && (
@@ -742,7 +745,7 @@ canAccess("Settings", read)
         alt="Profile"
         style={{
           borderRadius: "50px",
-          objectFit: "contain",
+          objectFit: "fil",
           height: "40px",
           width: "40px",
         }}
@@ -791,7 +794,7 @@ canAccess("Settings", read)
 
     {/* Logout */}
     <IoLogOutOutline
-      onClick={handleLogout}
+      onClick={setloginPop}
       color="red"
       title="Logout"
       size={18}
@@ -800,7 +803,126 @@ canAccess("Settings", read)
   </div>
 ) : null}
 
+{/* Logout PopUp */}
+{loginPop && (
+ <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        backgroundColor: "rgba(0, 0, 0, 0.30)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 9999,
+      }}
 
+    >
+      {/* Modal Box */}
+      <div
+        style={{
+          backgroundColor: "white",
+          width: "420px",
+          maxWidth: "92vw",
+          borderRadius: "12px",
+          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.12)",
+          overflow: "hidden",
+          padding: "15px 20px 10px",
+          display:"flex",
+          flexDirection:"column",
+          justifyContent:"center",
+          alignItems:"center"
+        }}
+       
+      >
+        {/* Header */}
+        <div
+          style={{
+          
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center"
+          }}
+        >
+          <span
+          
+            style={{
+              margin: 0,
+              fontSize: "24px",
+              fontWeight: "600",
+              color: "#1F2937",
+              fontFamily: "Inter, sans-serif",
+            }}
+          >
+            Confirm Logout
+          </span>
+
+         
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: "0px 0px 10px 0px", textAlign: "left", borderBottom: "1px solid #F1F1F1", }}>
+          <p
+            style={{
+              margin: "0 0 0px 0",
+              fontSize: "18px",
+              color: "#9c9da0ff",
+              fontFamily: "Inter, sans-serif",
+            }}
+          >
+            Are You Sure You Want to Logout ?
+          </p>
+        </div>
+
+        {/* Footer Buttons */}
+        <div
+          style={{
+            padding: "15px 0px",
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: "12px",
+          }}
+        >
+          <button
+               onClick={() => setloginPop(false)}
+            style={{
+              padding: "6px 10px",
+              fontSize: "18px",
+              fontWeight: "400",
+              color: "#6B7280",
+              backgroundColor: "#6b728038",
+              border: "1px solid #E5E7EB",
+              borderRadius: "8px",
+              cursor: "pointer",
+              minWidth: "80px",
+            }}
+            onMouseEnter={(e) => (e.target.style.backgroundColor = "#F3F4F6")}
+            onMouseLeave={(e) => (e.target.style.backgroundColor = "#6b728038")}
+          >
+            Cancel
+          </button>
+
+          <button
+            onClick={handleLogout}
+            style={{
+              padding: "6px 10px",
+              fontSize: "18px",
+              fontWeight: "400",
+              color: "#EF4444",
+              backgroundColor: "#ef44443f ",
+              border: "1px solid #E5E7EB",
+              borderRadius: "8px",
+              cursor: "pointer",
+              minWidth: "80px",
+            }}
+            onMouseEnter={(e) => (e.target.style.backgroundColor = "#F3F4F6")}
+            onMouseLeave={(e) => (e.target.style.backgroundColor = "#ef44443f")}
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
+    )}
       </div>
     </div>
   );

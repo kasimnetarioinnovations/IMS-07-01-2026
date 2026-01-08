@@ -1,6 +1,9 @@
 export const SIDEBAR_SEARCH_ROUTES = [
   { label: "Dashboard", path: "/dashboard" },
   { label: "POS", path: "/pos" },
+  { label: "Connect Whatsapp", path: "/whatsapp" },
+  { label: "Chat", path: "/chat" },
+  { label: "Mail", path: "/mail/inbox" },
 
   // Inventory
   { label: "All Products", path: "/product" },

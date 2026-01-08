@@ -56,7 +56,7 @@ button:focus {
 }
 
 a {
-  color: #007AFF;
+  /* color: #007AFF; */
   cursor: pointer;
   text-decoration: none;
   -webkit-transition: all 0.5s ease;
