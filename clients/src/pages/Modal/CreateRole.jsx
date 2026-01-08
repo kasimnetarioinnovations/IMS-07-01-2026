@@ -136,8 +136,8 @@ const groupedModules = {
     }, []);
 
     return (
-        <div className="page-wrapper">
-            <div className="content">
+    
+    
                 <div className="px-4 py-4 min-h-screen bg-gray-50">
                     {/* Header */}
                     <div className="d-flex align-items-center gap-2" style={{ marginBottom: "20px" }}>
@@ -276,7 +276,7 @@ const groupedModules = {
                         </h2>
 
                         {/* Permissions Table */}
-                        <div style={{ overflowY: "auto", height: "calc(100vh - 430px)", msOverflowStyle: "none", scrollbarWidth: "none" }}>
+                        <div style={{ overflowY: "auto", height: "420px", msOverflowStyle: "none", scrollbarWidth: "none" }}>
                             {Object.entries(groupedModules).map(([category, modules]) => (
                                 <div key={category} style={{ marginBottom: "40px" }}>
                                     <div style={{ borderRadius: "8px", overflow: "hidden", fontFamily: "Inter" }}>
@@ -524,8 +524,7 @@ const groupedModules = {
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+        
     );
 };
 
