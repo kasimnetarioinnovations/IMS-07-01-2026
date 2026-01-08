@@ -9,13 +9,13 @@ const MainLayouts = () => {
   // check if current route is addproduct
   const hideSidebar =
     location.pathname === "/add-product" ||
-    location.pathname === "/m/editproduct" ||
-    location.pathname === "/m/viewproduct" ||
+    location.pathname === "/product/edit" ||
+    location.pathname === "/viewproduct" ||
     location.pathname === "/create-purchase-orders" ||
     location.pathname === "/m/create-creditnote" ||
-    location.pathname === "/m/skeleton" || 
-    location.pathname === "/m/createinvoice" || 
-    location.pathname === "/m/create-debitnote" ;
+    location.pathname === "/skeleton" || 
+    location.pathname === "/createinvoice" || 
+    location.pathname === "/create-debitnote" ;
   return (
     <div
       className="main-layouts"

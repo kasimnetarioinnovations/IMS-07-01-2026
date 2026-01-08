@@ -990,6 +990,7 @@ const AdminDashboard = () => {
       width: "100%",
       minWidth: "525.67px",
       height: "457px",
+      overflowY: "hidden",
     },
     Graphcardrecentorders: {
       background: "white",
