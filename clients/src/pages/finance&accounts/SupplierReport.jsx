@@ -210,34 +210,7 @@ function SupplierReport() {
               </h2>
             </div>
 
-            {/* Right: Action Buttons */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 16,
-                height: "33px",
-              }}
-            >
-              <button
-                style={{
-                  padding: "6px 16px",
-                  background: "white",
-                  border: "1px solid #1F7FFF",
-                  color: "#1F7FFF",
-                  borderRadius: 8,
-                  textDecoration: "none",
-                  fontSize: "14px",
-                  display: "flex",
-                  gap: "8px",
-                  alignItems: "center",
-                  height: "33px",
-                }}
-              >
-                <MdAddShoppingCart className="fs-5" />
-                <span className="fs-6">Add Expenses</span>
-              </button>
-            </div>
+            
           </div>
 
           {/* main body */}

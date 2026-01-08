@@ -227,8 +227,7 @@ exports.getMe = async (req, res) => {
     return res.status(200).json({
       user: {
         id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        name:user.name,
         email: user.email,
         phone: user.phone,
         profileImage: user.profileImage,

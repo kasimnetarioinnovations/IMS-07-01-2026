@@ -11,63 +11,39 @@ import CreateModel from "../CreateModel";
 import { GiHamburgerMenu } from "react-icons/gi";
 
 import "../../styles/Responsive.css"
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, NavLink } from "react-router-dom";
 import { RiMenu2Line } from "react-icons/ri";
 import ai from "../../assets/images/AI.png"
 import AI_Model from "./AI_Model";
 import SearchningFor from "./SearchningFor";
+import { useAuth } from "../../components/auth/AuthContext";
+import { SIDEBAR_SEARCH_ROUTES } from "../../utils/sidebarSearchConfig";
+
 
 
 
 
 
 const Navbar = () => {
-  const [ShowCreateModel, setShowCreateModel] = useState(false);
     const [sidebarActive, setSidebarActive] = useState(false);
    const modelRef = useRef(null); // reference to modal area
   const buttonRef = useRef(null); // reference to Create button
-  const [showAiModel, setShowAiModel]= useState(false)
   const aiModelRef = useRef(null);
   const serchingRef = useRef(null);
     const serchingBtnRef = useRef(null);
   const [showRecentSearch, setShowRecentSearch] = useState(false);
   const navigate = useNavigate();
+   const { user } = useAuth();
 
 
 const settingGoToPage = () => {
-    navigate("/m/settings/user-profile-settings");
+    navigate("/settings/user-profile-settings");
   };
   
-   // handle button click
- const handleCreateClick = () => {
-  setShowCreateModel(prev => !prev); // toggles open/close
-};
+
  
 
   
-  // ✅ close when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        modelRef.current &&
-        !modelRef.current.contains(event.target) &&
-        !buttonRef.current.contains(event.target)
-      ) {
-        setShowCreateModel(false);
-      }
-       if (
-        showRecentSearch &&
-        serchingRef.current &&
-        !serchingRef.current.contains(event.target) &&
-        !serchingBtnRef.current.contains(event.target)
-      ) {
-        setShowRecentSearch(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showRecentSearch, ShowCreateModel]);
 
  // Handle sidebar toggle
   const handleSidebarToggle = () => {
@@ -75,6 +51,54 @@ const settingGoToPage = () => {
     sidebar?.classList.toggle("sidebar-active");
     setSidebarActive((prev) => !prev);
   };
+
+  const canAccess = (module, action = "read") => {
+    // ✅ Admin bypass: full access - check roleName instead of name
+    if (user?.role?.roleName?.toLowerCase() === "admin") return true;
+
+    // If no permissions or module not defined → deny
+    if (!permissions || !permissions[module]) {
+      console.warn(`Module "${module}" not found in permissions for user ${user?.name}`);
+      return false;
+    }
+
+    const modulePerms = permissions[module];
+
+    // ✅ Allow only if all:true or specific action:true
+    return modulePerms?.all === true || modulePerms?.[action] === true;
+  };
+
+  if (!user) return null;
+
+
+  const id = user?._id || user?.id;
+  const permissions = user?.role?.modulePermissions || {};
+
+
+  // Serach function logic
+  const [searchText, setSearchText] = useState("");
+const [filteredRoutes, setFilteredRoutes] = useState([]);
+const handleSearch = (value) => {
+  setSearchText(value);
+
+  if (!value.trim()) {
+    setFilteredRoutes([]);
+    return;
+  }
+
+  const results = SIDEBAR_SEARCH_ROUTES.filter(route =>
+    route.label.toLowerCase().includes(value.toLowerCase())
+  );
+
+  setFilteredRoutes(results);
+};
+const handleNavigate = (path) => {
+  navigate(path);
+  setFilteredRoutes([]);
+  setSearchText("");
+  setShowRecentSearch(false);
+};
+
 
 
 
@@ -125,6 +149,8 @@ const settingGoToPage = () => {
           <input
             ref={serchingBtnRef}
         onClick={() => setShowRecentSearch(true)}
+         onChange={(e) => handleSearch(e.target.value)}
+ 
             type="search"
             placeholder="Search"
             style={{
@@ -134,68 +160,42 @@ const settingGoToPage = () => {
               backgroundColor: "transparent",
             }}
           />
-          <div onClick={setShowAiModel} className="ai d-flex justify-content-center align-items-center" style={{backgroundColor:"#E9F0F4", borderRadius:"4px", padding:"4px 4px", cursor:"pointer"}}>
+          <div  className="ai d-flex justify-content-center align-items-center" style={{backgroundColor:"#E9F0F4", borderRadius:"4px", padding:"4px 4px", cursor:"pointer"}}>
             <img style={{width:"100%"}} src={ai} alt="ai" />
           </div>
         </div>
         <div className="d-flex align-items-center gap-3">
           <div className="nav-user-info  d-flex align-items-center gap-3">
-           
-            <div className="icon-hover" onClick={settingGoToPage}>
-              <IoSettingsOutline size={24} />
+             
+             {canAccess("Settings", "read") && (
+            <div className="icon-hover" >
+            <IoSettingsOutline size={24} onClick={settingGoToPage} />
             </div>
+            )}
             <div className="icon-hover">
               <PiBellThin size={26} />
             </div>
            
           </div>
          
+           {canAccess("POS" , "read") && (
            <button className="button-color button-hover d-flex justify-content-center align-items-center" style={{padding:"8px", width:"65px", height:"36px", gap:"4px"}}>
               <img src={pos_icon} alt="pos_icon" />
               <Link to="/pos" style={{textDecoration:"none", color:"white", fontFamily:"Inter",fontSize: "14px"}}>POS</Link>
            </button>
-          <button
-          ref={buttonRef}
-            onClick={handleCreateClick}
-             className="create-btn button-hover button-color"
-            style={{
-            
-              color: "white",
-              border: "none",
-              fontFamily: 'Inter',
-              fontSize: "14px",
-              
-              padding: "8px",
-              borderRadius: "8px",
-              width:"89px",
-              height:"36px",
-              display:"flex",
-              justifyContent:"center",
-              alignItems:"center",
-              gap:"4px"
-              
-            }}
-          >
-            <GoPlus size={20} />
-            Create
-          </button>
-           {/* <span>+</span> */}
+           )}
+         
         </div>
       </nav>
-            {ShowCreateModel && (
-        <div ref={modelRef}>
-          <CreateModel />
-        </div>
-      )}
-       {showAiModel &&
-        <div ref={aiModelRef}>
-        <AI_Model  onClose={() => setShowAiModel(false)} />
-       </div>
-       }
+          
+      
       
    {showRecentSearch && 
    <div ref={serchingRef}>
-   <SearchningFor/>
+   <SearchningFor 
+    results={filteredRoutes}
+      onSelect={handleNavigate}
+   />
    </div>
    }
     </div>

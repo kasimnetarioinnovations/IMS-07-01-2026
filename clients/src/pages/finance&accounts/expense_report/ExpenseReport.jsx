@@ -223,10 +223,9 @@ const ExpenseReport = ({ item }) => {
 
 
   return (
-    <div className="page-wrapper">
-      <div className="content">
+  
 
-        <div className="">
+        <div className="py-4 px-4">
           {/* back, header, view style */}
           <div
             style={{
@@ -1170,8 +1169,7 @@ const ExpenseReport = ({ item }) => {
             </div>
           )}
         </div>
-      </div>
-    </div>
+   
   );
 };
 
