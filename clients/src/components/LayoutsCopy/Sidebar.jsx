@@ -586,7 +586,7 @@ canAccess("Settings", read)
                
               {canAccess("CreditNote", "read") && (
                 <li>
-                  <NavLink to="credit-note">
+                  <NavLink to="creditnotelist">
                     <BiLogoWhatsapp size={16} />
                     Credit Note
                   </NavLink>

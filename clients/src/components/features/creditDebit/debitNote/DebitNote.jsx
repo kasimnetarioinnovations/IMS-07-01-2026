@@ -404,21 +404,6 @@ export default function DebitNoteList() {
     setSelectAllForExport(!selectAllForExport);
   };
 
-  /* ---------------- DELETE HANDLER ---------------- */
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this debit note?"))
-      return;
-
-    try {
-      await api.delete(`/api/supplier-debit-notes/${id}`);
-      toast.success("Debit note deleted successfully");
-      fetchDebitNotes();
-      fetchTotalCounts();
-    } catch (err) {
-      console.error(err);
-      toast.error(err.response?.data?.error || "Failed to delete debit note");
-    }
-  };
 
   /* ---------------- MENU ACTION HANDLER ---------------- */
   const handleMenuAction = (action, id, row) => {

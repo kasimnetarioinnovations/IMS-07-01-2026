@@ -515,10 +515,12 @@ export default function Purchase() {
     doc.save(`${filename}.pdf`);
 
     toast.success(
-      `Exported ${visibleRows.length} purchase order${
-        visibleRows.length !== 1 ? "s" : ""
+      `Exported ${visibleRows.length} purchase order${visibleRows.length !== 1 ? "s" : ""
       }`
     );
+    // Clear selection after export
+    setSelectedRowIds(new Set());
+    setAllVisibleSelected(false);
   };
 
   // Add to your existing useEffect or create a new one
@@ -547,7 +549,7 @@ export default function Purchase() {
       {/* Header: back + title + right-side controls */}
       <div className="d-flex justify-content-between align-items-center mb-3">
         <div className="d-flex align-items-center justify-content-center gap-3">
-          <span
+          {/* <span
             style={{
               backgroundColor: "white",
               width: "32px",
@@ -561,7 +563,7 @@ export default function Purchase() {
             }}
           >
             <img src={total_orders_icon} alt="total_orders_icon" />
-          </span>
+          </span> */}
           <h3
             style={{
               fontSize: "22px",
@@ -576,15 +578,15 @@ export default function Purchase() {
         </div>
 
         <div className="d-flex align-items-center gap-3">
-          <div className="d-flex align-items-center gap-4">
+          {/* <div className="d-flex align-items-center gap-4">
             <DatePicker
               selectedDateRange={selectedDateRange}
               setSelectedDateRange={setSelectedDateRange}
             />
-          </div>
+          </div> */}
 
           {/* Create Purchase */}
-          <Link style={{ textDecoration: "none" }} to="/create-purchase-order">
+          {/* <Link style={{ textDecoration: "none" }} to="/create-purchase-order">
             <button
               className="btn d-flex align-items-center"
               style={{
@@ -602,7 +604,7 @@ export default function Purchase() {
               <MdAddShoppingCart style={{ marginRight: 8, fontSize: "16px" }} />
               Create Purchase
             </button>
-          </Link>
+          </Link> */}
         </div>
       </div>
 

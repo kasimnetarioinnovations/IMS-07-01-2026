@@ -178,6 +178,7 @@ import MainLayouts from "../components/LayoutsCopy/MainLayouts.jsx";
 import Quotation from "../pages/Invoices/Quotation.jsx";
 import DebitNoteViewEdit from "../components/features/creditDebit/debitNote/DebitNoteViewEdit.jsx";
 import EmptyDebitNote from "../components/features/creditDebit/debitNote/EmptyDebitNote.jsx";
+import CreditNoteList from "../components/features/creditDebit/creditNote/CreditNoteList.jsx";
 // import {Pos} from "../pages/pos/Pos.jsx";
 
 
@@ -343,8 +344,9 @@ const AppRoutes = () => {
         <Route path="/sales-dashboard" element={<SalesDashboard />} />
         <Route path="/sales-invoice/:id" element={<RecentViewInvoice type="sales" />} />
         <Route path="/purchase-orders/:id" element={<RecentViewInvoice type="purchase" />} />
-
         <Route path="/add-sales" element={<AddSalesModal />} />
+        <Route path="/creditnotelist" element={<CreditNoteList />} />
+
 
 
         {/* stock */}
