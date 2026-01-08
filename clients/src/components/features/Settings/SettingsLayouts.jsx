@@ -5,8 +5,8 @@ import "../../../styles/Responsive.css";
 
 const SettingsLayouts = () => {
   return (
-    <div className="page-wrapper">
-      <div className="content">
+    
+      <div className="py-4 px-4">
           <div>
       <h1
         style={{
@@ -197,7 +197,7 @@ const SettingsLayouts = () => {
       </div>
     </div>
       </div>
-    </div>
+  
   );
 };
 

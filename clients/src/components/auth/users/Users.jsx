@@ -629,7 +629,7 @@ const Users = () => {
   return (
   
   
-        <div className="px-4 py-4" style={{ fontFamily: '"Inter", sans-serif', overflow:"hidden", height:"calc(100vh - 100px)"}}>
+        <div className="px-4 py-4 overflow-y-auto" style={{ fontFamily: '"Inter", sans-serif', overflow:"hidden", height:"calc(100vh - 80px)"}}>
           {/* Header */}
           <div
             style={{

@@ -19,6 +19,7 @@ import { FaAnglesLeft } from "react-icons/fa6";
 import { useAuth } from "../../components/auth/AuthContext";
 import { IoLogOutOutline } from "react-icons/io5";
 import api from "../../pages/config/axiosInstance"
+import { read } from "xlsx";
 
 
 const Sidebar = () => {
@@ -85,9 +86,8 @@ if (!user) return null;
 
 
   const id = user?._id || user?.id;
-    console.log("ID", id);
   const permissions = user?.role?.modulePermissions || {};
-  console.log("permission", permissions);
+
   
 
 const canAccess = (module, action = "read") => {
@@ -127,7 +127,7 @@ const canAccess = (module, action = "read") => {
   canAccess("Damage&Return", "read") ||
   canAccess("LowStocks", "read") ||
   canAccess("HSN", "read") ||
-  canAccess("PrintBarcode", "read");
+  canAccess("Barcode", "read");
 
    const hasMainAccess =
   canAccess("Dashboard", "read") ||
@@ -153,6 +153,15 @@ const hasSalesOrderAccess =
 canAccess("Sales", "read")||
 canAccess("Invoices", "read")||
 canAccess("CreditNote", "read")
+
+const hasExpensesAccess =
+canAccess("ExpenseReport", "read")
+
+const hasRepostrsacces =
+canAccess("SupplierReport", "read")
+
+const hasSettingsAccess =
+canAccess("Settings", read)
 
 
 
@@ -218,6 +227,7 @@ canAccess("CreditNote", "read")
                   className={`dropdown-icon ${
                     openDropdown === "main" ? "rotate" : ""
                   }`}
+                  
                 />
               </div>
 
@@ -234,16 +244,8 @@ canAccess("CreditNote", "read")
                 </li>
                    )}
                  
-                 {canAccess("POS" , "read") && (
-                   <li>
-                  <NavLink to="/pos">
-                    <BiLogoWhatsapp size={16} />
-                    POS
-                  </NavLink>
-                </li>
-                 )}
                 
-                  
+          
               </ul>
             </li>
             <hr style={{ height: "1px", color: "#979797ff" }} />
@@ -252,7 +254,7 @@ canAccess("CreditNote", "read")
             
             {/* Connect */}
             {hasConnectAccess && (
-             <ul className="sidebarmenu" style={{ paddingBottom: "18px" }}>
+             <ul className="sidebarmenu" style={{ paddingBottom: "10px" }}>
             <li
               className="sidebarmenu-item"
               onClick={() => handleToggle("connect")}
@@ -311,7 +313,7 @@ canAccess("CreditNote", "read")
           
           {/* Inventory */}
            {hasInventoryAccess && (
-          <ul className="sidebarmenu" style={{ paddingBottom: "18px" }}>
+          <ul className="sidebarmenu" style={{ paddingBottom: "10px" }}>
             <li
               className="sidebarmenu-item"
               onClick={() => handleToggle("inventory")}
@@ -378,7 +380,7 @@ canAccess("CreditNote", "read")
                   </NavLink>
                 </li>
                  )}
-                   {canAccess("PrintBarcode", "read") &&(
+                   {canAccess("Barcode", "read") &&(
                  <li>
                   <NavLink to="barcode">
                     <img src={low_icon} alt="" />
@@ -393,7 +395,7 @@ canAccess("CreditNote", "read")
            )} 
           {/* Customers */}
           {hasCustomerAccess && (
-             <ul className="sidebarmenu" style={{ paddingBottom: "18px" }}>
+             <ul className="sidebarmenu" style={{ paddingBottom: "10px" }}>
             <li
               className="sidebarmenu-item"
               onClick={() => handleToggle("customers")}
@@ -441,7 +443,7 @@ canAccess("CreditNote", "read")
           )}
           {/* Supplires */}
           {hasSuppliersAccess && (
-              <ul className="sidebarmenu" style={{ paddingBottom: "18px" }}>
+              <ul className="sidebarmenu" style={{ paddingBottom: "10px" }}>
             <li
               className="sidebarmenu-item"
               onClick={() => handleToggle("suppliers")}
@@ -482,7 +484,7 @@ canAccess("CreditNote", "read")
           )}
              {/* Purchase Order */}
           {hasPurachseOrderAccess && (
-              <ul className="sidebarmenu" style={{ paddingBottom: "18px" }}>
+              <ul className="sidebarmenu" style={{ paddingBottom: "10px" }}>
             <li
               className="sidebarmenu-item"
               onClick={() => handleToggle("purchase")}
@@ -575,7 +577,7 @@ canAccess("CreditNote", "read")
                )}
              
                 <li>
-                  <NavLink to="/quotation-list">
+                  <NavLink to="quotation">
                     <BiLogoWhatsapp size={16} />
                      Quotaion
                   </NavLink>
@@ -599,11 +601,12 @@ canAccess("CreditNote", "read")
         
          
           {/* Expenses */}
-          {/* {hasExpensesAccess && ( */}
-          <ul className="sidebarmenu" style={{ paddingBottom: "0px" }}>
+          {hasExpensesAccess && (
+          <ul className="sidebarmenu" style={{ paddingBottom: "10px" }}>
+            {canAccess("ExpenseReport", "read") && (
             <li
               className="expenses-li"
-              style={{ fontSize: "16px", paddingBottom: "18px" }}
+              style={{ fontSize: "16px", paddingBottom:"10px"}}
             >
               <NavLink
               to='expense-report'
@@ -616,18 +619,17 @@ canAccess("CreditNote", "read")
                 Expenses
               </NavLink>
             </li>
-          
-             
-
-            <hr style={{ height: "1px", color: "#979797ff" }} />
+            )}
+        
           </ul>
-          {/* )} */}
+          )}
           {/* Reports */}
-          {/* {hasRepostrsacces && ( */}
-          <ul className="sidebarmenu" style={{ paddingBottom: "18px" }}>
+          {hasRepostrsacces && (
+          <ul className="sidebarmenu" style={{ paddingBottom: "10px" }}>
             <li
               className="sidebarmenu-item"
               onClick={() => handleToggle("reports")}
+              style={{ paddingBottom: "10px" }}
             >
               <div
                 className="sidebarmenu-title"
@@ -649,61 +651,30 @@ canAccess("CreditNote", "read")
                   openDropdown === "reports" ? "open" : ""
                 }`}
               >
-                <li>
-                  <NavLink to="sales-report">
-                    <RiDashboardHorizontalLine size={16} />
-                    Sales Report
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="purchase-report">
-                    <BiLogoWhatsapp size={16} />
-                    Purchase Report
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="inventory-report">
-                    <BiLogoWhatsapp size={16} />
-                    Inventory Report
-                  </NavLink>
-                </li>
+               {/* {canAccess("SupplierReport", "read") && ( */}
                 <li>
                   <NavLink to="supplier-report">
                     <BiLogoWhatsapp size={16} />
                     Supplier Report
                   </NavLink>
                 </li>
-                <li>
-                  <NavLink to="return-damage-report">
-                    <BiLogoWhatsapp size={16} />
-                    Return & Damages Report
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="credit&debit-note">
-                    <BiLogoWhatsapp size={16} />
-                    Debit & Credit Note Report
-                  </NavLink>
-                </li>
-                <li>
-                  <NavLink to="overdue-report">
-                    <BiLogoWhatsapp size={16} />
-                    Overdue Report
-                  </NavLink>
-                </li>
+                {/* )} */}
+               
                
               </ul>
             </li>
             {/* <hr style={{height:"1px", color:"#979797ff"}}/> */}
           </ul>
-          {/* )} */}
+         )}
         
            {/* User Role and managemnt */}
+            <ul className="sidebarmenu" style={{ paddingBottom: "10px" }}>
            <li
               className="user-role-li"
-              style={{ fontSize: "16px", paddingBottom: "18px" }}
+              style={{ fontSize: "16px", paddingBottom: "10px" }}
             >
               <NavLink
+              className="sidebarmenu-title"
               to='users'
                 style={{
                   fontSize: "16px",
@@ -714,9 +685,11 @@ canAccess("CreditNote", "read")
                 Users Role & Management
               </NavLink>
             </li>
+            </ul>
+           
           {/* Settings */}
-          {/* {hasSettingsAccess && ( */}
-          <ul className="sidebarmenu" style={{ paddingBottom: "18px" }}>
+          {hasSettingsAccess && (
+          <ul className="sidebarmenu" style={{ paddingBottom: "10px" }}>
             <li
               className="sidebarmenu-item"
               onClick={() => handleToggle("settings")}
@@ -741,30 +714,27 @@ canAccess("CreditNote", "read")
                   openDropdown === "settings" ? "open" : ""
                 }`}
               >
+                 {canAccess("Settings", "read") && (
                 <li>
                   <NavLink to="settings/user-profile-settings">
                     <RiDashboardHorizontalLine size={16} />
-                     Setting 1
+                     Setting All
                   </NavLink>
                 </li>
-                <li>
-                    <NavLink to={`profile/${id}`}>
-                      <BiLogoWhatsapp size={16} />
-                      Settings 2
-                    </NavLink>
-                </li>
+               )}
               </ul>
             </li>
             {/* <hr style={{height:"1px", color:"#979797ff"}}/> */}
           </ul>
-          {/* )} */}
+          )}
         </div>
        {/* User Info */}
-    {userData ? (
+{userData ? (
   <div
-    className="user-id d-flex align-items-center justify-content-between"
-    style={{ backgroundColor: "white" }}
+    className="d-flex justify-content-between align-items-center"
+    style={{ backgroundColor: "white", position:"absolute", bottom:"5px" , width:"200px"}}
   >
+    <div className="d-flex gap-2">
     {/* Profile Image OR First Letter */}
     {userData?.profileImage?.url ? (
       <img
@@ -799,22 +769,24 @@ canAccess("CreditNote", "read")
       <p
         style={{
           marginBottom: "0",
-          color: "#3D3D3D",
+          color: "black",
           fontSize: "14px",
+          fontFamily:"Inter"
         }}
       >
-        {userObj?.name || "User"}
+        {userData?.name || "User"}
       </p>
-
       <p
         style={{
           marginBottom: "0",
-          color: "#727681",
-          fontSize: "12px",
+          color: "grey",
+          fontSize: "14px",
+          fontFamily:"Inter"
         }}
       >
         {userData?.role?.roleName || "User"}
       </p>
+    </div>
     </div>
 
     {/* Logout */}
@@ -823,9 +795,11 @@ canAccess("CreditNote", "read")
       color="red"
       title="Logout"
       size={18}
+      style={{ cursor: "pointer" }}
     />
   </div>
 ) : null}
+
 
       </div>
     </div>
