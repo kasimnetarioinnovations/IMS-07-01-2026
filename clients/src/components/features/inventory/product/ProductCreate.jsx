@@ -899,7 +899,7 @@ const ProductForm = () => {
                   display: "flex",
                   overflowX: 'auto',
                   overflowY: "auto",
-                  height: "79vh",
+                  height: "75vh",
                 }}
               >
                 {/* General Details */}
@@ -2788,13 +2788,14 @@ const ProductForm = () => {
                   </Link>
                   <button
                     type="submit"
+                    className="button-color button-hover d-flex justify-content-center align-items-center"
                     style={{
                       height: 36,
                       padding: 8,
-                      background: "var(--Blue-Blue, #1F7FFF)",
+                      // background: "var(--Blue-Blue, #1F7FFF)",
                       boxShadow: "-1px -1px 4px rgba(0, 0, 0, 0.25) inset",
                       borderRadius: 8,
-                      outline: "1.50px var(--Blue-Blue, #1F7FFF) solid",
+                      // outline: "1.50px var(--Blue-Blue, #1F7FFF) solid",
                       outlineOffset: "-1.50px",
                       justifyContent: "flex-start",
                       alignItems: "center",
