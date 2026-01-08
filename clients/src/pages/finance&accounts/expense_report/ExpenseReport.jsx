@@ -223,8 +223,6 @@ const ExpenseReport = ({ item }) => {
 
 
   return (
-  
-
         <div className="py-4 px-4">
           {/* back, header, view style */}
           <div
@@ -296,7 +294,7 @@ const ExpenseReport = ({ item }) => {
             style={{
               width: "100%",
               minHeight: "auto",
-              maxHeight: "calc(100vh - 200px)",
+              maxHeight: "calc(100vh - 160px)",
               padding: 16,
               background: "white",
               borderRadius: 16,

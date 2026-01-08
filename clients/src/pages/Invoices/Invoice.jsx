@@ -15,6 +15,8 @@ import { MdOutlineViewSidebar, MdAddShoppingCart } from "react-icons/md";
 import { TbFileImport, TbFileExport } from "react-icons/tb";
 import Pagination from "../../components/Pagination";
 import Barcode from "../../assets/images/barcode.jpg";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const Invoice = () => {
   const [invoices, setInvoices] = useState([]);
@@ -30,6 +32,18 @@ const Invoice = () => {
   const [selectedInvoices, setSelectedInvoices] = useState([]);
   const navigate = useNavigate();
   const [shareLoadingId, setShareLoadingId] = useState(null);
+
+  const [activeRow, setActiveRow] = useState(null);
+
+  const toggleRow = (index) => {
+    const newOpen = openRow === index ? null : index;
+    setOpenRow(newOpen);
+    if (newOpen === null && activeRow === index) {
+      setActiveRow(null);
+    } else if (newOpen !== null) {
+      setActiveRow(index);
+    }
+  };
 
   // const token = localStorage.getItem("token");
   // Fetch invoices from backend (CustomerInvoiceController)
@@ -235,6 +249,50 @@ const Invoice = () => {
 
   const tabs = [{ label: "All", count: total, active: true }];
 
+  const handlePdf = () => {
+    const doc = new jsPDF();
+    doc.text("Invoice", 14, 15);
+    const tableColumns = [
+      "Invoice No",
+      "Customer Name",
+      "Due Date",
+      "Amount",
+      "Paid",
+      "Amount Due",
+      "Status",
+    ];
+
+    const visibleRows = selectedInvoices.length > 0
+      ? invoices.filter((e) => selectedInvoices.includes(e._id))
+      : invoices;
+
+    const tableRows = visibleRows.map((e) => [
+      e.invoiceNo,
+      e.customerId?.name || "-",
+      e.dueDate ? new Date(e.dueDate).toLocaleDateString() : "-",
+      (e.grandTotal || 0).toFixed(2),
+      (e.paidAmount || 0).toFixed(2),
+      (e.dueAmount || 0).toFixed(2),
+      e.status,
+    ]);
+
+    autoTable(doc, {
+      head: [tableColumns],
+      body: tableRows,
+      startY: 20,
+      styles: {
+        fontSize: 8,
+      },
+      headStyles: {
+        fillColor: [155, 155, 155],
+        textColor: "white",
+      },
+      theme: "striped",
+    });
+
+    doc.save("invoices.pdf");
+  };
+
   return (
     <div className="p-4">
       {/* back, header, view style */}
@@ -340,13 +398,13 @@ const Invoice = () => {
               height: "33px",
             }}
           >
-            {selectedInvoices.length > 0 && (
+            {/* {selectedInvoices.length > 0 && (
               <div className="">
                 <div className="btn btn-danger" onClick={handleBulkDelete}>
                   Delete Selected({selectedInvoices.length})
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* search bar */}
             <div
@@ -383,6 +441,8 @@ const Invoice = () => {
 
             {/* Export Button */}
             <button
+              title="Export"
+              onClick={handlePdf}
               style={{
                 display: "flex",
                 justifyContent: "flex-start",
@@ -565,7 +625,7 @@ const Invoice = () => {
                 </tr>
               ) : invoices.length === 0 ? (
                 <td colSpan="9" className="text-center p-3">
-                  <span className="" style={{ fontStyle: "italic" }}>No invoice data available</span>
+                  <span className="" style={{ fontStyle: "italic" }}>No Invoice Data Available</span>
                 </td>
               ) : (
                 invoices.map((inv, idx) => {
@@ -583,9 +643,16 @@ const Invoice = () => {
                         ? Number(item.amount || 0)
                         : taxableAmount + taxAmount;
                       return (
-                        <tr key={`${inv._id || idx}-${pidx}`} style={{ borderBottom: "1px solid #FCFCFC" }}>
+                        <tr key={`${inv._id || idx}-${pidx}`}
+                          style={{ borderBottom: "1px solid #FCFCFC", cursor: 'pointer' }}
+                          onClick={() =>
+                            navigate(`/sales-invoice/${inv._id}`)
+                          }
+                          className={`table-hover ${activeRow === idx ? "active-row" : ""
+                            }`}
+                        >
                           {/* invoice no */}
-                          <td style={{ padding: "8px 16px", verticalAlign: "middle", height: '46px' }}>
+                          <td style={{ padding: "8px 16px", verticalAlign: "middle", height: '46px', }}>
                             <div
                               style={{ display: "flex", alignItems: "center", gap: 12 }}
                             >
@@ -606,6 +673,7 @@ const Invoice = () => {
                                     );
                                   }
                                 }}
+                                onClick={(e) => e.stopPropagation()}
                               />
                               <div>
                                 <div
@@ -617,11 +685,7 @@ const Invoice = () => {
                                     gap: "5px",
                                     justifyContent: "center",
                                     alignItems: "center",
-                                    cursor: 'pointer'
                                   }}
-                                  onClick={() =>
-                                    navigate(`/sales-invoice/${inv._id}`)
-                                  }
                                 >
                                   <div>
                                     {inv.invoiceNo}
@@ -708,16 +772,16 @@ const Invoice = () => {
                           </td>
 
                           {/* action */}
-                          <td>
+                          <td onClick={(e) => e.stopPropagation()}>
                             <div className="edit-delete-action d-flex align-items-center justify-content-center gap-2">
-                              <a
+                              {/* <a
                                 className="p-2 d-flex align-items-center justify-content-between border rounded"
                                   onClick={() =>
                                     navigate(`/sales-invoice/${inv._id}`)
                                   }
                               >
                                 <TbEye className="feather-eye" />
-                              </a>
+                              </a> */}
                               <a
                                 className="p-2 d-flex align-items-center justify-content-between border rounded"
                                 data-bs-toggle="modal"
@@ -725,7 +789,7 @@ const Invoice = () => {
                               >
                                 <TbTrash className="feather-trash-2" />
                               </a>
-                              <a
+                              {/* <a
                                 className="p-2 d-flex align-items-center justify-content-between border rounded"
                                 onClick={() =>
                                   shareInvoice(
@@ -741,7 +805,7 @@ const Invoice = () => {
                                 title="Share via Email & WhatsApp"
                               >
                                 <GrShareOption />
-                              </a>
+                              </a> */}
                             </div>
                           </td>
                         </tr>
