@@ -171,6 +171,7 @@ exports.createDebitNote = async (req, res) => {
 };
 
 // Update debit note
+// Update debit note - FIXED VERSION
 exports.updateDebitNote = async (req, res) => {
   try {
     const debitNote = await SupplierDebitNote.findById(req.params.id);
@@ -187,6 +188,13 @@ exports.updateDebitNote = async (req, res) => {
       return res.status(400).json({
         success: false,
         error: "Cannot update a settled debit note"
+      });
+    }
+    
+    if (debitNote.status === 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        error: "Cannot update a cancelled debit note"
       });
     }
 
@@ -229,7 +237,10 @@ exports.updateDebitNote = async (req, res) => {
       req.params.id,
       req.body,
       { new: true, runValidators: true }
-    );
+    )
+    .populate('supplierId', 'name company phone email gstin')
+    .populate('invoiceId', 'invoiceNumber')
+    .populate('items.productId', 'productName sku hsnCode');
 
     res.json({
       success: true,
@@ -238,6 +249,16 @@ exports.updateDebitNote = async (req, res) => {
     });
   } catch (error) {
     console.error('Update debit note error:', error);
+    
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        error: "Validation failed",
+        details: errors
+      });
+    }
+    
     res.status(500).json({
       success: false,
       error: "Failed to update debit note"
