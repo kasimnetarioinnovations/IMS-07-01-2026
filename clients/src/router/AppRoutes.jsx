@@ -175,6 +175,7 @@ import CreateRole from "../pages/Modal/CreateRole.jsx";
 import EditRole from "../pages/Modal/EditRole.jsx";
 import BarCodePrint from "../components/features/Settings/BarCodePrint.jsx";
 import MainLayouts from "../components/LayoutsCopy/MainLayouts.jsx";
+import Quotation from "../pages/Invoices/Quotation.jsx";
 // import {Pos} from "../pages/pos/Pos.jsx";
 
 
@@ -384,6 +385,7 @@ const AppRoutes = () => {
         <Route path="/create-purchase-orders/:supplierId" element={<CreatePurchaseOrder />} />
         <Route path="/show-purchase-orders/:invoiceId" element={<ShowPurchaseOrderInvoice />} />
         <Route path="/create-supplier-debitnote/:supplierId" element={<SupplierDebitNote />} />
+        <Route path="/quotation" element={<Quotation />} />
 
         {/* ------------------ MAIL ROUTES ------------------ */}
 

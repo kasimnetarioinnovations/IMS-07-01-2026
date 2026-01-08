@@ -528,30 +528,38 @@ exports.getAllInvoices = async (req, res) => {
 // Get single invoice by ID
 exports.getInvoiceById = async (req, res) => {
   try {
-    // Validate ID format
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid invoice ID format",
-      });
-    }
+    const identifier = req.params.id;
+    let invoice;
 
-    const invoice = await Invoice.findById(req.params.id)
-      .populate(
-        "customerId",
-        "name phone email address city state country pincode gstin"
-      )
-      .populate("createdBy", "firstName lastName email")
-      .populate(
-        "items.productId",
-        "productName hsnCode sku barcode unit sellingPrice tax"
-      );
+    if (mongoose.Types.ObjectId.isValid(identifier)) {
+      invoice = await Invoice.findById(identifier)
+        .populate(
+          "customerId",
+          "name phone email address city state country pincode gstin"
+        )
+        .populate("createdBy", "firstName lastName email")
+        .populate(
+          "items.productId",
+          "productName hsnCode sku barcode unit sellingPrice tax"
+        );
+    } else {
+      invoice = await Invoice.findOne({ invoiceNo: identifier })
+        .populate(
+          "customerId",
+          "name phone email address city state country pincode gstin"
+        )
+        .populate("createdBy", "firstName lastName email")
+        .populate(
+          "items.productId",
+          "productName hsnCode sku barcode unit sellingPrice tax"
+        );
+    }
 
     if (!invoice) {
       return res.status(404).json({
         success: false,
         error: "Invoice not found",
-        message: `No invoice found with ID: ${req.params.id}`,
+        message: `No invoice found with identifier: ${identifier}`,
       });
     }
 
