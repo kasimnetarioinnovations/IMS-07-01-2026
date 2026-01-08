@@ -140,13 +140,28 @@ const CustomerCreditNote = () => {
         invoicesData = response.data.data;
       }
 
+       const validInvoices = invoicesData.filter(
+      (invoice) => 
+        invoice.status !== 'cancelled' && 
+        invoice.status !== 'draft' &&
+        invoice.status !== 'void'
+    );
+
+    // Sort by date (newest first)
+    const sortedInvoices = validInvoices.sort((a, b) => 
+      new Date(b.invoiceDate || b.createdAt) - new Date(a.invoiceDate || a.createdAt)
+    );
       // Filter for unpaid invoices
       const unpaidInvoices = invoicesData.filter(
         (invoice) =>
           invoice.dueAmount > 0 || (invoice.status && invoice.status !== "paid")
       );
 
-      setCustomerInvoices(unpaidInvoices);
+      setCustomerInvoices(sortedInvoices);
+       // Show info if no invoices found
+    if (sortedInvoices.length === 0) {
+      toast.info("No invoices found for this customer");
+    }
     } catch (error) {
       console.error("Failed to load customer invoices:", error);
       setCustomerInvoices([]);
@@ -188,6 +203,7 @@ const CustomerCreditNote = () => {
           item.name ||
           item.productId?.productName ||
           "Product",
+           description: item.description || "", 
         quantity: item.qty || item.quantity || 1,
         originalQuantity: item.qty || item.quantity || 1, // Store original for max
         unit: item.unit || "Pcs",
@@ -330,81 +346,106 @@ const CustomerCreditNote = () => {
     }));
   };
 
-  const handleSubmit = async (action) => {
-    try {
-      // Filter selected items with quantity > 0
-      const selectedItems = formData.items.filter(
-        (item) => item.isSelected && item.quantity > 0 && item.productId
-      );
+ const handleSubmit = async (action) => {
+  try {
+    // Filter selected items with quantity > 0
+    const selectedItems = formData.items.filter(
+      (item) => item.isSelected && item.quantity > 0 && item.productId
+    );
 
-      if (selectedItems.length === 0) {
-        toast.error("Please select at least one item to return");
-        return;
-      }
-
-      if (!formData.customerId) {
-        toast.error("Please select a customer");
-        return;
-      }
-
-      if (!formData.invoiceId) {
-        toast.error("Please select an invoice");
-        return;
-      }
-
-      setLoading(true);
-
-      // Prepare data for API
-      const creditNoteData = {
-        customerId: formData.customerId,
-        customerName: formData.customerName,
-        phone: formData.phone,
-        invoiceId: formData.invoiceId,
-        invoiceNumber: formData.invoiceNumber,
-        date: formData.date,
-        reason: "returned_goods", // Default reason
-        items: selectedItems.map((item) => ({
-          productId: item.productId,
-          name: item.name,
-          quantity: item.quantity,
-          unit: item.unit,
-          unitPrice: item.unitPrice,
-          taxRate: item.taxRate,
-          taxAmount: item.taxAmount,
-          discountPercent: item.discountPercent,
-          discountAmount: item.discountAmount,
-          total: item.amount,
-        })),
-        subtotal: formData.subtotal,
-        totalDiscount: formData.discount,
-        shippingCharges: formData.shippingCharges,
-        roundOff: formData.roundOff,
-        totalAmount: formData.totalAmount,
-        status: action === "save" ? "draft" : "issued",
-        notes: formData.notes,
-      };
-
-      const response = await api.post("/api/credit-notes", creditNoteData);
-
-      toast.success(
-        `Credit note ${action === "save" ? "saved as draft" : "issued successfully"
-        }`
-      );
-
-      if (action === "saveAndPrint") {
-        navigate("/skeleton?redirect=/customers");
-      } else if (action === "issued") {
-        navigate("/customers");
-      }
-    } catch (error) {
-      console.error("Submit error:", error);
-      toast.error(
-        error.response?.data?.message || "Failed to save credit note"
-      );
-    } finally {
-      setLoading(false);
+    if (selectedItems.length === 0) {
+      toast.error("Please select at least one item to return");
+      return;
     }
-  };
+
+    if (!formData.customerId) {
+      toast.error("Please select a customer");
+      return;
+    }
+
+    if (!formData.invoiceId) {
+      toast.error("Please select an invoice");
+      return;
+    }
+
+    setLoading(true);
+
+    // ✅ FIX: Calculate total tax from selected items
+    const calculatedTotalTax = selectedItems.reduce(
+      (sum, item) => sum + (item.taxAmount || 0),
+      0
+    );
+
+    // ✅ FIX: Calculate total discount from selected items
+    const calculatedTotalDiscount = selectedItems.reduce(
+      (sum, item) => sum + (item.discountAmount || 0),
+      0
+    );
+
+    // ✅ FIX: Change invoiceNumber to supplierInvoiceNo to match model
+    const creditNoteData = {
+      customerId: formData.customerId,
+      customerName: formData.customerName,
+      phone: formData.phone || "",
+      invoiceId: formData.invoiceId,
+      invoiceNumber: formData.invoiceNumber, // ✅ Changed to match model
+      date: formData.date,
+      reason: "returned_goods", // Default reason
+      items: selectedItems.map((item) => ({
+        productId: item.productId,
+        name: item.name,
+        description: item.description || "",
+        quantity: item.quantity,
+        unit: item.unit,
+        unitPrice: item.unitPrice,
+        taxRate: item.taxRate,
+        taxAmount: item.taxAmount,
+        discountPercent: item.discountPercent,
+        discountAmount: item.discountAmount,
+        total: item.amount,
+      })),
+      subtotal: formData.subtotal,
+      totalTax: calculatedTotalTax, // ✅ Use calculated value
+      totalDiscount: calculatedTotalDiscount, // ✅ Use calculated value
+      shippingCharges: formData.shippingCharges,
+      roundOff: formData.roundOff,
+      totalAmount: formData.totalAmount,
+      status: action === "save" ? "draft" : "issued",
+      notes: formData.notes || "",
+    };
+
+    // Debug log to see what's being sent
+    console.log("📤 Submitting credit note data:", creditNoteData);
+
+    const response = await api.post("/api/credit-notes", creditNoteData);
+
+    console.log("✅ Server response:", response.data);
+
+    toast.success(
+      `Credit note ${action === "save" ? "saved as draft" : "issued successfully"}`
+    );
+
+    if (action === "saveAndPrint") {
+      navigate("/skeleton?redirect=/customers");
+    } else if (action === "issued") {
+      navigate("/customers");
+    }
+  } catch (error) {
+    console.error("❌ Submit error:", error);
+    console.error("Error response:", error.response?.data);
+    
+    let errorMessage = "Failed to save credit note";
+    if (error.response?.data?.error) {
+      errorMessage = error.response.data.error;
+    } else if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    }
+    
+    toast.error(errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -419,8 +460,8 @@ const CustomerCreditNote = () => {
   }, []);
 
   return (
-    <div className="page-wrapper">
-      <div className="content">
+    <div className="px-4 py-4">
+      <div className="">
         <div className="">
           {/* Header */}
           <div className="d-flex justify-content-between align-items-center mb-4">

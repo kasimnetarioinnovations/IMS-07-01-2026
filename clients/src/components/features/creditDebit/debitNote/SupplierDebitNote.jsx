@@ -133,39 +133,62 @@ const SupplierDebitNote = () => {
         }
     };
 
-    const fetchSupplierInvoices = async (supplierId) => {
-        try {
-            setLoadingInvoices(true);
-            let response;
-            try {
-                response = await api.get(`/api/supplier-invoices/supplier/${supplierId}`);
-            } catch (firstError) {
-                try {
-                    response = await api.get(`/api/supplier-invoices?supplierId=${supplierId}`);
-                } catch (secondError) {
-                    console.error("No supplier invoice endpoint found");
-                    setSupplierInvoices([]);
-                    return;
-                }
-            }
-
-            let invoicesData = [];
-            if (Array.isArray(response.data)) {
-                invoicesData = response.data;
-            } else if (response.data?.invoices && Array.isArray(response.data.invoices)) {
-                invoicesData = response.data.invoices;
-            } else if (response.data?.data && Array.isArray(response.data.data)) {
-                invoicesData = response.data.data;
-            }
-
-            setSupplierInvoices(invoicesData);
-        } catch (error) {
-            console.error("Failed to load supplier invoices:", error);
-            setSupplierInvoices([]);
-        } finally {
-            setLoadingInvoices(false);
+   const fetchSupplierInvoices = async (supplierId) => {
+  try {
+    setLoadingInvoices(true);
+    
+    // CORRECT ENDPOINT: Use your purchase orders route
+    const response = await api.get(`/api/purchase-orders?supplierId=${supplierId}`);
+    
+    let invoicesData = [];
+    
+    // Adjust based on your actual API response structure
+    if (response.data && Array.isArray(response.data)) {
+      // Direct array response
+      invoicesData = response.data;
+    } else if (response.data?.data && Array.isArray(response.data.data)) {
+      // Response with data property
+      invoicesData = response.data.data;
+    } else if (response.data?.purchaseOrders && Array.isArray(response.data.purchaseOrders)) {
+      // Response with purchaseOrders property
+      invoicesData = response.data.purchaseOrders;
+    } else if (response.data?.invoices && Array.isArray(response.data.invoices)) {
+      // Response with invoices property
+      invoicesData = response.data.invoices;
+    }
+    
+    // Filter to only show invoices that can have debit notes
+    // (typically received/partial invoices, not cancelled)
+    const filteredInvoices = invoicesData.filter(invoice => 
+      invoice.status !== 'cancelled' && 
+      invoice.status !== 'draft'
+    );
+    
+    setSupplierInvoices(filteredInvoices);
+  } catch (error) {
+    console.error("Failed to load purchase orders:", error);
+    
+    // Try alternative endpoint structure
+    try {
+      const altResponse = await api.get(`/api/purchase-orders/supplier/${supplierId}`);
+      
+      if (altResponse.data) {
+        let altData = [];
+        if (Array.isArray(altResponse.data)) {
+          altData = altResponse.data;
+        } else if (altResponse.data.data) {
+          altData = altResponse.data.data;
         }
-    };
+        setSupplierInvoices(altData);
+      }
+    } catch (secondError) {
+      console.error("Alternative endpoint also failed:", secondError);
+      setSupplierInvoices([]);
+    }
+  } finally {
+    setLoadingInvoices(false);
+  }
+};
 
     const handleSupplierSelect = (supplier) => {
         setFormData((prev) => ({
@@ -179,46 +202,89 @@ const SupplierDebitNote = () => {
         }));
     };
 
-    const handleInvoiceSelect = async (invoice) => {
-        try {
-            const invoiceResponse = await api.get(`/api/supplier-invoices/${invoice._id}`);
-            const invoiceDetails = invoiceResponse.data.invoice || invoiceResponse.data;
-
-            if (!invoiceDetails || !invoiceDetails.items) {
-                toast.error("Could not load invoice items");
-                return;
-            }
-
-            const itemsFromInvoice = invoiceDetails.items.map((item, index) => ({
-                id: index + 1,
-                productId: item.productId?._id || item.productId,
-                name: item.itemName || item.name || item.productId?.productName || "Product",
-                quantity: item.qty || item.quantity || 1,
-                originalQuantity: item.qty || item.quantity || 1,
-                unit: item.unit || "Pcs",
-                unitPrice: item.unitPrice || item.purchasePrice || 0,
-                tax: item.taxType || `GST @ ${item.taxRate || 5}%`,
-                taxRate: item.taxRate || 5,
-                taxAmount: 0,
-                discountPercent: 0,
-                discountAmount: 0,
-                amount: 0,
-                isSelected: true,
-            }));
-
-            setFormData((prev) => ({
-                ...prev,
-                invoiceId: invoice._id,
-                invoiceNumber: invoice.invoiceNo || invoice.invoiceNumber || "",
-                items: itemsFromInvoice,
-            }));
-
-            toast.success(`Loaded ${itemsFromInvoice.length} items from invoice`);
-        } catch (error) {
-            console.error("Failed to load invoice details:", error);
-            toast.error("Failed to load invoice details");
-        }
-    };
+const handleInvoiceSelect = async (invoice) => {
+  try {
+    // Fetch detailed purchase order
+    const invoiceResponse = await api.get(`/api/purchase-orders/${invoice._id}`);
+    
+    // Check different response structures
+    let invoiceDetails = null;
+    if (invoiceResponse.data?.purchaseOrder) {
+      invoiceDetails = invoiceResponse.data.purchaseOrder;
+    } else if (invoiceResponse.data?.invoice) {
+      invoiceDetails = invoiceResponse.data.invoice;
+    } else {
+      invoiceDetails = invoiceResponse.data;
+    }
+    
+    if (!invoiceDetails || !invoiceDetails.items) {
+      toast.error("Could not load invoice items");
+      return;
+    }
+    
+    // Map purchase order items to debit note items
+    const itemsFromInvoice = invoiceDetails.items.map((item, index) => ({
+      id: index + 1,
+      productId: item.productId?._id || item.productId,
+      name: item.itemName || item.name || "Product",
+      description: item.description || "",
+      quantity: item.qty || item.quantity || 1,
+      originalQuantity: item.qty || item.quantity || 1,
+      unit: item.unit || "Pcs",
+      unitPrice: item.unitPrice || item.price || 0,
+      tax: item.taxType || `GST @ ${item.taxRate || 5}%`,
+      taxRate: item.taxRate || 5,
+      taxAmount: item.taxAmount || 0,
+      discountPercent: item.discountPct || 0,
+      discountAmount: item.discountAmt || 0,
+      amount: item.amount || 0,
+      isSelected: true,
+    })); // <-- Fixed: Removed extra comma and added closing parenthesis
+    
+    setFormData((prev) => ({
+      ...prev,
+      invoiceId: invoice._id,
+      // Use the purchase order invoice number
+      invoiceNumber: invoice.invoiceNo || invoice.invoiceNumber || "",
+      items: itemsFromInvoice,
+    }));
+    
+    toast.success(`Loaded ${itemsFromInvoice.length} items from invoice`);
+  } catch (error) {
+    console.error("Failed to load invoice details:", error);
+    
+    // Fallback: Use the basic invoice data if detailed fetch fails
+    if (invoice.items && invoice.items.length > 0) {
+      const itemsFromBasic = invoice.items.map((item, index) => ({
+        id: index + 1,
+        productId: item.productId?._id || item.productId,
+        name: item.itemName || item.name || "Product",
+        quantity: item.qty || item.quantity || 1,
+        originalQuantity: item.qty || item.quantity || 1,
+        unit: item.unit || "Pcs",
+        unitPrice: item.unitPrice || 0,
+        tax: item.taxType || `GST @ 5%`,
+        taxRate: item.taxRate || 5,
+        taxAmount: item.taxAmount || 0,
+        discountPercent: item.discountPct || 0,
+        discountAmount: item.discountAmt || 0,
+        amount: item.amount || 0,
+        isSelected: true,
+      })); // <-- Fixed: Added closing parenthesis
+      
+      setFormData((prev) => ({
+        ...prev,
+        invoiceId: invoice._id,
+        invoiceNumber: invoice.invoiceNo || "",
+        items: itemsFromBasic,
+      }));
+      
+      toast.success(`Loaded ${itemsFromBasic.length} items from invoice`);
+    } else {
+      toast.error("Failed to load invoice details");
+    }
+  }
+};
 
     const handleItemSelect = (index) => {
         const updatedItems = [...formData.items];
@@ -309,78 +375,87 @@ const SupplierDebitNote = () => {
         }));
     };
 
-    const handleSubmit = async (action) => {
-        try {
-            const selectedItems = formData.items.filter(
-                (item) => item.isSelected && item.quantity > 0 && item.productId
-            );
+   const handleSubmit = async (action) => {
+    try {
+        const selectedItems = formData.items.filter(
+            (item) => item.isSelected && item.quantity > 0 && item.productId
+        );
 
-            if (selectedItems.length === 0) {
-                toast.error("Please select at least one item to return");
-                return;
-            }
-
-            if (!formData.supplierId) {
-                toast.error("Please select a supplier");
-                return;
-            }
-
-            if (!formData.invoiceId) {
-                toast.error("Please select an invoice");
-                return;
-            }
-
-            setLoading(true);
-
-            const debitNoteData = {
-                supplierId: formData.supplierId,
-                supplierName: formData.supplierName,
-                phone: formData.phone,
-                invoiceId: formData.invoiceId,
-                invoiceNumber: formData.invoiceNumber,
-                date: formData.date,
-                reason: "defective_goods", // Default reason for supplier debit note
-                items: selectedItems.map((item) => ({
-                    productId: item.productId,
-                    name: item.name,
-                    quantity: item.quantity,
-                    unit: item.unit,
-                    unitPrice: item.unitPrice,
-                    taxRate: item.taxRate,
-                    taxAmount: item.taxAmount,
-                    discountPercent: item.discountPercent,
-                    discountAmount: item.discountAmount,
-                    total: item.amount,
-                })),
-                subtotal: formData.subtotal,
-                totalDiscount: formData.discount,
-                shippingCharges: formData.shippingCharges,
-                roundOff: formData.roundOff,
-                totalAmount: formData.totalAmount,
-                status: action === "save" ? "draft" : "issued",
-                notes: formData.notes,
-            };
-
-            const response = await api.post("/api/supplier-debit-notes", debitNoteData);
-
-            toast.success(
-                `Debit note ${action === "save" ? "saved as draft" : "issued successfully"}`
-            );
-
-            if (action === "saveAndPrint") {
-                navigate("/skeleton?redirect=/supplier-list");
-            } else if (action === "issued") {
-                navigate("/skeleton?redirect=/supplier-list");
-            }
-        } catch (error) {
-            console.error("Submit error:", error);
-            toast.error(
-                error.response?.data?.error || "Failed to save debit note"
-            );
-        } finally {
-            setLoading(false);
+        if (selectedItems.length === 0) {
+            toast.error("Please select at least one item to return");
+            return;
         }
-    };
+
+        if (!formData.supplierId) {
+            toast.error("Please select a supplier");
+            return;
+        }
+
+        if (!formData.invoiceId) {
+            toast.error("Please select an invoice");
+            return;
+        }
+
+        setLoading(true);
+
+        // Prepare data according to your backend model
+        const debitNoteData = {
+            supplierId: formData.supplierId,
+            supplierName: formData.supplierName,
+            phone: formData.phone,
+            invoiceId: formData.invoiceId,
+            // supplierInvoiceNo should match your model field
+            supplierInvoiceNo: formData.invoiceNumber,
+            date: formData.date,
+            reason: "defective_goods", // Default reason for supplier debit note
+            items: selectedItems.map((item) => ({
+                productId: item.productId,
+                name: item.name,
+                description: item.description || "",
+                quantity: item.quantity,
+                unit: item.unit,
+                unitPrice: item.unitPrice,
+                taxRate: item.taxRate,
+                taxAmount: item.taxAmount,
+                discountPercent: item.discountPercent,
+                discountAmount: item.discountAmount,
+                total: item.amount,
+            })),
+            subtotal: formData.subtotal,
+            totalDiscount: formData.discount,
+            additionalCharges: formData.shippingCharges, // Match model field name
+            roundOff: formData.roundOff,
+            totalAmount: formData.totalAmount,
+            status: action === "save" ? "draft" : "issued",
+            notes: formData.notes,
+            fullyReceived: formData.fullyReceived, // Add if needed
+        };
+
+        console.log("Submitting debit note:", debitNoteData);
+        
+        const response = await api.post("/api/supplier-debit-notes", debitNoteData);
+
+        toast.success(
+            `Debit note ${action === "save" ? "saved as draft" : "issued successfully"}`
+        );
+
+        // Navigate based on action
+        if (action === "saveAndPrint") {
+            navigate("/skeleton?redirect=/supplier-debit-notes");
+        } else if (action === "save" || action === "issued") {
+            navigate("/skeleton?redirect=/supplier-debit-notes");
+        }
+    } catch (error) {
+        console.error("Submit error:", error);
+        toast.error(
+            error.response?.data?.error || 
+            error.response?.data?.message || 
+            "Failed to save debit note"
+        );
+    } finally {
+        setLoading(false);
+    }
+};
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -400,8 +475,8 @@ const SupplierDebitNote = () => {
         navigate(`/create-supplier-debitnote/${supplier._id}`, { replace: true });
     };
     return (
-        <div className="page-wrapper">
-            <div className="content">
+        <div className="px-4 py-4">
+            <div className="">
                 <div className="">
                     {/* Header - SAME UI */}
                     <div className="d-flex justify-content-between align-items-center mb-4">
@@ -547,7 +622,7 @@ const SupplierDebitNote = () => {
                                             <span style={{ flex: 1 }}>
                                                 {formData.invoiceId
                                                     ? supplierInvoices.find(i => i._id === formData.invoiceId)?.invoiceNo
-                                                    : "Supplier Invoice No"}
+                                                    : "Purchase Invoice No"}
                                             </span>
 
                                             <span style={{ fontSize: "12px", color: "#9CA3AF" }}>

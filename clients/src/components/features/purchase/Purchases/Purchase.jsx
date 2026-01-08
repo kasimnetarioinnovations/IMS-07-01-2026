@@ -24,6 +24,8 @@ import DuplicateICONImg from "../../../../assets/images/duplicate.png";
 import api from "../../../../pages/config/axiosInstance";
 import { toast } from "react-toastify";
 import { format } from "date-fns";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 const statsTop = [
   {
@@ -68,73 +70,87 @@ const statusStyles = {
     color: "#7E7000",
     bg: "#F7F7C7",
     dot: true,
-    label: "Draft"
+    label: "Draft",
   },
   received: {
     color: "#01774B",
     bg: "transparent",
     dot: false,
     icon: <FaCheck size={12} />,
-    label: "Received"
+    label: "Received",
   },
   partial: {
     color: "#1F7FFF",
     bg: "#E5F0FF",
     dot: true,
-    label: "Partial"
+    label: "Partial",
   },
   cancelled: {
     color: "#A80205",
     bg: "transparent",
     dot: false,
     icon: <RxCross2 size={12} />,
-    label: "Cancelled"
+    label: "Cancelled",
   },
   overdue: {
     color: "#FF6B00",
     bg: "#FFF0E5",
     dot: true,
-    label: "Overdue"
+    label: "Overdue",
   },
   converted: {
-  color: "#7E7000",
-  bg: "#F7F7C7",
-  dot: true,
-  label: "Converted to Purchase",
-},
+    color: "#7E7000",
+    bg: "#F7F7C7",
+    dot: true,
+    label: "Converted to Purchase",
+  },
 };
 
 const menuItems = [
-  {
-    label: "Edit",
-    icon: <img src={EditICONImg} alt="edit" style={{ width: 18, height: 18 }} />,
-    action: "edit",
-  },
-  {
-    label: "View Details",
-    icon: <img src={ViewDetailsImg} alt="view" style={{ width: 18, height: 18 }} />,
-    action: "view",
-  },
-  {
-    label: "Create Debit Notes",
-    icon: <img src={CreditNoteImg} alt="debit" style={{ width: 18, height: 18 }} />,
-    action: "debit_note",
-  },
-  {
-    label: "Duplicate",
-    icon: <img src={DuplicateICONImg} alt="duplicate" style={{ width: 18, height: 18 }} />,
-    action: "duplicate",
-  },
+  // {
+  //   label: "Edit",
+  //   icon: (
+  //     <img src={EditICONImg} alt="edit" style={{ width: 18, height: 18 }} />
+  //   ),
+  //   action: "edit",
+  // },
+  // {
+  //   label: "View Details",
+  //   icon: (
+  //     <img src={ViewDetailsImg} alt="view" style={{ width: 18, height: 18 }} />
+  //   ),
+  //   action: "view",
+  // },
+  // {
+  //   label: "Create Debit Notes",
+  //   icon: (
+  //     <img src={CreditNoteImg} alt="debit" style={{ width: 18, height: 18 }} />
+  //   ),
+  //   action: "debit_note",
+  // },
+  // {
+  //   label: "Duplicate",
+  //   icon: (
+  //     <img
+  //       src={DuplicateICONImg}
+  //       alt="duplicate"
+  //       style={{ width: 18, height: 18 }}
+  //     />
+  //   ),
+  //   action: "duplicate",
+  // },
   {
     label: "Delete",
-    icon: <img src={DeleteICONImg} alt="delete" style={{ width: 18, height: 18 }} />,
+    icon: (
+      <img src={DeleteICONImg} alt="delete" style={{ width: 18, height: 18 }} />
+    ),
     action: "delete",
   },
 ];
 
 export default function Purchase() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState("All Orders");
   const [search, setSearch] = useState("");
   const [openMenu, setOpenMenu] = useState(null);
   const [modalContent, setModalContent] = useState("");
@@ -143,12 +159,12 @@ export default function Purchase() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [selectedDateRange, setSelectedDateRange] = useState({
-  startDate: null,
-  endDate: null,
-});
+    startDate: null,
+    endDate: null,
+  });
   const [showModal, setShowModal] = useState(false);
   const [tabs, setTabs] = useState(tabsData);
-  
+
   // State for purchase orders
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -156,83 +172,105 @@ export default function Purchase() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [selectedOrdersForExport, setSelectedOrdersForExport] = useState([]);
+  const [selectAllOrdersForExport, setSelectAllOrdersForExport] =
+    useState(false);
+
+  const [selectedRowIds, setSelectedRowIds] = useState(new Set());
+  const [allVisibleSelected, setAllVisibleSelected] = useState(false);
 
   // Fetch purchase orders
-const fetchPurchaseOrders = async (page = 1, status = "") => {
-  try {
-    setLoading(true);
-    console.log("Fetching purchase orders...");
-    
-    const params = {
-      page,
-      limit: 10,
-      ...(status && status !== "all" && { status }),
-      ...(search && { search }),
-    };
+  const fetchPurchaseOrders = async (page = 1, status = "") => {
+    try {
+      setLoading(true);
+      console.log("Fetching purchase orders...");
 
-    // ONLY add dates if they are selected (not null)
-    if (selectedDateRange.startDate) {
-      params.startDate = format(selectedDateRange.startDate, 'yyyy-MM-dd');
-    }
-    if (selectedDateRange.endDate) {
-      params.endDate = format(selectedDateRange.endDate, 'yyyy-MM-dd');
-    }
+      const params = {
+        page,
+        limit: 10,
+        ...(status && status !== "all" && { status }),
+        ...(search && { search }),
+      };
 
-    console.log("API Params:", params);
-    console.log("Calling endpoint: /api/purchase-orders");
+      // ONLY add dates if they are selected (not null)
+      if (selectedDateRange.startDate) {
+        params.startDate = format(selectedDateRange.startDate, "yyyy-MM-dd");
+      }
+      if (selectedDateRange.endDate) {
+        params.endDate = format(selectedDateRange.endDate, "yyyy-MM-dd");
+      }
 
-    const response = await api.get("/api/purchase-orders", { params });
-    
-    console.log("API Response:", response.data);
-    
-    if (response.data.success) {
-      console.log("Purchase orders data:", response.data.invoices);
-      console.log("Total count:", response.data.total);
-      
-      setPurchaseOrders(response.data.invoices || []);
-      setTotalCount(response.data.total || 0);
-      setTotalPages(response.data.pagination?.totalPages || 1);
-      
-      // Update tab counts
-      updateTabCounts(response.data.invoices || []);
-      
-      // Update stats
-      updateStats(response.data.invoices || []);
-    } else {
-      toast.error(response.data.error || "Failed to load purchase orders");
+      console.log("API Params:", params);
+      console.log("Calling endpoint: /api/purchase-orders");
+
+      const response = await api.get("/api/purchase-orders", { params });
+
+      console.log("API Response:", response.data);
+
+      if (response.data.success) {
+        console.log("Purchase orders data:", response.data.invoices);
+        console.log("Total count:", response.data.total);
+
+        setPurchaseOrders(response.data.invoices || []);
+        setTotalCount(response.data.total || 0);
+        setTotalPages(response.data.pagination?.totalPages || 1);
+
+        // Update tab counts
+        updateTabCounts(response.data.invoices || []);
+
+        // Update stats
+        updateStats(response.data.invoices || []);
+      } else {
+        toast.error(response.data.error || "Failed to load purchase orders");
+      }
+    } catch (error) {
+      console.error("Error fetching purchase orders:", error);
+      console.error("Error response:", error.response?.data);
+      console.error("Error status:", error.response?.status);
+      toast.error("Failed to load purchase orders");
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Error fetching purchase orders:", error);
-    console.error("Error response:", error.response?.data);
-    console.error("Error status:", error.response?.status);
-    toast.error("Failed to load purchase orders");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // Update tab counts based on data
   const updateTabCounts = (orders) => {
-  setTabs((prev) => [
-    { ...prev[0], count: orders.length },
-    { ...prev[1], count: orders.filter(o => o.status === "converted").length },
-    { ...prev[2], count: orders.filter(o => o.status === "received").length },
-    { ...prev[3], count: orders.filter(o => o.status === "cancelled").length },
-  ]);
-};
-
+    setTabs((prev) => [
+      { ...prev[0], count: orders.length },
+      {
+        ...prev[1],
+        count: orders.filter((o) => o.status === "converted").length,
+      },
+      {
+        ...prev[2],
+        count: orders.filter((o) => o.status === "received").length,
+      },
+      {
+        ...prev[3],
+        count: orders.filter((o) => o.status === "cancelled").length,
+      },
+    ]);
+  };
 
   // Update statistics cards
   const updateStats = (orders) => {
-    const totalPurchaseValue = orders.reduce((sum, order) => sum + (order.grandTotal || 0), 0);
+    const totalPurchaseValue = orders.reduce(
+      (sum, order) => sum + (order.grandTotal || 0),
+      0
+    );
     const totalOrders = orders.length;
-    const averagePurchasing = totalOrders > 0 ? totalPurchaseValue / totalOrders : 0;
-    const duePayments = orders.reduce((sum, order) => sum + (order.dueAmount || 0), 0);
+    const averagePurchasing =
+      totalOrders > 0 ? totalPurchaseValue / totalOrders : 0;
+    const duePayments = orders.reduce(
+      (sum, order) => sum + (order.dueAmount || 0),
+      0
+    );
 
     setStats([
       {
         ...statsTop[0],
-        value: totalPurchaseValue.toLocaleString('en-IN'),
+        value: totalPurchaseValue.toLocaleString("en-IN"),
       },
       {
         ...statsTop[1],
@@ -240,11 +278,11 @@ const fetchPurchaseOrders = async (page = 1, status = "") => {
       },
       {
         ...statsTop[2],
-        value: Math.round(averagePurchasing).toLocaleString('en-IN'),
+        value: Math.round(averagePurchasing).toLocaleString("en-IN"),
       },
       {
         ...statsTop[3],
-        value: duePayments.toLocaleString('en-IN'),
+        value: duePayments.toLocaleString("en-IN"),
       },
     ]);
   };
@@ -252,7 +290,7 @@ const fetchPurchaseOrders = async (page = 1, status = "") => {
   // Handle menu actions
   const handleMenuAction = (invoice, action) => {
     setSelectedInvoice(invoice);
-    
+
     switch (action) {
       case "edit":
         navigate(`/edit-purchase-order/${invoice._id}`);
@@ -278,7 +316,9 @@ const fetchPurchaseOrders = async (page = 1, status = "") => {
   // Handle duplicate invoice
   const handleDuplicateInvoice = async (invoice) => {
     try {
-      const response = await api.post(`/api/purchase-orders/${invoice._id}/duplicate`);
+      const response = await api.post(
+        `/api/purchase-orders/${invoice._id}/duplicate`
+      );
       if (response.data.success) {
         toast.success("Purchase order duplicated successfully");
         fetchPurchaseOrders();
@@ -292,9 +332,11 @@ const fetchPurchaseOrders = async (page = 1, status = "") => {
   // Handle delete invoice
   const handleDeleteInvoice = async () => {
     if (!selectedInvoice) return;
-    
+
     try {
-      const response = await api.delete(`/api/purchase-orders/${selectedInvoice._id}`);
+      const response = await api.delete(
+        `/api/purchase-orders/${selectedInvoice._id}`
+      );
       if (response.data.success) {
         toast.success("Purchase order deleted successfully");
         fetchPurchaseOrders();
@@ -309,13 +351,20 @@ const fetchPurchaseOrders = async (page = 1, status = "") => {
 
   // Handle tab change
   const handleTabChange = (tab) => {
-    setActiveTab(tab.value);
+    setActiveTab(tab.label);
     let status = "";
     switch (tab.value) {
-      case "pending": status = "converted"; break;
-      case "approved": status = "received"; break;
-      case "rejected": status = "cancelled"; break;
-      default: status = "";
+      case "pending":
+        status = "converted";
+        break;
+      case "approved":
+        status = "received";
+        break;
+      case "rejected":
+        status = "cancelled";
+        break;
+      default:
+        status = "";
     }
     fetchPurchaseOrders(1, status);
   };
@@ -332,10 +381,17 @@ const fetchPurchaseOrders = async (page = 1, status = "") => {
     setCurrentPage(page);
     let status = "";
     switch (activeTab) {
-      case "pending": status = "converted"; break;
-    case "approved": status = "received"; break;
-    case "rejected": status = "cancelled"; break;
-    default: status = "";
+      case "pending":
+        status = "converted";
+        break;
+      case "approved":
+        status = "received";
+        break;
+      case "rejected":
+        status = "cancelled";
+        break;
+      default:
+        status = "";
     }
     fetchPurchaseOrders(page, status);
   };
@@ -386,22 +442,105 @@ const fetchPurchaseOrders = async (page = 1, status = "") => {
   };
 
   const updateInvoiceStatus = async (status) => {
-  if (!selectedInvoice) return;
+    if (!selectedInvoice) return;
 
-  try {
-    await api.put(`/api/purchase-orders/${selectedInvoice._id}`, {
-      status,
+    try {
+      await api.put(`/api/purchase-orders/${selectedInvoice._id}`, {
+        status,
+      });
+
+      toast.success(`Invoice ${status}`);
+      setShowModal(false);
+      setSelectedInvoice(null);
+      fetchPurchaseOrders(currentPage);
+    } catch (err) {
+      toast.error("Failed to update status");
+    }
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Purchase Orders Report", 14, 15);
+
+    const tableColumns = [
+      "PO No.",
+      "Supplier",
+      "Order Date",
+      "Due Date",
+      "Items",
+      "Status",
+    ];
+
+    // Get visible rows - selected ones or all if none selected
+    const visibleRows =
+      selectedRowIds.size > 0
+        ? purchaseOrders.filter((order) => selectedRowIds.has(order._id))
+        : purchaseOrders;
+
+    if (visibleRows.length === 0) {
+      toast.warn("No purchase orders selected to export");
+      return;
+    }
+
+    const tableRows = visibleRows.map((order) => [
+      order.invoiceNo || "—",
+      order.supplierId?.supplierName || "Unknown Supplier",
+      order.invoiceDate
+        ? format(new Date(order.invoiceDate), "dd/MM/yyyy")
+        : "-",
+      order.dueDate ? format(new Date(order.dueDate), "dd/MM/yyyy") : "-",
+      order.items?.length || 0,
+      order.status || "draft",
+      `₹${(order.grandTotal || 0).toLocaleString("en-IN")}`,
+    ]);
+
+    autoTable(doc, {
+      head: [tableColumns],
+      body: tableRows,
+      startY: 20,
+      styles: {
+        fontSize: 8,
+      },
+      headStyles: {
+        fillColor: [155, 155, 155],
+        textColor: "white",
+      },
+      theme: "striped",
     });
 
-    toast.success(`Invoice ${status}`);
-    setShowModal(false);
-    setSelectedInvoice(null);
-    fetchPurchaseOrders(currentPage);
-  } catch (err) {
-    toast.error("Failed to update status");
-  }
-};
+    const filename = `purchase-orders-${visibleRows.length}-items-${format(
+      new Date(),
+      "yyyy-MM-dd"
+    )}`;
+    doc.save(`${filename}.pdf`);
 
+    toast.success(
+      `Exported ${visibleRows.length} purchase order${
+        visibleRows.length !== 1 ? "s" : ""
+      }`
+    );
+  };
+
+  // Add to your existing useEffect or create a new one
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showExportMenu && !event.target.closest(".export-container")) {
+        setShowExportMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showExportMenu]);
+
+  // Add this useEffect near your other useEffect hooks
+  useEffect(() => {
+    const allCurrentPageIds = purchaseOrders.map((order) => order._id);
+    const allSelected =
+      allCurrentPageIds.length > 0 &&
+      allCurrentPageIds.every((id) => selectedRowIds.has(id));
+    setAllVisibleSelected(allSelected);
+  }, [selectedRowIds, purchaseOrders]);
 
   return (
     <div className="px-4 py-4">
@@ -438,7 +577,7 @@ const fetchPurchaseOrders = async (page = 1, status = "") => {
 
         <div className="d-flex align-items-center gap-3">
           <div className="d-flex align-items-center gap-4">
-            <DatePicker 
+            <DatePicker
               selectedDateRange={selectedDateRange}
               setSelectedDateRange={setSelectedDateRange}
             />
@@ -653,6 +792,7 @@ const fetchPurchaseOrders = async (page = 1, status = "") => {
             </div>
 
             {/* Export Button */}
+            {/* Export Button */}
             <button
               style={{
                 background: "#FCFCFC",
@@ -668,13 +808,28 @@ const fetchPurchaseOrders = async (page = 1, status = "") => {
                 alignItems: "center",
                 justifyContent: "center",
                 fontWeight: 500,
+                cursor:
+                  selectedRowIds.size > 0 || purchaseOrders.length > 0
+                    ? "pointer"
+                    : "not-allowed",
+                opacity:
+                  selectedRowIds.size > 0 || purchaseOrders.length > 0
+                    ? 1
+                    : 0.5,
               }}
+              onClick={handleExportPDF}
+              disabled={purchaseOrders.length === 0}
+              title={
+                selectedRowIds.size > 0
+                  ? `Export ${selectedRowIds.size} selected`
+                  : "Export all"
+              }
             >
               <TbFileExport
                 className="fs-5 text-secondary"
                 style={{ marginRight: "10px" }}
               />
-              Export
+              Export PDF
             </button>
           </div>
         </div>
@@ -719,7 +874,26 @@ const fetchPurchaseOrders = async (page = 1, status = "") => {
                         fontFamily: '"Inter", sans-serif',
                       }}
                     >
-                      <input type="checkbox" aria-label="select row" />
+                      <input
+                        type="checkbox"
+                        aria-label="select all"
+                        checked={allVisibleSelected}
+                        onChange={(e) => {
+                          const next = new Set(selectedRowIds);
+                          if (e.target.checked) {
+                            // Add all current page orders
+                            purchaseOrders.forEach((order) => {
+                              if (order._id) next.add(order._id);
+                            });
+                          } else {
+                            // Remove all current page orders
+                            purchaseOrders.forEach((order) => {
+                              if (order._id) next.delete(order._id);
+                            });
+                          }
+                          setSelectedRowIds(next);
+                        }}
+                      />
                     </th>
 
                     {/* Supplier Name */}
@@ -849,7 +1023,10 @@ const fetchPurchaseOrders = async (page = 1, status = "") => {
                   {loading ? (
                     <tr>
                       <td colSpan="8" className="text-center py-5">
-                        <div className="spinner-border text-primary" role="status">
+                        <div
+                          className="spinner-border text-primary"
+                          role="status"
+                        >
                           <span className="visually-hidden">Loading...</span>
                         </div>
                       </td>
@@ -862,8 +1039,10 @@ const fetchPurchaseOrders = async (page = 1, status = "") => {
                     </tr>
                   ) : (
                     purchaseOrders.map((order, idx) => {
-                      const sty = statusStyles[order.status] || statusStyles.draft;
-                      const supplierName = order.supplierId?.supplierName || "Unknown Supplier";
+                      const sty =
+                        statusStyles[order.status] || statusStyles.draft;
+                      const supplierName =
+                        order.supplierId?.supplierName || "Unknown Supplier";
                       const itemsCount = order.items?.length || 0;
 
                       return (
@@ -873,16 +1052,33 @@ const fetchPurchaseOrders = async (page = 1, status = "") => {
                             className="text-center"
                             style={{ padding: "14px 16px" }}
                           >
-                            <input type="checkbox" aria-label="select row" />
+                            <input
+                              type="checkbox"
+                              aria-label="select row"
+                              checked={selectedRowIds.has(order._id)}
+                              onChange={(e) => {
+                                const next = new Set(selectedRowIds);
+                                if (e.target.checked) {
+                                  if (order._id) next.add(order._id);
+                                } else {
+                                  if (order._id) next.delete(order._id);
+                                }
+                                setSelectedRowIds(next);
+                              }}
+                            />
                           </td>
 
                           {/* Supplier */}
-                          <td style={{ padding: "14px 16px", color: "#0E101A" }}>
+                          <td
+                            style={{ padding: "14px 16px", color: "#0E101A" }}
+                          >
                             {supplierName} ({itemsCount} items)
                           </td>
 
                           {/* Invoice */}
-                          <td style={{ padding: "14px 16px" }}>{order.invoiceNo}</td>
+                          <td style={{ padding: "14px 16px" }}>
+                            {order.invoiceNo}
+                          </td>
 
                           {/* Items */}
                           <td style={{ padding: "14px 16px" }}>{itemsCount}</td>
@@ -896,8 +1092,7 @@ const fetchPurchaseOrders = async (page = 1, status = "") => {
                                 flexWrap: "wrap",
                               }}
                             >
-                              <span>{formatDate(order.invoiceDate)}</span>
-                              & 
+                              <span>{formatDate(order.invoiceDate)}</span>&
                               <span>{getArrivingDate(order.invoiceDate)}</span>
                             </div>
                           </td>
@@ -917,7 +1112,10 @@ const fetchPurchaseOrders = async (page = 1, status = "") => {
                                 whiteSpace: "nowrap",
                                 minWidth: 120,
                               }}
-                              onClick={()=> {setSelectedInvoice(order); setShowModal(true)}}
+                              onClick={() => {
+                                setSelectedInvoice(order);
+                                setShowModal(true);
+                              }}
                             >
                               {sty.dot ? (
                                 <span
@@ -940,13 +1138,16 @@ const fetchPurchaseOrders = async (page = 1, status = "") => {
 
                           {/* Amount */}
                           <td style={{ padding: "14px 16px" }}>
-                            ₹ {order.grandTotal?.toLocaleString('en-IN')}/-
+                            ₹ {order.grandTotal?.toLocaleString("en-IN")}/-
                           </td>
 
                           {/* Actions */}
                           <td
                             className="text-center"
-                            style={{ padding: "14px 16px", position: "relative" }}
+                            style={{
+                              padding: "14px 16px",
+                              position: "relative",
+                            }}
                           >
                             <button
                               onClick={() =>
@@ -984,7 +1185,9 @@ const fetchPurchaseOrders = async (page = 1, status = "") => {
                                 {menuItems.map((item) => (
                                   <div
                                     key={item.action}
-                                    onClick={() => handleMenuAction(order, item.action)}
+                                    onClick={() =>
+                                      handleMenuAction(order, item.action)
+                                    }
                                     style={{
                                       display: "flex",
                                       alignItems: "center",
@@ -1031,17 +1234,17 @@ const fetchPurchaseOrders = async (page = 1, status = "") => {
               </table>
             </div>
           </div>
-          
+
           {/* Pagination */}
           {!loading && purchaseOrders.length > 0 && (
-            <Pagination 
+            <Pagination
               currentPage={currentPage}
-             itemsPerPage={10}
+              itemsPerPage={10}
               total={totalCount}
               onPageChange={handlePageChange}
             />
           )}
-          
+
           <ConfirmDeleteModal
             isOpen={showDeleteModal}
             onCancel={() => {
@@ -1052,18 +1255,15 @@ const fetchPurchaseOrders = async (page = 1, status = "") => {
             title="Delete Purchase Order"
             message={`Are you sure you want to delete invoice ${selectedInvoice?.invoiceNo}? This action cannot be undone.`}
           />
-          
+
           {/* Convert purchase modal */}
           <Convertpurchasepopupmodal
             isOpen={showModal}
             onCancel={() => setShowModal(false)}
-          onConfirm={(status) => updateInvoiceStatus(status)}
+            onConfirm={(status) => updateInvoiceStatus(status)}
           />
         </div>
       </div>
     </div>
   );
 }
-
-
-

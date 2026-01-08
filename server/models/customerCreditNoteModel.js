@@ -12,7 +12,7 @@ const creditNoteSchema = new mongoose.Schema({
     ref: 'Invoice',
     // required: true
   },
-   supplierInvoiceNo: {  
+   invoiceNumber: {  
     type: String
   },
   customerId: {
