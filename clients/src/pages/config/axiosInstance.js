@@ -26,12 +26,15 @@ api.interceptors.response.use(
   window.location.href = "/login";
 }
 
-      // ✅ ONLY SHOW MESSAGE (NO REDIRECT)
-      toast.error(
-        isInactive
-          ? "You are currently set Inactive by admin. Please contact admin."
-          : "Your session has expired. Please log in again."
-      );
+     // ✅ ONLY SHOW MESSAGE (NO REDIRECT)
+      // Check if we are already on the login page to avoid "Session expired" loop/spam
+      const isLoginPage = window.location.pathname === "/login" || window.location.pathname === "/";
+
+      if (isInactive) {
+        toast.error("You are currently set Inactive by admin. Please contact admin.");
+      } else if (!isLoginPage) {
+        toast.error("Your session has expired. Please log in again.");
+      }
     }
 
     return Promise.reject(error);

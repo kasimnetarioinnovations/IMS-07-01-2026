@@ -1,4 +1,3 @@
-import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { TbEye, TbTrash } from "react-icons/tb";
 import { useNavigate } from "react-router-dom";
@@ -8,6 +7,14 @@ import DeleteAlert from "../../utils/sweetAlert/DeleteAlert";
 import BASE_URL from "../config/config";
 import { toast } from "react-toastify";
 import api from "../../pages/config/axiosInstance"
+import React, { useEffect, useRef, useState } from "react";
+import { Link, NavLink } from "react-router-dom";
+import { IoIosSearch, IoIosArrowDown } from "react-icons/io";
+import { FaArrowLeft, FaBarcode, FaFileImport } from "react-icons/fa6";
+import { MdOutlineViewSidebar, MdAddShoppingCart } from "react-icons/md";
+import { TbFileImport, TbFileExport } from "react-icons/tb";
+import Pagination from "../../components/Pagination";
+import Barcode from "../../assets/images/barcode.jpg";
 
 const Invoice = () => {
   const [invoices, setInvoices] = useState([]);
@@ -25,16 +32,15 @@ const Invoice = () => {
   const [shareLoadingId, setShareLoadingId] = useState(null);
 
   // const token = localStorage.getItem("token");
-  // Fetch invoices from backend
+  // Fetch invoices from backend (CustomerInvoiceController)
   const fetchInvoices = async () => {
     setLoading(true);
     try {
       const params = {
         page,
         limit,
-        search,
-        customer,
-        invoiceId,
+        search, // matches invoiceNo search in controller
+        customerId: customer || undefined,
         startDate,
         endDate,
       };
@@ -42,15 +48,14 @@ const Invoice = () => {
       Object.keys(params).forEach((key) => {
         if (!params[key]) delete params[key];
       });
-      const res = await api.get('/api/invoice/allinvoice', {
+      const res = await api.get('/api/invoices', {
         params,
         // headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.data && Array.isArray(res.data.invoices)) {
+      if (res.data?.success && Array.isArray(res.data.invoices)) {
         setInvoices(res.data.invoices);
         setTotal(res.data.total || 0);
-        //          console.log("Fetched invoices:", res.data.invoices.length);
-        // console.log("Rendered rows:", invoices.flatMap(i => i.invoice?.products || []).length);
+        console.log("Fetched invoices:", res.data.invoices.length);
       } else {
         setInvoices([]);
         setTotal(0);
@@ -67,6 +72,10 @@ const Invoice = () => {
     fetchInvoices();
     // eslint-disable-next-line
   }, [page, limit, search, customer, invoiceId, startDate, endDate]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, customer, startDate, endDate]);
 
   // Pagination controls
   const totalPages = Math.ceil(total / limit);
@@ -90,22 +99,36 @@ const Invoice = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (!invoices || !invoices.products) return;
+    if (!Array.isArray(invoices)) return;
+    const allItems = invoices.flatMap((inv) => Array.isArray(inv.items) ? inv.items : []);
     let subTotal = 0;
     let discountSum = 0;
     let taxableSum = 0;
     let taxSum = 0;
-    invoices.products.forEach((item) => {
-      const d = getProductRowCalculation(item);
-      subTotal += d.subTotal;
-      discountSum += d.discountAmount;
-      taxableSum += d.taxableAmount;
-      taxSum += d.taxAmount;
+    let grandTotal = 0;
+
+    allItems.forEach((item) => {
+      const qty = Number(item.qty || 1);
+      const price = Number(item.unitPrice || 0);
+      const discountAmount = Number(item.discountAmt || 0);
+      const taxableAmount = Math.max(0, qty * price - discountAmount);
+      const taxRate = Number(item.taxRate || 0);
+      const taxAmount = item.taxAmount !== undefined
+        ? Number(item.taxAmount || 0)
+        : (taxableAmount * taxRate) / 100;
+      const lineTotal = item.amount !== undefined
+        ? Number(item.amount || 0)
+        : taxableAmount + taxAmount;
+
+      subTotal += qty * price;
+      discountSum += discountAmount;
+      taxableSum += taxableAmount;
+      taxSum += taxAmount;
+      grandTotal += lineTotal;
     });
 
     const cgst = taxSum / 2;
     const sgst = taxSum / 2;
-    const grandTotal = (taxableSum || 0) + (taxSum || 0);
 
     setSummary({
       subTotal,
@@ -114,44 +137,9 @@ const Invoice = () => {
       cgst,
       sgst,
       taxSum,
-
       grandTotal,
     });
   }, [invoices]);
-
-  function getProductRowCalculation(row) {
-    const saleQty = Number(row.saleQty || item.quantity || 1);
-    const price = Number(row.sellingPrice || 0);
-    const discount = Number(row.discount || 0);
-    const tax = Number(row.tax || 0);
-    const subTotal = saleQty * price;
-    // 🔧 Fixed discount logic
-    let discountAmount = 0;
-    if (row.discountType === "Percentage") {
-      discountAmount = (subTotal * discount) / 100;
-    } else if (row.discountType === "Rupees" || row.discountType === "Fixed") {
-      discountAmount = saleQty * discount; // ✅ per unit ₹ discount
-    } else {
-      discountAmount = 0;
-    }
-    // const discountAmount = discount;
-    const taxableAmount = subTotal - discountAmount;
-    const taxAmount = (taxableAmount * tax) / 100;
-    const lineTotal = taxableAmount + taxAmount;
-    const unitCost = saleQty > 0 ? lineTotal / saleQty : 0;
-
-    return {
-      subTotal,
-      discountAmount,
-      taxableAmount,
-      taxAmount,
-      lineTotal,
-      unitCost,
-      tax,
-      saleQty,
-      price,
-    };
-  }
 
   const handleBulkDelete = async () => {
     const confirmed = await DeleteAlert({});
@@ -200,10 +188,10 @@ const Invoice = () => {
 
       // Send SMS
       await api.post(
-      `/api/invoice/sms/${invoiceMongoId}`,
-      { phone: customerPhone },
-      // { headers: { Authorization: `Bearer ${token}` } }
-    );
+        `/api/invoice/sms/${invoiceMongoId}`,
+        { phone: customerPhone },
+        // { headers: { Authorization: `Bearer ${token}` } }
+      );
 
       toast.success("Invoice shared.");
     } catch (e) {
@@ -215,378 +203,571 @@ const Invoice = () => {
   };
 
 
+  const [viewBarcode, setViewBarcode] = useState([]);
+  const [viewOptions, setViewOptions] = useState([]);
+
+  const buttonRefs = useRef([]);
+  const modelRef = useRef(null); // reference to modal area
+
+  // ✅ close when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // close only when:
+      const isClickInsideModel =
+        modelRef.current && modelRef.current.contains(event.target);
+
+      const isClickInsideButton =
+        buttonRefs.current[viewBarcode] &&
+        buttonRefs.current[viewBarcode].contains(event.target);
+
+      buttonRefs.current[viewOptions] &&
+        buttonRefs.current[viewOptions].contains(event.target);
+
+      if (!isClickInsideModel && !isClickInsideButton) {
+        setViewBarcode(false);
+        setViewOptions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [viewBarcode][viewOptions]);
+
+  const tabs = [{ label: "All", count: total, active: true }];
+
   return (
-    <div className="page-wrapper">
-      <div className="content">
-        <div className="page-header">
-          <div className="add-item d-flex">
-            <div className="page-title">
-              <h4>Invoices</h4>
-              <h6>Manage your stock invoices.</h6>
-            </div>
-          </div>
-          {/* ...existing code... */}
+    <div className="p-4">
+      {/* back, header, view style */}
+      <div
+        style={{
+          width: "100%",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "0px 0px 16px 0px", // Optional: padding for container
+        }}
+      >
+        {/* Left: Title + Icon */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 11,
+            height: '33px'
+          }}
+        >
+          <h2
+            style={{
+              margin: 0,
+              color: "black",
+              fontSize: 22,
+              fontFamily: "Inter, sans-serif",
+              fontWeight: 500,
+              height: '33px'
+            }}
+          >
+            Invoices
+          </h2>
         </div>
+      </div>
 
-        <div className="card">
-          <div className="card-header d-flex align-items-center justify-content-between flex-wrap row-gap-3">
-            <div className="search-set">
-              <div className="search-input">
-                <input
-                  type="text"
-                  placeholder="Search by invoice, customer, notes..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="form-control"
-                />
-                <span className="btn-searchset">
-                  <i className="ti ti-search fs-14 feather-search" />
-                </span>
-              </div>
-            </div>
-            <div className="d-flex table-dropdown my-xl-auto right-content align-items-center flex-wrap row-gap-3">
-
-              {selectedInvoices.length > 0 && (
-                <div className="" style={{ marginRight: '10px' }}>
-                  <div className="btn btn-danger" onClick={handleBulkDelete}>
-                    Delete Selected({selectedInvoices.length})
-                  </div>
-                </div>
-              )}
-              <input
-                type="text"
-                placeholder="Customer ID"
-                y
-                value={customer}
-                onChange={(e) => setCustomer(e.target.value)}
-                className="form-control me-2"
-                style={{ width: 120 }}
-              />
-              <input
-                type="text"
-                placeholder="Invoice ID"
-                value={invoiceId}
-                onChange={(e) => setInvoiceId(e.target.value)}
-                className="form-control me-2"
-                style={{ width: 120 }}
-              />
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="form-control me-2"
-                style={{ width: 140 }}
-              />
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="form-control me-2"
-                style={{ width: 140 }}
-              />
-            </div>
-          </div>
-          <div className="card-body p-0">
-            <div className="table-responsive">
-              <table className="table datatable">
-                <thead className="thead-light">
-                  <tr style={{ textAlign: "center" }}>
-                    <th className="no-sort">
-                      <label className="checkboxs">
-                        <input
-                          type="checkbox"
-                          id="select-all"
-                          checked={
-                            invoices.length > 0 &&
-                            selectedInvoices.length ===
-                            invoices
-                              .map((i) => i.invoice?._id)
-                              .filter(Boolean).length
-                          }
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setSelectedInvoices(
-                                invoices
-                                  .map((row) => row.invoice?._id)
-                                  .filter(Boolean) // remove any undefined/null
-                              );
-                            } else {
-                              setSelectedInvoices([]);
-                            }
-                          }}
-                        />
-
-                        <span className="checkmarks" />
-                      </label>
-                    </th>
-                    <th>Invoice No</th>
-                    <th>Sale No</th>
-                    <th>Customer</th>
-                    <th>Due Date</th>
-                    <th>Amount</th>
-                    <th>Paid</th>
-                    <th>Amount Due</th>
-                    <th>Status</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={9}>Loading...</td>
-                    </tr>
-                  ) : invoices.length === 0 ? (
-                    <tr>
-                      <td colSpan={9}>No invoices found.</td>
-                    </tr>
-                  ) : (
-                    invoices.map((row, idx) => {
-                      // row: { invoice, sale }
-                      const inv = row.invoice || {};
-                      const sale = row.sale || {};
-                      // Render one row per product for each invoice
-                      if (
-                        Array.isArray(inv.products) &&
-                        inv.products.length > 0
-                      ) {
-                        return inv.products.map((item, pidx) => {
-                          const d = getProductRowCalculation(item);
-                          return (
-                            <tr key={`${inv._id || idx}-${pidx}`} style={{ textAlign: 'center' }}>
-                              <td>
-                                <label className="checkboxs">
-                                  <input
-                                    type="checkbox"
-                                    checked={selectedInvoices.includes(inv._id)}
-                                    onChange={(e) => {
-                                      if (e.target.checked) {
-                                        setSelectedInvoices((prev) => [
-                                          ...prev,
-                                          inv._id,
-                                        ]);
-                                      } else {
-                                        setSelectedInvoices((prev) =>
-                                          prev.filter((id) => id !== inv._id)
-                                        );
-                                      }
-                                    }}
-                                  />
-
-                                  <span className="checkmarks" />
-                                </label>
-                              </td>
-                              <td>
-                                <a
-                                  onClick={() =>
-                                    navigate(`/invoice/${sale.invoiceId}`)
-                                  }
-                                >
-                                  {inv.invoiceId || sale.invoiceId}
-                                </a>
-                              </td>
-                              <td>{sale.referenceNumber || "-"}</td>
-                              <td>
-                                <div className="">
-                                  <span>
-                                    {inv.customer?.name ||
-                                      sale.customer?.email ||
-                                      inv.customer?._id ||
-                                      sale.customer?._id ||
-                                      "-"}
-                                  </span>
-                                </div>
-                              </td>
-                              <td>
-                                {inv.dueDate
-                                  ? new Date(inv.dueDate).toLocaleDateString()
-                                  : sale.dueDate
-                                    ? new Date(sale.dueDate).toLocaleDateString()
-                                    : "-"}
-                              </td>
-                              <td className="fw-semibold text-success">
-                                ₹{d.lineTotal}
-                              </td>
-                              {/* <td>₹{d.subTotal}</td> */}
-                              <td>
-                                {Number(
-                                  inv.paidAmount ?? sale.paidAmount ?? 0
-                                ).toFixed(2)}
-                              </td>
-                              {/* <td>
-                                {Number(
-                                  inv.paidAmount ?? sale.paidAmount ?? 0
-                                ).toFixed(2)}
-                              </td> */}
-                              <td>
-                                {Number(
-                                  inv.dueAmount ?? sale.dueAmount ?? 0
-                                ).toFixed(2)}
-                              </td>
-                              <td>
-                                <span
-                                  className={`badge badge-soft-${(inv.paymentStatus ||
-                                      sale.paymentStatus) === "Paid"
-                                      ? "success"
-                                      : "danger"
-                                    } badge-xs shadow-none`}
-                                >
-                                  <i className="ti ti-point-filled me-1" />
-                                  {inv.paymentStatus ||
-                                    sale.paymentStatus ||
-                                    "-"}
-                                </span>
-                              </td>
-
-                              {/* <td>{item.productId?.productName || '-'}</td> */}
-                              {/* <td>{item.hsnCode || '-'}</td> */}
-                              {/* <td>{d.saleQty}</td> */}
-                              {/* <td>₹{d.price}</td> */}
-                              {/* <td><div style={{ display: "flex", alignItems: "center" }}><span>{item.discount}</span><span className="ms-1">{item.discountType === "Percentage" ? "%" : "₹"}</span></div></td> */}
-                              {/* <td>₹{d.subTotal}</td>
-                                                            <td>₹{d.discountAmount}</td>
-                                                            <td>{d.tax}%</td>
-                                                            <td>₹{d.taxAmount}</td>
-                                                            <td>₹{d.unitCost}</td> */}
-                              {/* <td className="fw-semibold text-success">₹{d.lineTotal}</td>
-                                                            <td>{inv.paidAmount || sale.paidAmount || "-"}</td>
-                                                            <td>{inv.dueAmount || sale.dueAmount || "-"}</td>
-                                                            <td><span className={`badge badge-soft-${(inv.paymentStatus || sale.paymentStatus) === "Paid" ? "success" : "danger"} badge-xs shadow-none`}><i className="ti ti-point-filled me-1" />{inv.paymentStatus || sale.paymentStatus || "-"}</span></td> */}
-                              <td className="">
-                                <div className="edit-delete-action d-flex align-items-center justify-content-center gap-2">
-                                  <a
-                                    className="p-2 d-flex align-items-center justify-content-between border rounded"
-                                    onClick={() =>
-                                      navigate(`/invoice/${sale.invoiceId}`)
-                                    }
-                                  >
-                                    <TbEye className="feather-eye" />
-                                  </a>
-                                  <a
-                                    className="p-2 d-flex align-items-center justify-content-between border rounded"
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#delete"
-                                  >
-                                    <TbTrash className="feather-trash-2" />
-                                  </a>
-                                  <a
-                                    className="p-2 d-flex align-items-center justify-content-between border rounded"
-                                    onClick={() =>
-                                      shareInvoice(
-                                        inv._id,
-                                        inv.customer?.email || sale.customer?.email,
-                                        inv.customer?.phone || sale.customer?.phone
-                                      )
-                                    }
-                                    style={{
-                                      opacity: shareLoadingId === inv._id ? 0.6 : 1,
-                                      pointerEvents: shareLoadingId === inv._id ? "none" : "auto"
-                                    }}
-                                    title="Share via Email & WhatsApp"
-                                  >
-                                    <GrShareOption />
-                                  </a>
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        });
-                      }
-                      //  else {
-                      //     return (
-                      //         <tr key={inv._id || idx}>
-                      //             <td><label className="checkboxs"><input type="checkbox" /><span className="checkmarks" /></label></td>
-                      //             <td><a onClick={() => navigate(`/invoice/${sale.invoiceId}`)}>{inv.invoiceId || sale.invoiceId}</a></td>
-                      //             <td><div className="d-flex align-items-center"><span>{(inv.customer?.name || sale.customer?.name || inv.customer?._id || sale.customer?._id || "-")}</span></div></td>
-                      //             <td>{inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : (sale.dueDate ? new Date(sale.dueDate).toLocaleDateString() : "-")}</td>
-                      //             <td colSpan={11}>No products</td>
-                      //             <td>{inv.paidAmount || sale.paidAmount || "-"}</td>
-                      //             <td>{inv.dueAmount || sale.dueAmount || "-"}</td>
-                      //             <td><span className={`badge badge-soft-${(inv.paymentStatus || sale.paymentStatus) === "Paid" ? "success" : "danger"} badge-xs shadow-none`}><i className="ti ti-point-filled me-1" />{inv.paymentStatus || sale.paymentStatus || "-"}</span></td>
-                      //             <td className="d-flex"><div className="edit-delete-action d-flex align-items-center justify-content-center"><a className="me-2 p-2 d-flex align-items-center justify-content-between border rounded" onClick={() => navigate(`/invoice/${sale.invoiceId}`)}><TbEye className="feather-eye" /></a><a className="p-2 d-flex align-items-center justify-content-between border rounded" data-bs-toggle="modal" data-bs-target="#delete"><TbTrash className="feather-trash-2" /></a></div></td>
-                      //         </tr>
-                      //     );
-                      // }
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-            {/* Pagination */}
-            {/* <div className="d-flex justify-content-between align-items-center p-3">
-                            <span>Page {page} of {totalPages}</span>
-                            <div>
-                                <button className="btn btn-sm btn-light me-2" disabled={page === 1} onClick={() => setPage(page - 1)}>Prev</button>
-                                <button className="btn btn-sm btn-light" disabled={page === totalPages || totalPages === 0} onClick={() => setPage(page + 1)}>Next</button>
-                            </div>
-                        </div> */}
-            <div
-              className="d-flex justify-content-end gap-3"
-              style={{ padding: "10px 20px" }}
-            >
-              <select
-                value={limit} // previously itemsPerPage
-                onChange={(e) => {
-                  setLimit(Number(e.target.value));
-                  setPage(1); // reset to first page when items per page changes
-                }}
-                className="form-select w-auto"
-              >
-                <option value={10}>10 Per Page</option>
-                <option value={25}>25 Per Page</option>
-                <option value={50}>50 Per Page</option>
-                <option value={100}>100 Per Page</option>
-              </select>
-
-              <span
+      {/* main body */}
+      <div style={{
+        width: '100%',
+        minHeight: 'auto',
+        maxHeight: 'calc(100vh - 160px)',
+        padding: 16,
+        background: 'white',
+        borderRadius: 16,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16,
+        fontFamily: 'Inter, sans-serif',
+      }}>
+        {/* tabs + Search Bar & import */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            width: '100%',
+            height: "33px",
+          }}
+        >
+          {/* Tabs */}
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              padding: 2,
+              background: "#F3F8FB",
+              borderRadius: 8,
+              flexWrap: "wrap",
+              maxWidth: '50%',
+              width: "fit-content",
+              height: "33px",
+            }}
+          >
+            {tabs.map((tab) => (
+              <div
+                key={tab.label}
                 style={{
-                  backgroundColor: "white",
-                  boxShadow: "rgb(0 0 0 / 4%) 0px 3px 8px",
-                  padding: "7px",
-                  borderRadius: "5px",
-                  border: "1px solid #e4e0e0",
-                  color: "gray",
+                  padding: "4px 12px",
+                  background: tab.active ? "white" : "transparent",
+                  borderRadius: 8,
+                  boxShadow: tab.active
+                    ? "0px 1px 4px rgba(0, 0, 0, 0.10)"
+                    : "none",
                   display: "flex",
                   alignItems: "center",
-                  gap: "5px",
+                  gap: 8,
+                  fontSize: 14,
+                  color: "#0E101A",
                 }}
               >
-                {invoices.length === 0
-                  ? "0 of 0"
-                  : `${(page - 1) * limit + 1}-${Math.min(
-                    page * limit,
-                    total
-                  )} of ${total}`}
+                {tab.label}
+                <span style={{ color: "#727681" }}>{tab.count}</span>
+              </div>
+            ))}
+          </div>
 
-                <button
-                  style={{
-                    border: "none",
-                    color: "grey",
-                    backgroundColor: "white",
-                    cursor: page === 1 ? "not-allowed" : "pointer",
-                  }}
-                  onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-                  disabled={page === 1}
-                >
-                  <GrFormPrevious />
-                </button>
+          <div
+            style={{
+              display: "inline-flex",
+              justifyContent: "end",
+              alignItems: "center",
+              gap: 16,
+              width: '50%',
+              height: "33px",
+            }}
+          >
+            {selectedInvoices.length > 0 && (
+              <div className="">
+                <div className="btn btn-danger" onClick={handleBulkDelete}>
+                  Delete Selected({selectedInvoices.length})
+                </div>
+              </div>
+            )}
 
-                <button
-                  style={{
-                    border: "none",
-                    backgroundColor: "white",
-                    cursor: page === totalPages ? "not-allowed" : "pointer",
-                  }}
-                  onClick={() =>
-                    setPage((prev) => Math.min(prev + 1, totalPages))
-                  }
-                  disabled={page === totalPages}
-                >
-                  <MdNavigateNext />
-                </button>
-              </span>
+            {/* search bar */}
+            <div
+              style={{
+                width: "50%",
+                position: "relative",
+                padding: "5px 0px 5px 10px",
+                display: "flex",
+                borderRadius: 8,
+                alignItems: "center",
+                background: "#FCFCFC",
+                border: "1px solid #EAEAEA",
+                gap: "5px",
+                color: "rgba(19.75, 25.29, 61.30, 0.40)",
+                height: "33px",
+              }}
+            >
+              <IoIosSearch style={{ fontSize: '25px' }} />
+              <input
+                type="search"
+                placeholder="Search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{
+                  width: "100%",
+                  border: "none",
+                  outline: "none",
+                  fontSize: 14,
+                  background: "#FCFCFC",
+                  color: "rgba(19.75, 25.29, 61.30, 0.40)",
+                }}
+              />
             </div>
+
+            {/* Export Button */}
+            <button
+              style={{
+                display: "flex",
+                justifyContent: "flex-start",
+                alignItems: "center",
+                gap: 9,
+                padding: "8px 16px",
+                background: "#FCFCFC",
+                borderRadius: 8,
+                outline: "1px solid #EAEAEA",
+                outlineOffset: "-1px",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "Inter, sans-serif",
+                fontSize: 14,
+                fontWeight: 400,
+                color: "#0E101A",
+                height: "33px",
+              }}
+            >
+              <TbFileExport className="fs-5 text-secondary" />
+              Export
+            </button>
           </div>
         </div>
+
+        {/* Table */}
+        <div
+          className="table-responsive"
+          style={{
+            overflowY: "auto",
+            maxHeight: "510px",
+          }}
+        >
+          <table
+            className="table-responsive"
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              overflowX: "auto",
+            }}
+          >
+            {/* Header */}
+            <thead
+              style={{
+                position: "sticky",
+                top: 0,
+                zIndex: 10,
+                height: "38px",
+              }}
+            >
+              <tr style={{ background: "#F3F8FB", }}>
+                <th
+                  style={{
+                    textAlign: "left",
+                    padding: "4px 16px",
+                    color: "#727681",
+                    fontSize: 14,
+                    width: 80,
+                    fontWeight: '400'
+                  }}
+                >
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 12 }}
+                  >
+                    <input
+                      type="checkbox"
+                      id="select-all"
+                      style={{ width: 18, height: 18 }}
+                      checked={
+                        (() => {
+                          const allIds = invoices.map((i) => i._id).filter(Boolean);
+                          const uniqueSelected = new Set(selectedInvoices);
+                          return allIds.length > 0 && uniqueSelected.size === allIds.length;
+                        })()
+                      }
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedInvoices(
+                            invoices.map((i) => i._id).filter(Boolean)
+                          );
+                        } else {
+                          setSelectedInvoices([]);
+                        }
+                      }}
+                    />
+                    Invoice No
+                  </div>
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    padding: "4px 16px",
+                    color: "#727681",
+                    fontSize: 14,
+                    width: 200,
+                    fontWeight: '400'
+                  }}
+                >
+                  Customer
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    padding: "4px 16px",
+                    color: "#727681",
+                    fontSize: 14,
+                    width: 123,
+                    fontWeight: '400'
+                  }}
+                >
+                  Due Date
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    padding: "4px 16px",
+                    color: "#727681",
+                    fontSize: 14,
+                    width: 112,
+                    fontWeight: '400'
+                  }}
+                >
+                  Amount
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    padding: "4px 16px",
+                    color: "#727681",
+                    fontSize: 14,
+                    width: 100,
+                    fontWeight: '400'
+                  }}
+                >
+                  Paid
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    padding: "4px 16px",
+                    color: "#727681",
+                    fontSize: 14,
+                    width: 100,
+                    fontWeight: '400'
+                  }}
+                >
+                  Amount Due
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    padding: "4px 16px",
+                    color: "#727681",
+                    fontSize: 14,
+                    width: 100,
+                    fontWeight: '400'
+                  }}
+                >
+                  Status
+                </th>
+                <th
+                  style={{
+                    textAlign: "center",
+                    padding: "4px 16px",
+                    color: "#727681",
+                    fontSize: 14,
+                    width: 100,
+                    fontWeight: '400'
+                  }}
+                >
+                  Action
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={9}>Loading...</td>
+                </tr>
+              ) : invoices.length === 0 ? (
+                <td colSpan="9" className="text-center p-3">
+                  <span className="" style={{ fontStyle: "italic" }}>No invoice data available</span>
+                </td>
+              ) : (
+                invoices.map((inv, idx) => {
+                  if (Array.isArray(inv.items) && inv.items.length > 0) {
+                    return inv.items.map((item, pidx) => {
+                      const qty = Number(item.qty || 1);
+                      const price = Number(item.unitPrice || 0);
+                      const discountAmount = Number(item.discountAmt || 0);
+                      const taxableAmount = Math.max(0, qty * price - discountAmount);
+                      const taxRate = Number(item.taxRate || 0);
+                      const taxAmount = item.taxAmount !== undefined
+                        ? Number(item.taxAmount || 0)
+                        : (taxableAmount * taxRate) / 100;
+                      const lineTotal = item.amount !== undefined
+                        ? Number(item.amount || 0)
+                        : taxableAmount + taxAmount;
+                      return (
+                        <tr key={`${inv._id || idx}-${pidx}`} style={{ borderBottom: "1px solid #FCFCFC" }}>
+                          {/* invoice no */}
+                          <td style={{ padding: "8px 16px", verticalAlign: "middle", height: '46px' }}>
+                            <div
+                              style={{ display: "flex", alignItems: "center", gap: 12 }}
+                            >
+                              <input
+                                type="checkbox"
+                                style={{ width: 18, height: 18, }}
+                                checked={selectedInvoices.includes(inv._id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedInvoices((prev) => {
+                                      const next = new Set(prev);
+                                      next.add(inv._id);
+                                      return Array.from(next);
+                                    });
+                                  } else {
+                                    setSelectedInvoices((prev) =>
+                                      prev.filter((id) => id !== inv._id)
+                                    );
+                                  }
+                                }}
+                              />
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: 14,
+                                    color: "#0E101A",
+                                    whiteSpace: "nowrap",
+                                    display: "flex",
+                                    gap: "5px",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    cursor: 'pointer'
+                                  }}
+                                  onClick={() =>
+                                    navigate(`/sales-invoice/${inv._id}`)
+                                  }
+                                >
+                                  <div>
+                                    {inv.invoiceNo}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* customer details */}
+                          <td
+                            style={{
+                              padding: "8px 16px",
+                              fontSize: 14,
+                              color: "#0E101A",
+                            }}
+                          >
+                            <span>
+                              {inv.customerId?.name ||
+                                inv.customerId?.email ||
+                                inv.customerId?._id ||
+                                "-"}
+                            </span>
+                          </td>
+
+                          {/* date */}
+                          <td
+                            style={{
+                              padding: "8px 16px",
+                              fontSize: 14,
+                              color: "#0E101A",
+                            }}
+                          >
+                            {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "-"}
+                          </td>
+
+                          {/* amount */}
+                          <td
+                            style={{
+                              padding: "8px 16px",
+                              fontSize: 14,
+                              color: "#0E101A",
+                            }}
+                          >
+                            ₹{inv.grandTotal.toFixed(2)}
+                          </td>
+
+                          {/* paid */}
+                          <td
+                            style={{
+                              padding: "8px 16px",
+                              fontSize: 14,
+                              color: "#0E101A",
+                            }}
+                          >
+                            ₹{Number(inv.paidAmount ?? 0).toFixed(2)}
+                          </td>
+
+                          {/* due amount */}
+                          <td
+                            style={{
+                              padding: "8px 16px",
+                              fontSize: 14,
+                              color: "#0E101A",
+                            }}
+                          >
+                            ₹{Number(inv.dueAmount ?? 0).toFixed(2)}
+                          </td>
+
+                          {/* status */}
+                          <td
+                            style={{
+                              padding: "8px 16px",
+                              fontSize: 14,
+                              color: "#0E101A",
+                            }}
+                          >
+                            <span
+                              className={`badge badge-soft-${(inv.status === "paid" ? "success" : "danger")} badge-xs shadow-none`}
+                            >
+                              <i className="ti ti-point-filled me-1" />
+                              {inv.status || "-"}
+                            </span>
+                          </td>
+
+                          {/* action */}
+                          <td>
+                            <div className="edit-delete-action d-flex align-items-center justify-content-center gap-2">
+                              <a
+                                className="p-2 d-flex align-items-center justify-content-between border rounded"
+                                  onClick={() =>
+                                    navigate(`/sales-invoice/${inv._id}`)
+                                  }
+                              >
+                                <TbEye className="feather-eye" />
+                              </a>
+                              <a
+                                className="p-2 d-flex align-items-center justify-content-between border rounded"
+                                data-bs-toggle="modal"
+                                data-bs-target="#delete"
+                              >
+                                <TbTrash className="feather-trash-2" />
+                              </a>
+                              <a
+                                className="p-2 d-flex align-items-center justify-content-between border rounded"
+                                onClick={() =>
+                                  shareInvoice(
+                                    inv._id,
+                                    inv.customerId?.email,
+                                    inv.customerId?.phone
+                                  )
+                                }
+                                style={{
+                                  opacity: shareLoadingId === inv._id ? 0.6 : 1,
+                                  pointerEvents: shareLoadingId === inv._id ? "none" : "auto"
+                                }}
+                                title="Share via Email & WhatsApp"
+                              >
+                                <GrShareOption />
+                              </a>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    });
+                  }
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="px-2">
+          <Pagination
+            currentPage={page}
+            total={total}
+            itemsPerPage={limit}
+            onPageChange={(p) => setPage(p)}
+            onItemsPerPageChange={(n) => {
+              setLimit(n);
+              setPage(1);
+            }}
+          />
+        </div>
+
       </div>
     </div>
   );
