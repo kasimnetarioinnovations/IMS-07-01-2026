@@ -254,9 +254,8 @@ const Permission = () => {
   };
 
   return (
-    <div className="page-wrapper">
-      <div className="content">
-        <div className="">
+  
+        <div className="px-4 py-4">
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             {/* Icon Container */}
             <Link to="/Users" style={{ textDecoration: "none" }}>
@@ -399,8 +398,7 @@ const Permission = () => {
             <p>Please select a role to edit permissions.</p>
           )}
         </div>
-      </div>
-    </div>
+     
   );
 };
 

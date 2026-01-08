@@ -145,6 +145,16 @@ const canAccess = (module, action = "read") => {
   const hasSuppliersAccess =
 canAccess("Supplier", "read") 
 
+const hasPurachseOrderAccess =
+canAccess("Purchase", "read")||
+canAccess("DebitNote", "read")
+
+const hasSalesOrderAccess =
+canAccess("Sales", "read")||
+canAccess("Invoices", "read")||
+canAccess("CreditNote", "read")
+
+
 
   return (
     <div>
@@ -470,8 +480,9 @@ canAccess("Supplier", "read")
             {/* <hr style={{height:"1px", color:"#979797ff"}}/> */}
           </ul>
           )}
-          {/* Purchase Order */}
-          <ul className="sidebarmenu" style={{ paddingBottom: "18px" }}>
+             {/* Purchase Order */}
+          {hasPurachseOrderAccess && (
+              <ul className="sidebarmenu" style={{ paddingBottom: "18px" }}>
             <li
               className="sidebarmenu-item"
               onClick={() => handleToggle("purchase")}
@@ -517,9 +528,12 @@ canAccess("Supplier", "read")
                    )}
               </ul>
             </li>
-            {/* <hr style={{height:"1px", color:"#979797ff"}}/> */}
           </ul>
+          )}
+         
+        
           {/* Sales Order */}
+          {hasSalesOrderAccess && (
           <ul className="sidebarmenu" style={{ paddingBottom: "0px" }}>
             <li
               className="sidebarmenu-item"
@@ -581,9 +595,11 @@ canAccess("Supplier", "read")
 
             <hr style={{ height: "1px", color: "#979797ff" }} />
           </ul>
+          )}
         
          
           {/* Expenses */}
+          {/* {hasExpensesAccess && ( */}
           <ul className="sidebarmenu" style={{ paddingBottom: "0px" }}>
             <li
               className="expenses-li"
@@ -605,7 +621,9 @@ canAccess("Supplier", "read")
 
             <hr style={{ height: "1px", color: "#979797ff" }} />
           </ul>
+          {/* )} */}
           {/* Reports */}
+          {/* {hasRepostrsacces && ( */}
           <ul className="sidebarmenu" style={{ paddingBottom: "18px" }}>
             <li
               className="sidebarmenu-item"
@@ -678,9 +696,9 @@ canAccess("Supplier", "read")
             </li>
             {/* <hr style={{height:"1px", color:"#979797ff"}}/> */}
           </ul>
+          {/* )} */}
         
            {/* User Role and managemnt */}
-         
            <li
               className="user-role-li"
               style={{ fontSize: "16px", paddingBottom: "18px" }}
@@ -697,6 +715,7 @@ canAccess("Supplier", "read")
               </NavLink>
             </li>
           {/* Settings */}
+          {/* {hasSettingsAccess && ( */}
           <ul className="sidebarmenu" style={{ paddingBottom: "18px" }}>
             <li
               className="sidebarmenu-item"
@@ -738,9 +757,10 @@ canAccess("Supplier", "read")
             </li>
             {/* <hr style={{height:"1px", color:"#979797ff"}}/> */}
           </ul>
+          {/* )} */}
         </div>
        {/* User Info */}
-{userData ? (
+    {userData ? (
   <div
     className="user-id d-flex align-items-center justify-content-between"
     style={{ backgroundColor: "white" }}
