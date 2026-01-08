@@ -19,6 +19,7 @@ import RoleTable from "../../../pages/Role/RoleTable";
 import api from "../../../pages/config/axiosInstance";
 import Iconss from "../../../assets/images/Iconss.png";
 import { FaArrowLeft } from "react-icons/fa";
+import { IoSearch } from "react-icons/io5";
 
 
 const Users = () => {
@@ -547,7 +548,7 @@ const Users = () => {
             onChange={(e) => setSelectedStatus(e.target.value)}
             style={{
               width: "150px",
-              padding: "8px 3px",
+              padding: "10px",
               backgroundColor: "#FCFCFC",
               border: "1px solid #EAEAEA",
               borderRadius: "8px",
@@ -564,7 +565,7 @@ const Users = () => {
             <option value="Blacklist">Blacklist</option>
           </select>
 
-          <div className="d-flex align-items-center gap-3">
+          {/* <div className="d-flex align-items-center gap-3">
             <div
               className="d-flex align-items-center search-box"
               style={{
@@ -585,7 +586,38 @@ const Users = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-          </div>
+          </div> */}
+            <div
+                                style={{
+                                  // width: "50%",
+                                  position: "relative",
+                                  padding: "8px 16px 8px 20px",
+                                  display: "flex",
+                                  borderRadius: 8,
+                                  alignItems: "center",
+                                  background: "#FCFCFC",
+                                  border: "1px solid #EAEAEA",
+                                  gap: "5px",
+                                  color: "rgba(19.75, 25.29, 61.30, 0.40)",
+                                }}
+                              >
+                                <IoSearch />
+                                <input
+                                  type="text"
+                                  placeholder="Search by name, email or phone"
+                                  style={{
+                                    width: "100%",
+                                    border: "none",
+                                    outline: "none",
+                                    fontSize: 14,
+                                    background: "#FCFCFC",
+                                    color: "rgba(19.75, 25.29, 61.30, 0.40)",
+                                  }}
+                                   value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                                 
+                                />
+                              </div>
         </>
       );
     } else {
@@ -629,7 +661,7 @@ const Users = () => {
   return (
   
   
-        <div className="px-4 py-4 overflow-y-auto" style={{ fontFamily: '"Inter", sans-serif', overflow:"hidden", height:"calc(100vh - 80px)"}}>
+        <div className="px-4 py-4" style={{ fontFamily: '"Inter", sans-serif', overflow:"hidden", height:"calc(100vh - 80px)"}}>
           {/* Header */}
           <div
             style={{
@@ -655,6 +687,7 @@ const Users = () => {
 
             <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
               <button
+               className="button-hover"
                 onClick={() => {
                   if (activeTab === "user") {
                     resetCreateForm();
@@ -808,26 +841,32 @@ const Users = () => {
                   </div>
 
                   <div className="d-flex align-items-center gap-3">
-                    <button
-                      style={{
-                        background: "#FCFCFC",
-                        border: "1px solid #EAEAEA",
-                        borderRadius: 8,
-                        padding: "4px 14px",
-                        fontSize: "14px",
-                        color: "#0E101A",
-                        height: "32px",
-                        display: "flex",
-                        alignItems: "center",
-                        fontWeight: 500,
-                      }}
-                      onClick={() => handleExport('pdf')}
-                    >
-                      <TbFileExport
-                        style={{ color: "#14193D66", marginRight: "10px" }}
-                      />
-                      Export
-                    </button>
+                
+                     <button
+                                            title="Export"
+                                            onClick={() => handleExport('pdf')}
+                                            style={{
+                                              display: "flex",
+                                              justifyContent: "flex-start",
+                                              alignItems: "center",
+                                              gap: 9,
+                                               padding: "10px",
+                                              background: "#FCFCFC",
+                                              borderRadius: 8,
+                                              outline: "1px solid #EAEAEA",
+                                              outlineOffset: "-1px",
+                                              border: "none",
+                                              cursor: "pointer",
+                                              fontFamily: "Inter, sans-serif",
+                                              fontSize: 14,
+                                              fontWeight: 400,
+                                              color: "#0E101A",
+                                            
+                                            }}
+                                          >
+                                            <TbFileExport className="fs-5 text-secondary" />
+                                            Export
+                                          </button>
                   </div>
                 </div>
               </div>
