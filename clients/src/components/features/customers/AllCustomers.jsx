@@ -17,6 +17,7 @@ import EditICONImg from "../../../assets/images/edit.png";
 import ConfirmDeleteModal from "../../ConfirmDelete";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { IoIosArrowBack } from "react-icons/io";
+import { HiOutlineDotsHorizontal } from "react-icons/hi";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -65,9 +66,24 @@ export default function Customers() {
   const [selectedRowIds, setSelectedRowIds] = useState(new Set());
   const [allVisibleSelected, setAllVisibleSelected] = useState(false);
 
+  const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0 });
+  const [openUpwards, setOpenUpwards] = useState(false);
+
+  const [activeRow, setActiveRow] = useState(null);
+
+  const toggleRow = (index) => {
+    const newOpen = openRow === index ? null : index;
+    setOpenRow(newOpen);
+    if (newOpen === null && activeRow === index) {
+      setActiveRow(null);
+    } else if (newOpen !== null) {
+      setActiveRow(index);
+    }
+  };
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const menuRef = useRef();
 
@@ -337,7 +353,7 @@ export default function Customers() {
 
   return (
 
-    <div className="px-4 py-4" style={{ fontFamily: '"Inter", sans-serif' }}>
+    <div className="p-4" style={{ fontFamily: '"Inter", sans-serif' }}>
       {/* Header */}
       <div
         className="d-flex justify-content-between align-items-center"
@@ -350,16 +366,16 @@ export default function Customers() {
           className="button-hover"
           style={{
             borderRadius: "8px",
-              padding: "5px 16px",
-              border: "1px solid #1F7FFF",
-              color: "rgb(31, 127, 255)",
-              fontFamily: "Inter",
-              backgroundColor: "white",
-              fontSize: "14px",
-              fontWeight: "500",
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
+            padding: "5px 16px",
+            border: "1px solid #1F7FFF",
+            color: "rgb(31, 127, 255)",
+            fontFamily: "Inter",
+            backgroundColor: "white",
+            fontSize: "14px",
+            fontWeight: "500",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
           }}
           onClick={() => setOpenAddModal(true)}
         >
@@ -418,36 +434,36 @@ export default function Customers() {
           </div>
 
           <div style={{
-              display: "flex",
-              justifyContent: "end",
-              gap: "24px",
-              height: "33px",
-            }}>
+            display: "flex",
+            justifyContent: "end",
+            gap: "24px",
+            height: "33px",
+          }}>
             <div
               style={{
-              width: "100%",
-              position: "relative",
-              padding: "4px 8px 4px 20px",
-              display: "flex",
-              borderRadius: 8,
-              alignItems: "center",
-              background: "#FCFCFC",
-              border: "1px solid #EAEAEA",
-              gap: "5px",
-              color: "rgba(19.75, 25.29, 61.30, 0.40)",
-            }}
+                width: "100%",
+                position: "relative",
+                padding: "4px 8px 4px 20px",
+                display: "flex",
+                borderRadius: 8,
+                alignItems: "center",
+                background: "#FCFCFC",
+                border: "1px solid #EAEAEA",
+                gap: "5px",
+                color: "rgba(19.75, 25.29, 61.30, 0.40)",
+              }}
             >
               <FiSearch className="fs-5" />
               <input
                 type="search"
                 style={{
-                width: "100%",
-                border: "none",
-                outline: "none",
-                fontSize: 14,
-                background: "#FCFCFC",
-                color: "rgba(19.75, 25.29, 61.30, 0.40)",
-              }}
+                  width: "100%",
+                  border: "none",
+                  outline: "none",
+                  fontSize: 14,
+                  background: "#FCFCFC",
+                  color: "rgba(19.75, 25.29, 61.30, 0.40)",
+                }}
                 placeholder="Search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -456,16 +472,22 @@ export default function Customers() {
 
             <button
               style={{
-                background: "#FCFCFC",
-                border: "1px solid #EAEAEA",
-                borderRadius: 8,
-                padding: "4px 14px",
-                fontSize: "14px",
-                color: "#0E101A",
-                height: "32px",
                 display: "flex",
+                justifyContent: "flex-start",
                 alignItems: "center",
-                fontWeight: 500,
+                gap: 9,
+                padding: "8px 16px",
+                background: "#FCFCFC",
+                borderRadius: 8,
+                outline: "1px solid #EAEAEA",
+                outlineOffset: "-1px",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "Inter, sans-serif",
+                fontSize: 14,
+                fontWeight: 400,
+                color: "#0E101A",
+                height: "33px",
                 cursor: paginatedCustomers.length > 0 ? "pointer" : "not-allowed",
                 opacity: paginatedCustomers.length > 0 ? 1 : 0.5,
               }}
@@ -477,55 +499,53 @@ export default function Customers() {
                   : "Export all visible customers"
               }
             >
-              <TbFileExport
-                style={{ color: "#14193D66", marginRight: "10px" }}
-              />
+              <TbFileExport className="fs-5 text-secondary" />
               Export
             </button>
           </div>
         </div>
 
         {/* Table */}
-        <div className="table-responsive" style={{ maxHeight: "600px" }}>
+        <div className="table-responsive" style={{ maxHeight: "550px", overflowY: 'auto' }}>
           <table
-            className="table mb-0"
-            style={{ borderSpacing: 0, borderCollapse: "separate" }}
+            style={{
+              width: "100%",
+              borderSpacing: "0 0px",
+              fontFamily: "Inter",
+            }}
           >
-            <thead>
-              <tr>
+            <thead style={{ position: "sticky", top: 0, zIndex: 9 }}>
+              <tr style={{ backgroundColor: "#F3F8FB", textAlign: "left" }}>
                 <th
                   style={{
-                    backgroundColor: "#F3F8FB",
-                    fontWeight: 400,
-                    fontSize: 14,
+                    padding: "0px 0px",
                     color: "#727681",
-                    padding: "12px 16px",
-                    position: "sticky",
-                    top: 0,
-                    zIndex: 10,
-                    width: 0,
+                    fontSize: "14px",
+                    fontWeight: 400,
                   }}
                 >
-                  <input
-                    type="checkbox"
-                    aria-label="select all"
-                    checked={allVisibleSelected}
-                    onChange={(e) => {
-                      const next = new Set(selectedRowIds);
-                      if (e.target.checked) {
-                        // Add all current page customers
-                        paginatedCustomers.forEach(customer => {
-                          if (customer._id) next.add(customer._id);
-                        });
-                      } else {
-                        // Remove all current page customers
-                        paginatedCustomers.forEach(customer => {
-                          if (customer._id) next.delete(customer._id);
-                        });
-                      }
-                      setSelectedRowIds(next);
-                    }}
-                  />
+                  <div style={{ display: "flex", alignItems: "center", gap: "0px", justifyContent: 'center' }}>
+                    <input
+                      type="checkbox"
+                      aria-label="select all"
+                      checked={allVisibleSelected}
+                      onChange={(e) => {
+                        const next = new Set(selectedRowIds);
+                        if (e.target.checked) {
+                          // Add all current page customers
+                          paginatedCustomers.forEach(customer => {
+                            if (customer._id) next.add(customer._id);
+                          });
+                        } else {
+                          // Remove all current page customers
+                          paginatedCustomers.forEach(customer => {
+                            if (customer._id) next.delete(customer._id);
+                          });
+                        }
+                        setSelectedRowIds(next);
+                      }}
+                    />
+                  </div>
                 </th>
                 {[
                   "Customer Name",
@@ -537,14 +557,10 @@ export default function Customers() {
                   <th
                     key={i}
                     style={{
-                      backgroundColor: "#F3F8FB",
-                      fontWeight: 400,
-                      fontSize: 14,
-                      color: "#727681",
                       padding: "12px 16px",
-                      position: "sticky",
-                      top: 0,
-                      zIndex: 10,
+                      color: "#727681",
+                      fontSize: "14px",
+                      fontWeight: 400,
                     }}
                   >
                     {h}
@@ -568,34 +584,45 @@ export default function Customers() {
                 paginatedCustomers.map((customer, index) => (
                   <tr
                     key={customer._id}
-                    style={{ verticalAlign: "middle", cursor: "pointer" }}
+                    style={{
+                      borderBottom: "1px solid #EAEAEA",
+                      cursor: 'pointer',
+                    }}
+                    className={`table-hover ${activeRow === index ? "active-row" : ""}`}
                     onClick={() => handleRowClick(customer)}
                   >
                     {/* Checkbox Column */}
-                    <td
-                      style={{
-                        padding: "14px 16px",
-                        textAlign: "center"
-                      }}
+                    <td style={{
+                      padding: "0px 0px",
+                      color: "#0E101A",
+                      fontSize: "14px",
+                    }}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <input
-                        type="checkbox"
-                        aria-label="select customer"
-                        checked={selectedRowIds.has(customer._id)}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          const next = new Set(selectedRowIds);
-                          if (e.target.checked) {
-                            if (customer._id) next.add(customer._id);
-                          } else {
-                            if (customer._id) next.delete(customer._id);
-                          }
-                          setSelectedRowIds(next);
-                        }}
-                      />
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: 'center' }}>
+                        <input
+                          type="checkbox"
+                          aria-label="select customer"
+                          checked={selectedRowIds.has(customer._id)}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            const next = new Set(selectedRowIds);
+                            if (e.target.checked) {
+                              if (customer._id) next.add(customer._id);
+                            } else {
+                              if (customer._id) next.delete(customer._id);
+                            }
+                            setSelectedRowIds(next);
+                          }}
+                        />
+                      </div>
                     </td>
-                    <td style={{ padding: "14px 16px" }}>
+                    <td
+                      style={{
+                        padding: "4px 16px",
+                        color: "#0E101A",
+                        fontSize: "14px",
+                      }}>
                       <div
                         className="d-flex align-items-center"
                         style={{ gap: 10 }}
@@ -634,7 +661,7 @@ export default function Customers() {
 
                     <td
                       style={{
-                        padding: "14px 16px",
+                        padding: "4px 16px",
                         fontSize: 14,
                         color: "#0E101A",
                       }}
@@ -644,7 +671,7 @@ export default function Customers() {
 
                     <td
                       style={{
-                        padding: "14px 16px",
+                        padding: "4px 16px",
                         fontWeight: 500,
                         color: customer.totalDueAmount > 0 ? "#681b0dff" : "#727681",
                       }}
@@ -652,84 +679,92 @@ export default function Customers() {
                       {customer.totalDueAmount > 0 ? `₹${customer.totalDueAmount.toFixed(2)}` : "₹0.00/-"}
                     </td>
 
-                    <td style={{ padding: "14px 16px", color: customer.totalPurchaseAmount > 0 ? "#0D6828" : "#727681", }}>
+                    <td style={{ padding: "4px 16px", color: customer.totalPurchaseAmount > 0 ? "#0D6828" : "#727681", }}>
                       {customer.totalPurchaseAmount > 0 ? `₹${customer.totalPurchaseAmount.toFixed(2)}` : "₹0.00/-"}
                     </td>
 
                     <td
                       style={{
-                        padding: "8px 16px",
+                        padding: "4px 16px",
                         position: "relative",
                         overflow: "visible",
                       }}
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "start",
-                          alignItems: "center",
-                          position: "relative",
-                          cursor: "pointer",
-                        }}
+
+                      {/* three dot button */}
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           setOpenMenuIndex(
                             openMenuIndex === index ? null : index
                           );
+                          const rect =
+                            e.currentTarget.getBoundingClientRect();
+                          setOpenMenuIndex(openMenuIndex === index ? null : index)
+
+                          const dropdownHeight = 260; // your menu height
+                          const spaceBelow =
+                            window.innerHeight - rect.bottom;
+                          const spaceAbove = rect.top;
+
+                          // decide direction
+                          if (
+                            spaceBelow < dropdownHeight &&
+                            spaceAbove > dropdownHeight
+                          ) {
+                            setOpenUpwards(true);
+                            setDropdownPos({
+                              x: rect.left,
+                              y: rect.top - 6, // position above button
+                            });
+                          } else {
+                            setOpenUpwards(false);
+                            setDropdownPos({
+                              x: rect.left,
+                              y: rect.bottom + 6, // position below button
+                            });
+                          }
                         }}
+                        className="btn"
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          padding: 4,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          position: "relative",
+                        }}
+                        aria-label="actions"
                       >
-                        {/* three dot button */}
+                        <HiOutlineDotsHorizontal size={28} color="grey" />
+                      </button>
+
+                      {/* dropdown */}
+                      {openMenuIndex === index && (
                         <div
                           style={{
-                            width: 24,
-                            height: 24,
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
+                            position: "fixed",
+                            top: openUpwards
+                              ? dropdownPos.y - 270
+                              : dropdownPos.y,
+                            left: dropdownPos.x - 80,
+                            zIndex: 999999,
                           }}
                         >
                           <div
-                            style={{
-                              width: 4,
-                              height: 4,
-                              background: "#6C748C",
-                              borderRadius: 2,
-                            }}
-                          />
-                          <div
-                            style={{
-                              width: 4,
-                              height: 4,
-                              background: "#6C748C",
-                              borderRadius: 2,
-                            }}
-                          />
-                          <div
-                            style={{
-                              width: 4,
-                              height: 4,
-                              background: "#6C748C",
-                              borderRadius: 2,
-                            }}
-                          />
-                        </div>
-
-                        {/* dropdown */}
-                        {openMenuIndex === index && (
-                          <div
                             ref={menuRef}
                             style={{
-                              position: "absolute",
-                              top: "100%",
-                              right: 0,
-                              marginTop: 6,
-                              width: 210,
-                              backgroundColor: "#fff",
+                              background: "white",
+                              padding: 8,
                               borderRadius: 12,
                               boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                              border: "1px solid #E5E7EB",
-                              zIndex: 999999,
-                              overflow: "hidden",
+                              minWidth: 180,
+                              height: "auto", // height must match dropdownHeight above
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 4,
                             }}
                           >
                             {menuItems.map((item) => (
@@ -748,6 +783,7 @@ export default function Customers() {
                                   fontSize: 16,
                                   fontWeight: 400,
                                   cursor: "pointer",
+                                  borderRadius: 8,
                                 }}
                                 onMouseEnter={(e) => {
                                   e.currentTarget.style.backgroundColor =
@@ -763,8 +799,8 @@ export default function Customers() {
                               </div>
                             ))}
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -780,8 +816,13 @@ export default function Customers() {
             total={filteredCustomers.length}
             itemsPerPage={itemsPerPage}
             onPageChange={(page) => setCurrentPage(page)}
+            onItemsPerPageChange={(val) => {
+              setItemsPerPage(val);
+              setCurrentPage(1);
+            }}
           />
         </div>
+        
         <ConfirmDeleteModal
           isOpen={showDeleteModal}
           onCancel={() => {
