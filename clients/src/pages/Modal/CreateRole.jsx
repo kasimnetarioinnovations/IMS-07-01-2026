@@ -136,7 +136,7 @@ const CreateRole = () => {
     }, []);
 
     return (
-        <div className="p-4 min-h-screen bg-gray-50">
+        <div className="p-4 min-h-screen bg-gray-50" style={{ height: "100vh" }}>
             {/* Header */}
             <div className="d-flex align-items-center gap-2" style={{ marginBottom: "20px" }}>
                 <div
@@ -276,7 +276,7 @@ const CreateRole = () => {
                 </h2>
 
                 {/* Permissions Table */}
-                <div style={{ overflowY: "auto", minHeight: "360px", msOverflowStyle: "none", }}>
+                <div style={{ overflow: "auto", maxHeight: "calc(100vh - 470px)", }}>
                     {Object.entries(groupedModules).map(([category, modules]) => (
                         <div key={category} style={{ marginBottom: "40px" }}>
                             <div style={{ borderRadius: "8px", overflow: "hidden", fontFamily: "Inter" }}>

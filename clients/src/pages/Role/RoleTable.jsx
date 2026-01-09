@@ -267,7 +267,7 @@ const RoleTable = ({
                   style={{
                     position: "fixed",
                     top: openUpwards
-                      ? dropdownPos.y - 190
+                      ? dropdownPos.y - 100
                       : dropdownPos.y,
                     left: dropdownPos.x - 80,
                     zIndex: 999999,
