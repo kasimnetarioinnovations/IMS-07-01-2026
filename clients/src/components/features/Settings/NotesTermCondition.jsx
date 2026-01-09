@@ -19,7 +19,7 @@ const NotesTermCondition = () => {
   const fetchSettings = async () => {
   try {
     setIsLoading(true);
-    console.log('Fetching from:', '/api/notes-terms-settings');
+
     const response = await api.get('/api/notes-terms-settings');
     console.log('Response:', response);
     
