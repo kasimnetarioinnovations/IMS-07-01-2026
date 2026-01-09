@@ -22,6 +22,8 @@ function ShowCustomerInvoiceQuotation() {
   const [quotationData, setQuotationData] = useState(null);
   const [loading, setLoading] = useState(true);
     const [companyData, setCompanyData] = useState(null);
+    const [terms, setTerms] = useState(null);
+    const [template, setTemplate] = useState(null);
       const invoiceRef = useRef(null);
       const [isDownloading, setIsDownloading] = useState(false);
 
@@ -49,8 +51,31 @@ function ShowCustomerInvoiceQuotation() {
     }
   };
 
+   const fetchSettings = async () => {
+    try {
+      const res = await api.get('/api/notes-terms-settings');
+     setTerms(res.data.data)
+    console.log('reddd', res.data)  
+    } catch (error) {
+      console.error('Error fetching notes & terms settings:', error);
+    }
+  };
+
+  const fetchSignature = async () => {
+    try {
+      const res = await api.get('/api/print-templates/all');
+     setTemplate(res.data.data)
+     console.log('ddrrr', res.data)
+    } catch (error) {
+      console.error('Error fetching tempate settings:', error);
+    }
+  }
+
+
    useEffect(() => {
   fetchCompanyData();
+  fetchSettings();
+  fetchSignature();
 }, []);
 
   const handleDownloadPDF = async () => {
@@ -213,7 +238,7 @@ function ShowCustomerInvoiceQuotation() {
                       >
                         <div style={{ width: "100px" }}>
                           <img
-                            src={CompanyLogo}
+                            src={companyData?.companyLogo || CompanyLogo}
                             alt="company logo"
                             style={{ width: "100%", objectFit: "contain" }}
                           />
@@ -823,9 +848,8 @@ function ShowCustomerInvoiceQuotation() {
                               textAlign: "left",
                               width: "100%",
                             }}
-                          ></div>
+                          > {terms?.termsText}</div>
                         </div>
-
                         <div
                           style={{
                             width: "50%",
@@ -867,6 +891,8 @@ function ShowCustomerInvoiceQuotation() {
                 </div>
               </div>
             </div>
+            {/* Right Side  start*/}
+            {/* Right Side end */}
           </div>
           <div
             style={{

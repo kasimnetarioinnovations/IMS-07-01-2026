@@ -24,6 +24,7 @@ function ShowCustomerInvoice() {
   const invoiceRef = useRef(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [companyData, setCompanyData] = useState(null);
+  const [terms, setTerms] = useState(null);
 
   useEffect(() => {
     const fetchInvoice = async () => {
@@ -52,8 +53,18 @@ function ShowCustomerInvoice() {
     }
   };
 
+     const fetchSettings = async () => {
+    try {
+      const res = await api.get('/api/notes-terms-settings');
+     setTerms(res.data.data)
+    console.log('reddd', res.data)  
+    } catch (error) {
+      console.error('Error fetching notes & terms settings:', error);
+    }
+  };
    useEffect(() => {
   fetchCompanyData();
+  fetchSettings();
 }, []);
 
   const handleDownloadPDF = async () => {
@@ -228,7 +239,7 @@ function ShowCustomerInvoice() {
                       >
                         <div style={{ width: "100px" }}>
                           <img
-                            src={CompanyLogo}
+                            src={companyData?.companyLogo || CompanyLogo}
                             alt="company logo"
                             style={{ width: "100%", objectFit: "contain" }}
                           />
@@ -851,6 +862,7 @@ function ShowCustomerInvoice() {
                           }}
                         >
                           <u>Term & Conditions</u>
+                          {terms?.termsText}
                         </div>
 
                         <div
