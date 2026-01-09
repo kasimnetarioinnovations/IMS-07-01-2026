@@ -755,8 +755,8 @@ function CreatePurchaseOrder() {
     if (loading) return <div>Loading...</div>;
 
     return (
-        <div className="">
-            <div className="px-4 py-4" style={{overflow:"hidden", height:"calc(100vh - 80px)"}}>
+        <div className="px-4 py-4" style={{height:"100vh"}}>
+            <div className="" style={{overflow:"hidden", height:"calc(100vh - 100px)"}}>
                 <div className="">
                     {/* Header */}
                     <div

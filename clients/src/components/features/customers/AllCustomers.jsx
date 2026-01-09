@@ -17,6 +17,8 @@ import EditICONImg from "../../../assets/images/edit.png";
 import ConfirmDeleteModal from "../../ConfirmDelete";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { IoIosArrowBack } from "react-icons/io";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 
 const menuItems = [
@@ -59,6 +61,9 @@ export default function Customers() {
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [openMenuIndex, setOpenMenuIndex] = useState(null);
   const navigate = useNavigate();
+  // Add these to your existing state declarations
+const [selectedRowIds, setSelectedRowIds] = useState(new Set());
+const [allVisibleSelected, setAllVisibleSelected] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -244,9 +249,12 @@ export default function Customers() {
   };
 
   const handleRowClick = (customer) => {
+     if (!event.target.closest('input[type="checkbox"]') && 
+      !event.target.closest('.button-action')) {
     setSelectedCustomer(customer);
     setOpenDetailsModal(true);
   };
+}
 
   useEffect(() => {
     if (!loading && customers.length === 0) {
@@ -258,6 +266,74 @@ export default function Customers() {
   useEffect(() => {
     setCurrentPage(1);
   }, [activeTab, search]);
+
+  const handleExportPDF = () => {
+  const doc = new jsPDF();
+  doc.text("Customers Report", 14, 15);
+
+  const tableColumns = [
+    "Customer Name",
+    "Phone",
+    "Email",
+    "Address",
+    "Points",
+    "Due Amount",
+    "Total Spent"
+  ];
+
+  // Get visible rows - selected ones or all if none selected
+  const visibleRows = 
+    selectedRowIds.size > 0
+      ? paginatedCustomers.filter(customer => selectedRowIds.has(customer._id))
+      : paginatedCustomers;
+
+  if (visibleRows.length === 0) {
+    toast.warn("No customers selected to export");
+    return;
+  }
+
+  const tableRows = visibleRows.map(customer => [
+    customer.name || "—",
+    customer.phone || "—",
+    customer.email || "—",
+    customer.address || "—",
+    customer.availablePoints || 0,
+    `INR${(customer.totalDueAmount || 0).toFixed(2)}` || 0,
+    `INR${(customer.totalPurchaseAmount || 0).toFixed(2)}` || 0
+  ]);
+
+  autoTable(doc, {
+    head: [tableColumns],
+    body: tableRows,
+    startY: 20,
+    styles: {
+      fontSize: 8,
+    },
+    headStyles: {
+      fillColor: [155, 155, 155],
+      textColor: "white",
+    },
+    theme: "striped",
+  });
+
+  const filename = `customers-${visibleRows.length}-${new Date().toISOString().split('T')[0]}`;
+  doc.save(`${filename}.pdf`);
+
+  toast.success(`Exported ${visibleRows.length} customer${visibleRows.length !== 1 ? "s" : ""}`);
+  
+  // Clear selection after export
+  setSelectedRowIds(new Set());
+  setAllVisibleSelected(false);
+};
+
+// Add this useEffect near your other useEffect hooks
+useEffect(() => {
+  const allCurrentPageIds = paginatedCustomers.map(customer => customer._id);
+  const allSelected = 
+    allCurrentPageIds.length > 0 && 
+    allCurrentPageIds.every(id => selectedRowIds.has(id));
+  setAllVisibleSelected(allSelected);
+}, [selectedRowIds, paginatedCustomers]);
 
   return (
     
@@ -370,7 +446,16 @@ export default function Customers() {
                     display: "flex",
                     alignItems: "center",
                     fontWeight: 500,
+                    cursor: paginatedCustomers.length > 0 ? "pointer" : "not-allowed",
+    opacity: paginatedCustomers.length > 0 ? 1 : 0.5,
                   }}
+                  onClick={handleExportPDF}
+  disabled={paginatedCustomers.length === 0}
+  title={
+    selectedRowIds.size > 0
+      ? `Export ${selectedRowIds.size} selected customer(s)`
+      : "Export all visible customers"
+  }
                 >
                   <TbFileExport
                     style={{ color: "#14193D66", marginRight: "10px" }}
@@ -388,6 +473,40 @@ export default function Customers() {
               >
                 <thead>
                   <tr>
+                    <th
+      style={{
+        backgroundColor: "#F3F8FB",
+        fontWeight: 400,
+        fontSize: 14,
+        color: "#727681",
+        padding: "12px 16px",
+        position: "sticky",
+        top: 0,
+        zIndex: 10,
+        width: 0,
+      }}
+    >
+      <input
+        type="checkbox"
+        aria-label="select all"
+        checked={allVisibleSelected}
+        onChange={(e) => {
+          const next = new Set(selectedRowIds);
+          if (e.target.checked) {
+            // Add all current page customers
+            paginatedCustomers.forEach(customer => {
+              if (customer._id) next.add(customer._id);
+            });
+          } else {
+            // Remove all current page customers
+            paginatedCustomers.forEach(customer => {
+              if (customer._id) next.delete(customer._id);
+            });
+          }
+          setSelectedRowIds(next);
+        }}
+      />
+    </th>
                     {[
                       "Customer Name",
                       "Points Available",
@@ -432,6 +551,30 @@ export default function Customers() {
                         style={{ verticalAlign: "middle", cursor: "pointer" }}
                         onClick={() => handleRowClick(customer)}
                       >
+                        {/* Checkbox Column */}
+    <td
+      style={{ 
+        padding: "14px 16px",
+        textAlign: "center"
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <input
+        type="checkbox"
+        aria-label="select customer"
+        checked={selectedRowIds.has(customer._id)}
+        onChange={(e) => {
+          e.stopPropagation();
+          const next = new Set(selectedRowIds);
+          if (e.target.checked) {
+            if (customer._id) next.add(customer._id);
+          } else {
+            if (customer._id) next.delete(customer._id);
+          }
+          setSelectedRowIds(next);
+        }}
+      />
+    </td>
                         <td style={{ padding: "14px 16px" }}>
                           <div
                             className="d-flex align-items-center"

@@ -124,7 +124,9 @@ exports.getAllSuppliers = async (req, res) => {
       {},
       {
         supplierName: 1,
+        email: 1,
         phone: 1,
+        address: 1,
         categoryBrand: 1,
         businessType: 1,
         status: 1,
@@ -181,7 +183,9 @@ exports.getAllSuppliers = async (req, res) => {
       return {
         _id: s._id,
         name: s.supplierName,
+         email: s.email || "", 
         phone: s.phone,
+        address: s.address || {},
         category: s.categoryBrand
           ? s.categoryBrand.split(",").map((c) => c.trim())
           : [],

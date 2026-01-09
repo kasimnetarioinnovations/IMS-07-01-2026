@@ -22,6 +22,8 @@ import api from "../../../pages/config/axiosInstance";
 import { toast } from "react-toastify";
 import EditSupplierModal from "../../../pages/Modal/suppliers/EditSupplierModals";
 import { IoIosArrowBack } from "react-icons/io";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 
 
@@ -62,6 +64,8 @@ const SupplierList = () => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [selectedRowIds, setSelectedRowIds] = useState(new Set());
+const [allVisibleSelected, setAllVisibleSelected] = useState(false);
 
 
   const fetchSuppliers = async () => {
@@ -137,6 +141,8 @@ const SupplierList = () => {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  console.log("paginatedSupplierscc", paginatedSuppliers)
   useEffect(() => {
     setCurrentPage(1);
   }, [activeTab, search]);
@@ -171,16 +177,89 @@ const SupplierList = () => {
     }
   };
 
-  const handleRowClick = (supplierId) => {
+  const handleRowClick = (supplierId, event) => {
+     if (!event.target.closest('input[type="checkbox"]') && 
+      !event.target.closest('.button-action')) {
     setSelectedSupplier(supplierId);
     setOpenModal(true);
   };
+}
 
   useEffect(() => {
     if (!loading && suppliers.length === 0) {
       navigate("/empty-supplier", { replace: true });
     }
   }, [loading, suppliers, navigate]);
+
+
+   const handleExportPDF = () => {
+  const doc = new jsPDF();
+  doc.text("Supplier Report", 14, 15);
+
+  const tableColumns = [
+     "Supplier Name",
+    "Phone",
+    "Email",
+    "Address",
+    "Business Type",
+    "Category/Brand",
+    "Balance Amount",
+    "Total Spent"
+  ];
+
+  // Get visible rows - selected ones or all if none selected
+  const visibleRows = 
+    selectedRowIds.size > 0
+      ? paginatedSuppliers.filter(supplier  => selectedRowIds.has(supplier ._id))
+      : paginatedSuppliers;
+
+  if (visibleRows.length === 0) {
+    toast.warn("No supplier selected to export");
+    return;
+  }
+
+  const tableRows = visibleRows.map(supplier => [
+    supplier.name || "—",
+    supplier.phone || "—",
+    supplier.email || "—",
+    `${supplier.address.addressLine || ""}` || "",
+    supplier.businessType || "—",
+    supplier.category?.join(", ") || "—",
+    `INR${supplier.balance >= 0 ? "" : "-"}INR${Math.abs(supplier.balance || 0).toFixed(2)}`,
+    `INR${(supplier.totalSpent || 0).toFixed(2)}`
+  ]);
+
+  autoTable(doc, {
+    head: [tableColumns],
+    body: tableRows,
+    startY: 20,
+    styles: {
+      fontSize: 8,
+    },
+    headStyles: {
+      fillColor: [155, 155, 155],
+      textColor: "white",
+    },
+    theme: "striped",
+  });
+
+  const filename = `suppliers-${visibleRows.length}-${new Date().toISOString().split('T')[0]}`;
+  doc.save(`${filename}.pdf`);
+
+  toast.success(`Exported ${visibleRows.length} supplier${visibleRows.length !== 1 ? "s" : ""}`);
+  
+  // Clear selection after export
+  setSelectedRowIds(new Set());
+  setAllVisibleSelected(false);
+};
+
+useEffect(() => {
+  const allCurrentPageIds = paginatedSuppliers.map(supplier => supplier._id);
+  const allSelected = 
+    allCurrentPageIds.length > 0 && 
+    allCurrentPageIds.every(id => selectedRowIds.has(id));
+  setAllVisibleSelected(allSelected);
+}, [selectedRowIds, paginatedSuppliers]);
 
   return (
     <div className="px-4 py-4" style={{ fontFamily: '"Inter", sans-serif' }}>
@@ -312,7 +391,18 @@ const SupplierList = () => {
                       display: "flex",
                       alignItems: "center",
                       fontWeight: 500,
+                       cursor: paginatedSuppliers.length > 0 ? "pointer" : "not-allowed",
+    opacity: paginatedSuppliers.length > 0 ? 1 : 0.5,
+
                     }}
+                    onClick={handleExportPDF}
+  disabled={paginatedSuppliers.length === 0}
+  title={
+    selectedRowIds.size > 0
+      ? `Export ${selectedRowIds.size} selected supplier(s)`
+      : "Export all visible suppliers"
+  }
+
                   >
                     <TbFileExport
                       style={{ color: "#14193D66", marginRight: "10px" }}
@@ -345,6 +435,40 @@ const SupplierList = () => {
                 >
                   <thead>
                     <tr>
+                      <th
+      style={{
+        backgroundColor: "#F3F8FB",
+        fontWeight: 400,
+        fontSize: 14,
+        color: "#727681",
+        padding: "12px 16px",
+        position: "sticky",
+        top: 0,
+        zIndex: 10,
+        width: 0,
+      }}
+    >
+      <input
+        type="checkbox"
+        aria-label="select all"
+        checked={allVisibleSelected}
+        onChange={(e) => {
+          const next = new Set(selectedRowIds);
+          if (e.target.checked) {
+            // Add all current page customers
+            paginatedSuppliers.forEach(supplier => {
+              if (supplier._id) next.add(supplier._id);
+            });
+          } else {
+            // Remove all current page customers
+            paginatedSuppliers.forEach(supplier => {
+              if (supplier._id) next.delete(supplier._id);
+            });
+          }
+          setSelectedRowIds(next);
+        }}
+      />
+    </th>
                       {[
                         "Supplier Name",
                         "Category / Brand Dealing With",
@@ -389,8 +513,31 @@ const SupplierList = () => {
                           verticalAlign: "middle",
                           fontFamily: '"Inter", sans-serif',
                         }}
-                        onClick={() => handleRowClick(supplier._id)}
+                        onClick={() => handleRowClick(supplier._id, e)}
                       >
+                         <td
+      style={{ 
+        padding: "14px 16px",
+        textAlign: "center"
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <input
+        type="checkbox"
+        aria-label="select supplier"
+        checked={selectedRowIds.has(supplier._id)}
+        onChange={(e) => {
+          e.stopPropagation();
+          const next = new Set(selectedRowIds);
+          if (e.target.checked) {
+            if (supplier._id) next.add(supplier._id);
+          } else {
+            if (supplier._id) next.delete(supplier._id);
+          }
+          setSelectedRowIds(next);
+        }}
+      />
+    </td>
                         {/* Supplier Name */}
                         <td style={{ padding: "14px 16px" }}>
                           <div
@@ -712,7 +859,6 @@ const SupplierList = () => {
           </div>
         </div>
       </div>
-    
   );
 };
 

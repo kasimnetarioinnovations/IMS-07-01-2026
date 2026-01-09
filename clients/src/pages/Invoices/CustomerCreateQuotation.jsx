@@ -842,8 +842,8 @@ function CustomerCreateQuotation() {
 
   // ... rest of your JSX remains the same ...
   return (
-    <div className="page-wrapper">
-      <div className="content">
+    <div className="px-4 py-4" style={{height:"100vh"}}>
+      <div className="">
         <div className="">
           {/* Header */}
           <div
@@ -945,7 +945,7 @@ function CustomerCreateQuotation() {
               gap: "24px",
               display: "flex",
               overflowX: "auto",
-              height: "calc(100vh - 160px)",
+              height: "calc(100vh - 180px)",
             }}
           >
             {/* Customer Details */}

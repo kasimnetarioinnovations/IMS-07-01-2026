@@ -808,8 +808,8 @@ function CustomerCreateInvoice() {
   if (loading) return <div>Loading...</div>;
 
   return (
-    <div className="page-wrapper">
-      <div className="content">
+    <div className="px-4 py-4" style={{height:"100vh"}}>
+      <div className="">
         <div className="">
           {/* Header */}
           <div
@@ -911,7 +911,8 @@ function CustomerCreateInvoice() {
               gap: "24px",
               display: "flex",
               overflowX: "auto",
-              height: "calc(100vh - 160px)",
+              height: "calc(100vh - 180px)",
+              
             }}
           >
             {/* Customer Details */}
