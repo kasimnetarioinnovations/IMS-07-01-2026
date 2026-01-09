@@ -342,8 +342,8 @@ const SettingsCompanyDetails = () => {
           <div className="company-details-container" style={{ display: "flex", flexDirection: "column", gap: "24px", overflowY: "auto", height: "calc(100vh - 160px)" }}>
             {/* Company Logo */}
             <div className="settings-company-logo" style={{
-              display: "grid",
-              gridTemplateColumns: "245px 1fr",
+              display:"flex",
+              justifyContent:"space-between",
               width: "100%",
               alignItems: "center"
             }}>

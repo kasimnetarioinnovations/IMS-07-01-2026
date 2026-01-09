@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "../../styles/sidebar.css";
 import munc_logo from "../../assets/images/munc-logo.png";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useLocation  } from "react-router-dom";
 import { IoIosArrowDown } from "react-icons/io";
 import { RiDashboardHorizontalLine } from "react-icons/ri";
 import { BiLogoWhatsapp } from "react-icons/bi";
@@ -164,6 +164,60 @@ canAccess("SupplierReport", "read")
 const hasSettingsAccess =
 canAccess("Settings", read)
 
+// const stopToggle = (e) => {
+//   e.stopPropagation();
+// };
+
+const location = useLocation();
+
+const routeDropdownMap = {
+  "/dashboard": "main",
+  "/whatsapp": "connect",
+  "/chat": "connect",
+  "/mail": "connect",
+
+  "/product": "inventory",
+  "/category-list": "inventory",
+  "/damage-return": "inventory",
+  "/low-stocks": "inventory",
+  "/hsn": "inventory",
+  "/barcode": "inventory",
+
+  "/customers": "customers",
+  "/customerdueadvance": "customers",
+
+  "/supplier-list": "suppliers",
+
+  "/purchase-list": "purchase",
+  "/debit-note": "purchase",
+
+  "/online-orders": "sales",
+  "/invoice": "sales",
+  "/quotation": "sales",
+  "/creditnotelist": "sales",
+
+  "/expense-report": "Expenses",
+
+  "/supplier-report": "reports",
+
+  "/users":"Users Role & Management",
+
+  "/settings": "settings",
+};
+
+
+useEffect(() => {
+  const currentPath = location.pathname;
+
+  const matchedDropdown = Object.keys(routeDropdownMap).find((path) =>
+    currentPath.startsWith(path)
+  );
+
+  if (matchedDropdown) {
+    setOpenDropdown(routeDropdownMap[matchedDropdown]);
+  }
+}, [location.pathname]);
+
 
 
   return (
@@ -216,9 +270,10 @@ canAccess("Settings", read)
            <ul className="sidebarmenu">
             <li
               className="sidebarmenu-item d-flex flex-column"
-              onClick={() => handleToggle("main")}
+             
             >
               <div
+               onClick={() => handleToggle("main")}
                 className="sidebarmenu-title"
                 style={{ color: "black", fontSize: "14px" }}
               >
@@ -234,6 +289,7 @@ canAccess("Settings", read)
 
               {/* Dropdown items */}
               <ul
+            
                 className={`dropdown ${openDropdown === "main" ? "open" : ""}`}
               >
                    {canAccess("Dashboard" , "read") && (
@@ -258,9 +314,10 @@ canAccess("Settings", read)
              <ul className="sidebarmenu" style={{ paddingBottom: "10px" }}>
             <li
               className="sidebarmenu-item"
-              onClick={() => handleToggle("connect")}
+             
             >
               <div
+               onClick={() => handleToggle("connect")}
                 className="sidebarmenu-title"
                 style={{ color: "black", fontSize: "14px" }}
               >
@@ -276,6 +333,7 @@ canAccess("Settings", read)
               {/* Dropdown items */}
 
               <ul
+            
                 className={`dropdown ${
                   openDropdown === "connect" ? "open" : ""
                 }`}
@@ -317,9 +375,10 @@ canAccess("Settings", read)
           <ul className="sidebarmenu" style={{ paddingBottom: "10px" }}>
             <li
               className="sidebarmenu-item"
-              onClick={() => handleToggle("inventory")}
+              
             >
               <div
+              onClick={() => handleToggle("inventory")}
                 className="sidebarmenu-title"
                 style={{ color: "black", fontSize: "14px" }}
               >
@@ -399,9 +458,10 @@ canAccess("Settings", read)
              <ul className="sidebarmenu" style={{ paddingBottom: "10px" }}>
             <li
               className="sidebarmenu-item"
-              onClick={() => handleToggle("customers")}
+              
             >
               <div
+              onClick={() => handleToggle("customers")}
                 className="sidebarmenu-title"
                 style={{ color: "black", fontSize: "14px" }}
               >
@@ -447,9 +507,10 @@ canAccess("Settings", read)
               <ul className="sidebarmenu" style={{ paddingBottom: "10px" }}>
             <li
               className="sidebarmenu-item"
-              onClick={() => handleToggle("suppliers")}
+             
             >
               <div
+               onClick={() => handleToggle("suppliers")}
                 className="sidebarmenu-title"
                 style={{ color: "black", fontSize: "14px" }}
               >
@@ -488,9 +549,10 @@ canAccess("Settings", read)
               <ul className="sidebarmenu" style={{ paddingBottom: "10px" }}>
             <li
               className="sidebarmenu-item"
-              onClick={() => handleToggle("purchase")}
+              
             >
               <div
+              onClick={() => handleToggle("purchase")}
                 className="sidebarmenu-title"
                 style={{ color: "black", fontSize: "14px" }}
               >
@@ -540,9 +602,10 @@ canAccess("Settings", read)
           <ul className="sidebarmenu" style={{ paddingBottom: "0px" }}>
             <li
               className="sidebarmenu-item"
-              onClick={() => handleToggle("sales")}
+             
             >
               <div
+               onClick={() => handleToggle("sales")}
                 className="sidebarmenu-title"
                 style={{ color: "black", fontSize: "14px" }}
               >
@@ -629,10 +692,11 @@ canAccess("Settings", read)
           <ul className="sidebarmenu" style={{ paddingBottom: "10px" }}>
             <li
               className="sidebarmenu-item"
-              onClick={() => handleToggle("reports")}
+             
               style={{ paddingBottom: "10px" }}
             >
               <div
+               onClick={() => handleToggle("reports")}
                 className="sidebarmenu-title"
                 style={{ color: "black", fontSize: "14px" }}
               >
@@ -695,9 +759,10 @@ canAccess("Settings", read)
           <ul className="sidebarmenu" style={{ paddingBottom: "10px" }}>
             <li
               className="sidebarmenu-item"
-              onClick={() => handleToggle("settings")}
+             
             >
               <div
+               onClick={() => handleToggle("settings")}
                 className="sidebarmenu-title"
                 style={{ color: "black", fontSize: "14px" }}
               >
