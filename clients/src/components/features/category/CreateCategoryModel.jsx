@@ -35,8 +35,8 @@ const CreateCategoryModel = ({
       }}
     >
       <div
-        className="create-category-modelbox"
         id={modalId}
+        className="create-category-modelbox"
         style={{
           backgroundColor: "white",
           width: "800px",
