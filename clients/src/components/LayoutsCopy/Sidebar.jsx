@@ -786,7 +786,7 @@ useEffect(() => {
                 <li>
                   <NavLink to="settings/user-profile-settings">
                     <RiDashboardHorizontalLine size={16} />
-                     Setting All
+                     Users Setting
                   </NavLink>
                 </li>
                )}
