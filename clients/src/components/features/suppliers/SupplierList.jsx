@@ -24,8 +24,7 @@ import EditSupplierModal from "../../../pages/Modal/suppliers/EditSupplierModals
 import { IoIosArrowBack } from "react-icons/io";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-
-
+import { HiOutlineDotsHorizontal } from "react-icons/hi";
 
 const menuItems = [
   {
@@ -63,16 +62,30 @@ const SupplierList = () => {
   const [openEditModal, setOpenEditModal] = useState(false);
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selectedRowIds, setSelectedRowIds] = useState(new Set());
-const [allVisibleSelected, setAllVisibleSelected] = useState(false);
+  const [allVisibleSelected, setAllVisibleSelected] = useState(false);
 
+  const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0 });
+  const [openUpwards, setOpenUpwards] = useState(false);
+
+  const [activeRow, setActiveRow] = useState(null);
+
+  const toggleRow = (index) => {
+    const newOpen = openRow === index ? null : index;
+    setOpenRow(newOpen);
+    if (newOpen === null && activeRow === index) {
+      setActiveRow(null);
+    } else if (newOpen !== null) {
+      setActiveRow(index);
+    }
+  };
 
   const fetchSuppliers = async () => {
     try {
       setLoading(true);
       const res = await api.get("/api/suppliers");
-      console.log('ressssss',res.data)
+      console.log('ressssss', res.data)
       setSuppliers(res.data.suppliers || []);
     } catch (err) {
       console.error(err);
@@ -178,12 +191,12 @@ const [allVisibleSelected, setAllVisibleSelected] = useState(false);
   };
 
   const handleRowClick = (supplierId, event) => {
-     if (!event.target.closest('input[type="checkbox"]') && 
+    if (!event.target.closest('input[type="checkbox"]') &&
       !event.target.closest('.button-action')) {
-    setSelectedSupplier(supplierId);
-    setOpenModal(true);
-  };
-}
+      setSelectedSupplier(supplierId);
+      setOpenModal(true);
+    };
+  }
 
   useEffect(() => {
     if (!loading && suppliers.length === 0) {
@@ -192,673 +205,718 @@ const [allVisibleSelected, setAllVisibleSelected] = useState(false);
   }, [loading, suppliers, navigate]);
 
 
-   const handleExportPDF = () => {
-  const doc = new jsPDF();
-  doc.text("Supplier Report", 14, 15);
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.text("Supplier Report", 14, 15);
 
-  const tableColumns = [
-     "Supplier Name",
-    "Phone",
-    "Email",
-    "Address",
-    "Business Type",
-    "Category/Brand",
-    "Balance Amount",
-    "Total Spent"
-  ];
+    const tableColumns = [
+      "Supplier Name",
+      "Phone",
+      "Email",
+      "Address",
+      "Business Type",
+      "Category/Brand",
+      "Balance Amount",
+      "Total Spent"
+    ];
 
-  // Get visible rows - selected ones or all if none selected
-  const visibleRows = 
-    selectedRowIds.size > 0
-      ? paginatedSuppliers.filter(supplier  => selectedRowIds.has(supplier ._id))
-      : paginatedSuppliers;
+    // Get visible rows - selected ones or all if none selected
+    const visibleRows =
+      selectedRowIds.size > 0
+        ? paginatedSuppliers.filter(supplier => selectedRowIds.has(supplier._id))
+        : paginatedSuppliers;
 
-  if (visibleRows.length === 0) {
-    toast.warn("No supplier selected to export");
-    return;
-  }
+    if (visibleRows.length === 0) {
+      toast.warn("No supplier selected to export");
+      return;
+    }
 
-  const tableRows = visibleRows.map(supplier => [
-    supplier.name || "—",
-    supplier.phone || "—",
-    supplier.email || "—",
-    `${supplier.address.addressLine || ""}` || "",
-    supplier.businessType || "—",
-    supplier.category?.join(", ") || "—",
-    `INR${supplier.balance >= 0 ? "" : "-"}INR${Math.abs(supplier.balance || 0).toFixed(2)}`,
-    `INR${(supplier.totalSpent || 0).toFixed(2)}`
-  ]);
+    const tableRows = visibleRows.map(supplier => [
+      supplier.name || "—",
+      supplier.phone || "—",
+      supplier.email || "—",
+      `${supplier.address.addressLine || ""}` || "",
+      supplier.businessType || "—",
+      supplier.category?.join(", ") || "—",
+      `INR${supplier.balance >= 0 ? "" : "-"}INR${Math.abs(supplier.balance || 0).toFixed(2)}`,
+      `INR${(supplier.totalSpent || 0).toFixed(2)}`
+    ]);
 
-  autoTable(doc, {
-    head: [tableColumns],
-    body: tableRows,
-    startY: 20,
-    styles: {
-      fontSize: 8,
-    },
-    headStyles: {
-      fillColor: [155, 155, 155],
-      textColor: "white",
-    },
-    theme: "striped",
-  });
+    autoTable(doc, {
+      head: [tableColumns],
+      body: tableRows,
+      startY: 20,
+      styles: {
+        fontSize: 8,
+      },
+      headStyles: {
+        fillColor: [155, 155, 155],
+        textColor: "white",
+      },
+      theme: "striped",
+    });
 
-  const filename = `suppliers-${visibleRows.length}-${new Date().toISOString().split('T')[0]}`;
-  doc.save(`${filename}.pdf`);
+    const filename = `suppliers-${visibleRows.length}-${new Date().toISOString().split('T')[0]}`;
+    doc.save(`${filename}.pdf`);
 
-  toast.success(`Exported ${visibleRows.length} supplier${visibleRows.length !== 1 ? "s" : ""}`);
-  
-  // Clear selection after export
-  setSelectedRowIds(new Set());
-  setAllVisibleSelected(false);
-};
+    toast.success(`Exported ${visibleRows.length} supplier${visibleRows.length !== 1 ? "s" : ""}`);
 
-useEffect(() => {
-  const allCurrentPageIds = paginatedSuppliers.map(supplier => supplier._id);
-  const allSelected = 
-    allCurrentPageIds.length > 0 && 
-    allCurrentPageIds.every(id => selectedRowIds.has(id));
-  setAllVisibleSelected(allSelected);
-}, [selectedRowIds, paginatedSuppliers]);
+    // Clear selection after export
+    setSelectedRowIds(new Set());
+    setAllVisibleSelected(false);
+  };
+
+  useEffect(() => {
+    const allCurrentPageIds = paginatedSuppliers.map(supplier => supplier._id);
+    const allSelected =
+      allCurrentPageIds.length > 0 &&
+      allCurrentPageIds.every(id => selectedRowIds.has(id));
+    setAllVisibleSelected(allSelected);
+  }, [selectedRowIds, paginatedSuppliers]);
 
   return (
     <div className="px-4 py-4" style={{ fontFamily: '"Inter", sans-serif' }}>
-     
-        <div style={{ fontFamily: '"Inter", sans-serif' }}>
-          {/* Header Section */}
-          <div
+
+      <div style={{ fontFamily: '"Inter", sans-serif' }}>
+        {/* Header Section */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <span
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              color: "#0E101A",
+              fontWeight: 500,
+              fontSize: "22px",
+              lineHeight: "120%",
+              fontFamily: '"Inter", sans-serif',
             }}
           >
-            <span
-              style={{
-                color: "#0E101A",
-                fontWeight: 500,
-                fontSize: "22px",
-                lineHeight: "120%",
-                fontFamily: '"Inter", sans-serif',
-              }}
-            >
-              Suppliers
-            </span>
+            Suppliers
+          </span>
 
-            <button
-              style={{
-                border: "1px solid #1F7FFF",
-                borderRadius: "8px",
-                padding: "8px 16px",
-                color: "#1F7FFF",
-                fontWeight: 400,
-                fontSize: "16px",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                backgroundColor: "transparent",
-                fontFamily: '"Inter", sans-serif',
-              }}
-              onClick={() => setOpenAddSupplierModal(true)}
-            >
-              <LuUserPlus /> Add Supplier
-            </button>
-          </div>
+          <button
+            className="button-hover"
+            style={{
+              borderRadius: "8px",
+              padding: "5px 16px",
+              border: "1px solid #1F7FFF",
+              color: "rgb(31, 127, 255)",
+              fontFamily: "Inter",
+              backgroundColor: "white",
+              fontSize: "14px",
+              fontWeight: "500",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+            onClick={() => setOpenAddSupplierModal(true)}
+          >
+            <LuUserPlus /> Add Supplier
+          </button>
+        </div>
 
-          {/* Table Section */}
-          <div style={{ marginTop: "20px" }}>
-            <div
-              className="card shadow-sm border-0"
-              style={{ borderRadius: "10px", padding: "20px" }}
-            >
-              {/* Filters and Search */}
-              <div className="d-flex flex-wrap gap-3 align-items-center justify-content-between mb-4">
-                <div className="d-flex align-items-center gap-3 flex-wrap">
-                  <div
-                    style={{
-                      background: "#F3F8FB",
-                      padding: 3,
-                      borderRadius: 8,
-                      display: "flex",
-                      gap: 8,
-                      overflowX: "auto",
-                    }}
-                  >
-                    {tabsData.map((t) => {
-                      const active = activeTab === t.label;
-                      return (
-                        <div
-                          key={t.label}
-                          onClick={() => setActiveTab(t.label)}
-                          role="button"
-                          style={{
-                            padding: "6px 12px",
-                            borderRadius: 8,
-                            background: active ? "#fff" : "transparent",
-                            boxShadow: active
-                              ? "0 1px 4px rgba(0,0,0,0.08)"
-                              : "none",
-                            display: "flex",
-                            gap: 8,
-                            alignItems: "center",
-                            cursor: "pointer",
-                            minWidth: 90,
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          <div style={{ fontSize: 14, color: "#0E101A" }}>
-                            {t.label}
-                          </div>
-                          <div style={{ color: "#727681", fontSize: 14 }}>
-                            {t.count}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="d-flex align-items-center gap-3">
-                  <div
-                    className="d-flex align-items-center search-box"
-                    style={{
-                      background: "#FCFCFC",
-                      padding: "4px 20px",
-                      borderRadius: 8,
-                      border: "1px solid #EAEAEA",
-                      minHeight: 32,
-                    }}
-                  >
-                    <FiSearch style={{ color: "#14193D66" }} />
-                    <input
-                      className="form-control border-0 shadow-none"
-                      style={{ background: "transparent", padding: 0 }}
-                      placeholder="Search"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                    />
-                  </div>
-
-                  <button
-                    style={{
-                      background: "#FCFCFC",
-                      border: "1px solid #EAEAEA",
-                      borderRadius: 8,
-                      padding: "4px 14px",
-                      fontSize: "14px",
-                      color: "#0E101A",
-                      height: "32px",
-                      display: "flex",
-                      alignItems: "center",
-                      fontWeight: 500,
-                       cursor: paginatedSuppliers.length > 0 ? "pointer" : "not-allowed",
-    opacity: paginatedSuppliers.length > 0 ? 1 : 0.5,
-
-                    }}
-                    onClick={handleExportPDF}
-  disabled={paginatedSuppliers.length === 0}
-  title={
-    selectedRowIds.size > 0
-      ? `Export ${selectedRowIds.size} selected supplier(s)`
-      : "Export all visible suppliers"
-  }
-
-                  >
-                    <TbFileExport
-                      style={{ color: "#14193D66", marginRight: "10px" }}
-                    />
-                    Export
-                  </button>
-                </div>
-              </div>
-
-              {/* Table */}
-              <div
-                className="table-responsive"
-                style={{
-                  cursor: "pointer",
-                  maxHeight: "600px",  // CHANGE: Use maxHeight instead of height
-                  overflowY: "auto",   // CHANGE: Use auto instead of scroll
-                  scrollbarWidth: "thin",
-                  scrollbarWidth: "none",
-                  msOverflowStyle: "none",
-                }}
-              >
-                {/* Wrapper div for padding around the table – this creates the fixed space at top/bottom */}
-                <table
-                  className="table mb-0"
+        {/* Table Section */}
+        <div style={{ marginTop: "20px" }}>
+          <div
+            className="card shadow-sm border-0"
+            style={{ borderRadius: "10px", padding: "20px" }}
+          >
+            {/* Filters and Search */}
+            <div className="d-flex flex-wrap gap-3 align-items-center justify-content-between mb-4">
+              <div className="d-flex align-items-center gap-3 flex-wrap">
+                <div
                   style={{
-                    borderCollapse: "separate",
-                    borderSpacing: "0",
-                    fontFamily: '"Inter", sans-serif',
+                    background: "#F3F8FB",
+                    padding: 3,
+                    borderRadius: 8,
+                    display: "flex",
+                    gap: 8,
+                    overflowX: "auto",
                   }}
                 >
-                  <thead>
-                    <tr>
+                  {tabsData.map((t) => {
+                    const active = activeTab === t.label;
+                    return (
+                      <div
+                        key={t.label}
+                        onClick={() => setActiveTab(t.label)}
+                        role="button"
+                        style={{
+                          padding: "6px 12px",
+                          borderRadius: 8,
+                          background: active ? "#fff" : "transparent",
+                          boxShadow: active
+                            ? "0 1px 4px rgba(0,0,0,0.08)"
+                            : "none",
+                          display: "flex",
+                          gap: 8,
+                          alignItems: "center",
+                          cursor: "pointer",
+                          minWidth: 90,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        <div style={{ fontSize: 14, color: "#0E101A" }}>
+                          {t.label}
+                        </div>
+                        <div style={{ color: "#727681", fontSize: 14 }}>
+                          {t.count}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="" style={{
+                display: "flex",
+                justifyContent: "end",
+                gap: "24px",
+                height: "33px",
+              }}>
+                <div
+                  style={{
+                    width: "100%",
+                    position: "relative",
+                    padding: "4px 8px 4px 20px",
+                    display: "flex",
+                    borderRadius: 8,
+                    alignItems: "center",
+                    background: "#FCFCFC",
+                    border: "1px solid #EAEAEA",
+                    gap: "5px",
+                    color: "rgba(19.75, 25.29, 61.30, 0.40)",
+                  }}
+                >
+                  <FiSearch className="fs-5" />
+                  <input
+                    type="search"
+                    style={{
+                      width: "100%",
+                      border: "none",
+                      outline: "none",
+                      fontSize: 14,
+                      background: "#FCFCFC",
+                      color: "rgba(19.75, 25.29, 61.30, 0.40)",
+                    }}
+                    placeholder="Search"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
+
+                <button
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-start",
+                    alignItems: "center",
+                    gap: 9,
+                    padding: "8px 16px",
+                    background: "#FCFCFC",
+                    borderRadius: 8,
+                    outline: "1px solid #EAEAEA",
+                    outlineOffset: "-1px",
+                    border: "none",
+                    cursor: "pointer",
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 14,
+                    fontWeight: 400,
+                    color: "#0E101A",
+                    height: "33px",
+                    cursor: paginatedSuppliers.length > 0 ? "pointer" : "not-allowed",
+                    opacity: paginatedSuppliers.length > 0 ? 1 : 0.5,
+                  }}
+                  onClick={handleExportPDF}
+                  disabled={paginatedSuppliers.length === 0}
+                  title={
+                    selectedRowIds.size > 0
+                      ? `Export ${selectedRowIds.size} selected supplier(s)`
+                      : "Export all visible suppliers"
+                  }
+
+                >
+                  <TbFileExport
+                    className="fs-5 text-secondary"
+                  />
+                  Export
+                </button>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="table-responsive" style={{ maxHeight: "550px", overflowY: 'auto' }}
+            >
+              {/* Wrapper div for padding around the table – this creates the fixed space at top/bottom */}
+              <table
+                style={{
+                  width: "100%",
+                  borderSpacing: "0 0px",
+                  fontFamily: "Inter",
+                }}
+              >
+                <thead style={{ position: "sticky", top: 0, zIndex: 9 }}>
+                  <tr style={{ backgroundColor: "#F3F8FB", textAlign: "left" }}>
+                    <th
+                      style={{
+                        padding: "0px 0px",
+                        color: "#727681",
+                        fontSize: "14px",
+                        fontWeight: 400,
+                      }}
+                    >
+
+                      <div style={{ display: "flex", alignItems: "center", gap: "0px", justifyContent: 'center' }}>
+                        <input
+                          type="checkbox"
+                          aria-label="select all"
+                          checked={allVisibleSelected}
+                          onChange={(e) => {
+                            const next = new Set(selectedRowIds);
+                            if (e.target.checked) {
+                              // Add all current page customers
+                              paginatedSuppliers.forEach(supplier => {
+                                if (supplier._id) next.add(supplier._id);
+                              });
+                            } else {
+                              // Remove all current page customers
+                              paginatedSuppliers.forEach(supplier => {
+                                if (supplier._id) next.delete(supplier._id);
+                              });
+                            }
+                            setSelectedRowIds(next);
+                          }}
+                        />
+                      </div>
+                    </th>
+                    {[
+                      "Supplier Name",
+                      "Category / Brand Dealing With",
+                      "Balance Amount",
+                      "Total Spent",
+                      "Actions",
+                    ].map((heading, i) => (
                       <th
-      style={{
-        backgroundColor: "#F3F8FB",
-        fontWeight: 400,
-        fontSize: 14,
-        color: "#727681",
-        padding: "12px 16px",
-        position: "sticky",
-        top: 0,
-        zIndex: 10,
-        width: 0,
-      }}
-    >
-      <input
-        type="checkbox"
-        aria-label="select all"
-        checked={allVisibleSelected}
-        onChange={(e) => {
-          const next = new Set(selectedRowIds);
-          if (e.target.checked) {
-            // Add all current page customers
-            paginatedSuppliers.forEach(supplier => {
-              if (supplier._id) next.add(supplier._id);
-            });
-          } else {
-            // Remove all current page customers
-            paginatedSuppliers.forEach(supplier => {
-              if (supplier._id) next.delete(supplier._id);
-            });
-          }
-          setSelectedRowIds(next);
-        }}
-      />
-    </th>
-                      {[
-                        "Supplier Name",
-                        "Category / Brand Dealing With",
-                        "Balance Amount",
-                        "Total Spent",
-                        "Actions",
-                      ].map((heading, i) => (
-                        <th
-                          key={i}
+                        key={i}
+                        style={{
+                          padding: "12px 16px",
+                          color: "#727681",
+                          fontSize: "14px",
+                          fontWeight: 400,
+                        }}
+                      >
+                        {heading === "Balance Amount" ? (
+                          <>
+                            {heading}{" "}
+                            <PiInfo
+                              style={{ color: "#6C748C", fontWeight: 500 }}
+                            />
+                          </>
+                        ) : (
+                          heading
+                        )}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {paginatedSuppliers.map((supplier, index) => (
+                    <tr
+                      key={index}
+                      style={{
+                        borderBottom: "1px solid #EAEAEA",
+                        cursor: 'pointer',
+                      }}
+                      className={`table-hover ${activeRow === index ? "active-row" : ""}`}
+                      onClick={(e) => handleRowClick(supplier._id, e)}
+                    >
+                      <td
+                        style={{
+                          padding: "0px 0px",
+                          color: "#0E101A",
+                          fontSize: "14px",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: 'center' }}>
+                          <input
+                            type="checkbox"
+                            aria-label="select supplier"
+                            checked={selectedRowIds.has(supplier._id)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              const next = new Set(selectedRowIds);
+                              if (e.target.checked) {
+                                if (supplier._id) next.add(supplier._id);
+                              } else {
+                                if (supplier._id) next.delete(supplier._id);
+                              }
+                              setSelectedRowIds(next);
+                            }}
+                          />
+                        </div>
+                      </td>
+                      {/* Supplier Name */}
+                      <td
+                        style={{
+                          padding: "4px 16px",
+                          color: "#0E101A",
+                          fontSize: "14px",
+                        }}>
+                        <div
+                          className="d-flex align-items-center"
+                          style={{ gap: "10px" }}
+                        >
+                          <div
+                            style={{
+                              width: 38,
+                              height: 38,
+                              borderRadius: 8,
+                              background: "#eee",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              fontWeight: "bold",
+                              color: "#666",
+                            }}
+                          >
+                            {supplier?.name?.charAt(0).toUpperCase() || "S"}
+                          </div>
+                          <div>
+                            <div
+                              style={{
+                                color: "#0E101A",
+                                fontWeight: 400,
+                                fontSize: "14px",
+                                fontFamily: '"Inter", sans-serif',
+                              }}
+                            >
+                              {supplier.name}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: "12px",
+                                color: "#727681",
+                                fontFamily: '"Inter", sans-serif',
+                              }}
+                            >
+                              {supplier.phone}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Category */}
+                      <td style={{ padding: "4px 16px" }}>
+                        <div
                           style={{
-                            backgroundColor: "#F3F8FB",
-                            fontWeight: 400,
-                            fontSize: "14px",
-                            color: "#727681",
-                            padding: "12px 16px",
-                            fontFamily: '"Inter", sans-serif',
-                            position: "sticky",
-                            top: 0, // Changed to match padding exactly—prevents misalignment
-                            zIndex: 1000, // Increased for stronger layering over scrolling tbody rows
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: "6px",
                           }}
                         >
-                          {heading === "Balance Amount" ? (
-                            <>
-                              {heading}{" "}
-                              <PiInfo
-                                style={{ color: "#6C748C", fontWeight: 500 }}
-                              />
-                            </>
-                          ) : (
-                            heading
-                          )}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
+                          {supplier.category.map((item, i) => (
+                            <span
+                              key={i}
+                              style={{
+                                backgroundColor: "#E5F0FF",
+                                color: "#0E101A",
+                                borderRadius: "16px",
+                                padding: "4px 12px",
+                                fontSize: "14px",
+                                fontFamily: '"Inter", sans-serif',
+                              }}
+                            >
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
 
-                  <tbody>
-                    {paginatedSuppliers.map((supplier, index) => (
-                      <tr
-                        key={index}
+                      {/* Balance */}
+                      <td
                         style={{
-                          verticalAlign: "middle",
+                          color: supplier.balance < 0 ? "#D00003" : "#0D6828",
+                          fontWeight: "500",
+                          padding: "4px 16px",
                           fontFamily: '"Inter", sans-serif',
                         }}
-                        onClick={() => handleRowClick(supplier._id, e)}
                       >
-                         <td
-      style={{ 
-        padding: "14px 16px",
-        textAlign: "center"
-      }}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <input
-        type="checkbox"
-        aria-label="select supplier"
-        checked={selectedRowIds.has(supplier._id)}
-        onChange={(e) => {
-          e.stopPropagation();
-          const next = new Set(selectedRowIds);
-          if (e.target.checked) {
-            if (supplier._id) next.add(supplier._id);
-          } else {
-            if (supplier._id) next.delete(supplier._id);
-          }
-          setSelectedRowIds(next);
-        }}
-      />
-    </td>
-                        {/* Supplier Name */}
-                        <td style={{ padding: "14px 16px" }}>
-                          <div
-                            className="d-flex align-items-center"
-                            style={{ gap: "10px" }}
-                          >
-                            <div
-                              style={{
-                                width: 38,
-                                height: 38,
-                                borderRadius: 8,
-                                background: "#eee",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                fontWeight: "bold",
-                                color: "#666",
-                              }}
-                            >
-                              {supplier?.name?.charAt(0).toUpperCase() || "S"}
-                            </div>
-                            <div>
-                              <div
-                                style={{
-                                  color: "#0E101A",
-                                  fontWeight: 400,
-                                  fontSize: "14px",
-                                  fontFamily: '"Inter", sans-serif',
-                                }}
-                              >
-                                {supplier.name}
-                              </div>
-                              <div
-                                style={{
-                                  fontSize: "12px",
-                                  color: "#727681",
-                                  fontFamily: '"Inter", sans-serif',
-                                }}
-                              >
-                                {supplier.phone}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
+                        {formatCurrency(supplier.balance)}
+                      </td>
 
-                        {/* Category */}
-                        <td style={{ padding: "14px 16px" }}>
+                      {/* Total Spent */}
+                      <td
+                        style={{
+                          color: "#0E101A",
+                          fontSize: "14px",
+                          padding: "4px 16px",
+                          fontFamily: '"Inter", sans-serif',
+                        }}
+                      >
+                        ₹{" "}
+                        {new Intl.NumberFormat("en-IN").format(
+                          supplier.totalSpent
+                        )}
+                        /-
+                      </td>
+
+                      {/* Actions */}
+                      <td
+                        style={{
+                          padding: "4px 16px",
+                          position: "relative",
+                          overflow: "visible",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {/* three dot button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenMenuIndex(
+                              openMenuIndex === index ? null : index
+                            );
+                            const rect =
+                              e.currentTarget.getBoundingClientRect();
+                            setOpenMenuIndex(openMenuIndex === index ? null : index)
+
+                            const dropdownHeight = 260; // your menu height
+                            const spaceBelow =
+                              window.innerHeight - rect.bottom;
+                            const spaceAbove = rect.top;
+
+                            // decide direction
+                            if (
+                              spaceBelow < dropdownHeight &&
+                              spaceAbove > dropdownHeight
+                            ) {
+                              setOpenUpwards(true);
+                              setDropdownPos({
+                                x: rect.left,
+                                y: rect.top - 6, // position above button
+                              });
+                            } else {
+                              setOpenUpwards(false);
+                              setDropdownPos({
+                                x: rect.left,
+                                y: rect.bottom + 6, // position below button
+                              });
+                            }
+                          }}
+                          className="btn"
+                          style={{
+                            border: "none",
+                            background: "transparent",
+                            padding: 4,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            position: "relative",
+                          }}
+                          aria-label="actions"
+                        >
+                          <HiOutlineDotsHorizontal size={28} color="grey" />
+                        </button>
+
+                        {/* dropdown */}
+                        {openMenuIndex === index && (
                           <div
+                          style={{
+                            position: "fixed",
+                            top: openUpwards
+                              ? dropdownPos.y - 220
+                              : dropdownPos.y,
+                            left: dropdownPos.x - 80,
+                            zIndex: 999999,
+                          }}
+                        >
+                          <div
+                            ref={menuRef}
                             style={{
+                              background: "white",
+                              padding: 8,
+                              borderRadius: 12,
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                              minWidth: 180,
+                              height: "auto", // height must match dropdownHeight above
                               display: "flex",
-                              flexWrap: "wrap",
-                              gap: "6px",
+                              flexDirection: "column",
+                              gap: 4,
                             }}
                           >
-                            {supplier.category.map((item, i) => (
-                              <span
-                                key={i}
+                            {menuItems.map((item) => (
+                              <div
+                                key={item.action}
+                                onClick={() =>
+                                  handleMenuAction(item.action, supplier)
+                                }
+                                className="button-action"
                                 style={{
-                                  backgroundColor: "#E5F0FF",
-                                  color: "#0E101A",
-                                  borderRadius: "16px",
-                                  padding: "4px 12px",
-                                  fontSize: "14px",
-                                  fontFamily: '"Inter", sans-serif',
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 12,
+                                  padding: "8px 12px",
+                                  fontFamily: "Inter, sans-serif",
+                                  fontSize: 16,
+                                  fontWeight: 400,
+                                  cursor: "pointer",
+                                  borderRadius: 8,
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor =
+                                    "#e3f2fd";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor =
+                                    "transparent";
                                 }}
                               >
-                                {item}
-                              </span>
+                                <span>{item.icon}</span>
+                                <span>{item.label}</span>
+                              </div>
                             ))}
                           </div>
-                        </td>
-
-                        {/* Balance */}
-                        <td
-                          style={{
-                            color: supplier.balance < 0 ? "#D00003" : "#0D6828",
-                            fontWeight: "500",
-                            padding: "14px 16px",
-                            fontFamily: '"Inter", sans-serif',
-                          }}
-                        >
-                          {formatCurrency(supplier.balance)}
-                        </td>
-
-                        {/* Total Spent */}
-                        <td
-                          style={{
-                            color: "#0E101A",
-                            fontSize: "14px",
-                            padding: "14px 16px",
-                            fontFamily: '"Inter", sans-serif',
-                          }}
-                        >
-                          ₹{" "}
-                          {new Intl.NumberFormat("en-IN").format(
-                            supplier.totalSpent
-                          )}
-                          /-
-                        </td>
-
-                        {/* Actions */}
-                        <td
-                          style={{
-                            padding: "8px 16px",
-                            position: "relative",
-                            overflow: "visible",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "start",
-                              alignItems: "center",
-                              position: "relative",
-                              cursor: "pointer",
-                            }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpenMenuIndex(
-                                openMenuIndex === index ? null : index
-                              );
-                            }}
-                          >
-                            {/* three dot button */}
-                            <div
-                              style={{
-                                width: 24,
-                                height: 24,
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                              }}
-                            >
-                              <div
-                                style={{
-                                  width: 4,
-                                  height: 4,
-                                  background: "#6C748C",
-                                  borderRadius: 2,
-                                }}
-                              />
-                              <div
-                                style={{
-                                  width: 4,
-                                  height: 4,
-                                  background: "#6C748C",
-                                  borderRadius: 2,
-                                }}
-                              />
-                              <div
-                                style={{
-                                  width: 4,
-                                  height: 4,
-                                  background: "#6C748C",
-                                  borderRadius: 2,
-                                }}
-                              />
-                            </div>
-
-                            {/* dropdown */}
-                            {openMenuIndex === index && (
-                              <div
-                                ref={menuRef}
-                                style={{
-                                  position: "absolute",
-                                  top: "100%",
-                                  right: 0,
-                                  marginTop: 6,
-                                  width: 210,
-                                  backgroundColor: "#fff",
-                                  borderRadius: 12,
-                                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                                  border: "1px solid #E5E7EB",
-                                  zIndex: 999999,
-                                  overflow: "hidden",
-                                }}
-                              >
-                                {menuItems.map((item) => (
-                                  <div
-                                    key={item.action}
-                                    onClick={() =>
-                                      handleMenuAction(item.action, supplier)
-                                    }
-                                    className="button-action"
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 12,
-                                      padding: "8px 12px",
-                                      fontFamily: "Inter, sans-serif",
-                                      fontSize: 16,
-                                      fontWeight: 400,
-                                      cursor: "pointer",
-                                    }}
-                                    onMouseEnter={(e) => {
-                                      e.currentTarget.style.backgroundColor =
-                                        "#e3f2fd";
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      e.currentTarget.style.backgroundColor =
-                                        "transparent";
-                                    }}
-                                  >
-                                    <span>{item.icon}</span>
-                                    <span>{item.label}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
                           </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {/* Pagination */}
-              <Pagination
-                currentPage={currentPage}
-                total={filteredSuppliers.length}
-                itemsPerPage={itemsPerPage}
-                onPageChange={(page) => setCurrentPage(page)}
-              />
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-              <ConfirmDeleteModal
-                isOpen={showDeleteModal}
-                onCancel={() => { setShowDeleteModal(false); setSelectedSupplier(null); }}
-                onConfirm={async () => {
-                  try {
-                    await api.delete(`/api/suppliers/${selectedSupplier._id}`);
-                    toast.success("Supplier deleted successfully");
-                    setSuppliers((prev) =>
-                      prev.filter((s) => s._id !== selectedSupplier._id)
-                    );
-                    setShowDeleteModal(false);
-                    setSelectedSupplier(null);
-                  } catch (error) {
-                    console.error("Delete Supplier Error:", error);
-                    toast.error(
-                      error.response?.data?.message ||
-                      "Failed to delete supplier"
-                    );
-                  }
-                }}
-              />
-              {openModal && selectedSupplier && (
-                <>
-                  <span
-                    onClick={() => setOpenModal(false)}
-                    style={{
-                      cursor: "pointer",
-                      position: "fixed",
-                      left: "calc(100vw - 900px - 60px)", // Position just left of panel
-                      top: "20px",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      border: "1px solid #EAEAEA",
-                      width: "40px",
-                      height: "40px",
-                      borderRadius: "50%",
-                      backgroundColor: "#fff",
-                      zIndex: 10000, // Higher than panel's z-index
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                    }}
-                  >
-                    <IoIosArrowBack style={{ color: "#6C748C", fontSize: "18px" }} />
-                  </span>
-                  <div
-                    style={{
-                      position: "fixed",
-                      top: 0,
-                      right: 0,
-                      width: "940px",
-                      height: "100vh",
-                      background: "white",
-                      boxShadow: "-4px 0 20px rgba(0,0,0,0.1)",
-                      transition: "right 0.4s ease",
-                      zIndex: 9999,
-                      overflowY: "auto",
-                    }}
-                  >
-                    <SupplierDetails
-                      supplierId={selectedSupplier}
-                      onClose={() => setOpenModal(false)}
-                    />
-                  </div>
-                </>
-              )}
+            {/* Pagination */}
+            <Pagination
+              currentPage={currentPage}
+              total={filteredSuppliers.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={(page) => setCurrentPage(page)}
+              onItemsPerPageChange={(val) => {
+                setItemsPerPage(val);
+                setCurrentPage(1);
+              }}
+            />
 
+            <ConfirmDeleteModal
+              isOpen={showDeleteModal}
+              onCancel={() => { setShowDeleteModal(false); setSelectedSupplier(null); }}
+              onConfirm={async () => {
+                try {
+                  await api.delete(`/api/suppliers/${selectedSupplier._id}`);
+                  toast.success("Supplier deleted successfully");
+                  setSuppliers((prev) =>
+                    prev.filter((s) => s._id !== selectedSupplier._id)
+                  );
+                  setShowDeleteModal(false);
+                  setSelectedSupplier(null);
+                } catch (error) {
+                  console.error("Delete Supplier Error:", error);
+                  toast.error(
+                    error.response?.data?.message ||
+                    "Failed to delete supplier"
+                  );
+                }
+              }}
+            />
 
-              {/* add supplier */}
-              {openAddSupplierModal && (
+            {openModal && selectedSupplier && (
+              <>
+                <span
+                  onClick={() => setOpenModal(false)}
+                  style={{
+                    cursor: "pointer",
+                    position: "fixed",
+                    left: "calc(100vw - 900px - 60px)", // Position just left of panel
+                    top: "20px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    border: "1px solid #EAEAEA",
+                    width: "40px",
+                    height: "40px",
+                    borderRadius: "50%",
+                    backgroundColor: "#fff",
+                    zIndex: 10000, // Higher than panel's z-index
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                  }}
+                >
+                  <IoIosArrowBack style={{ color: "#6C748C", fontSize: "18px" }} />
+                </span>
                 <div
                   style={{
                     position: "fixed",
                     top: 0,
-                    left: 0,
-                    width: "100%",
+                    right: 0,
+                    width: "940px",
                     height: "100vh",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
+                    background: "white",
+                    boxShadow: "-4px 0 20px rgba(0,0,0,0.1)",
+                    transition: "right 0.4s ease",
                     zIndex: 9999,
+                    overflowY: "auto",
                   }}
                 >
-                  <AddSupplier onClose={() => setOpenAddSupplierModal(false)} onSuccess={fetchSuppliers} />
+                  <SupplierDetails
+                    supplierId={selectedSupplier}
+                    onClose={() => setOpenModal(false)}
+                  />
                 </div>
-              )}
+              </>
+            )}
 
-              {/* edit supplier */}
-              {openEditModal && selectedSupplier && (
-                <EditSupplierModal
-                  supplierId={selectedSupplier._id}
-                  onClose={() => { setOpenEditModal(false); setSelectedSupplier(null); }}
-                />
-              )}
-            </div>
+            {/* add supplier */}
+            {openAddSupplierModal && (
+              <div
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  width: "100vw",
+                  height: "100vh",
+                  backgroundColor: "rgba(0,0,0,0.27)",
+                  backdropFilter: "blur(1px)",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  zIndex: 99999999,
+                }}
+              >
+                <AddSupplier onClose={() => setOpenAddSupplierModal(false)} onSuccess={fetchSuppliers} />
+              </div>
+            )}
+
+            {/* edit supplier */}
+            {openEditModal && selectedSupplier && (
+              <div
+                style={{
+                  position: "fixed",
+                  top: 0,
+                  left: 0,
+                  width: "100vw",
+                  height: "100vh",
+                  backgroundColor: "rgba(0,0,0,0.27)",
+                  backdropFilter: "blur(1px)",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  zIndex: 99999999,
+                }}
+              >
+              <EditSupplierModal
+                supplierId={selectedSupplier._id}
+                onClose={() => { setOpenEditModal(false); setSelectedSupplier(null); }}
+              />
+              </div>
+            )}
           </div>
         </div>
       </div>
+    </div>
   );
 };
 
