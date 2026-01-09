@@ -15,6 +15,10 @@ const MainLayouts = () => {
     location.pathname === "/viewproduct" ||
     location.pathname === "/m/create-creditnote" ||
     location.pathname === "/skeleton" || 
+    // for role
+    location.pathname === "/create-role" ||
+    matchPath("/edit-role/:id", location.pathname) ||
+
     // for edit view product
     matchPath("/product/edit/:id", location.pathname) || 
     matchPath("/product/view/:id", location.pathname) ||

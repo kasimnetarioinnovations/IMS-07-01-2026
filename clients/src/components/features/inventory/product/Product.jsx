@@ -1164,7 +1164,7 @@ const Product = () => {
                             {/* Product Name & Category */}
                             <td
                               style={{
-                                padding: "8px 16px",
+                                padding: "4px 16px",
                                 verticalAlign: "middle",
                               }}
                             >
@@ -1245,7 +1245,7 @@ const Product = () => {
                             {/* Quantity */}
                             <td
                               style={{
-                                padding: "8px 16px",
+                                padding: "4px 16px",
                                 fontSize: 14,
                                 color: "#0E101A",
                                 cursor: "pointer",
@@ -1267,7 +1267,7 @@ const Product = () => {
                             {/* Item Code */}
                             <td
                               style={{
-                                padding: "8px 16px",
+                                padding: "4px 16px",
                                 fontSize: 14,
                                 color: "#0E101A",
                               }}
@@ -1365,7 +1365,7 @@ const Product = () => {
                             {/* Purchase Price */}
                             <td
                               style={{
-                                padding: "8px 16px",
+                                padding: "4px 16px",
                                 fontSize: 14,
                                 color: "#0E101A",
                                 cursor: "pointer",
@@ -1387,7 +1387,7 @@ const Product = () => {
                             {/* Selling Price */}
                             <td
                               style={{
-                                padding: "8px 16px",
+                                padding: "4px 16px",
                                 fontSize: 14,
                                 color: "#0E101A",
                                 cursor: "pointer",
@@ -1409,7 +1409,7 @@ const Product = () => {
                             {/* Actions */}
                             <td
                               style={{
-                                padding: "8px 16px",
+                                padding: "4px 16px",
                                 position: "relative",
                                 overflow: "visible",
                               }}
