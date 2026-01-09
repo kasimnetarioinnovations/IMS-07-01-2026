@@ -246,21 +246,19 @@ const EditCustomerModal = ({ customer, onClose }) => {
 
   return (
     <div
-      className="modal fade show d-block"
-      style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-      tabIndex="-1"
+      className="create-category-modelbox"
+        style={{
+          backgroundColor: "white",
+          width: "800px",
+          padding: "30px 40px",
+          borderRadius: "8px",
+        }}
     >
-      <div className="modal-dialog modal-lg" style={{ marginTop: "10%" }}>
+      <div>
         <div className="modal-content">
           <div
             className="modal-header"
-            style={{
-              borderBottom: "none",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "end",
-              padding: "15px 15px",
-            }}
+            style={{ borderBottom: "none", display: "flex", alignItems: "center", justifyContent: "end", borderRadius: "50%", padding: "5px 5px" }}
           >
             <button
               style={{
@@ -281,7 +279,7 @@ const EditCustomerModal = ({ customer, onClose }) => {
             </button>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", margin: "10px 20px" }}>
+          <div style={{ display: "flex", alignItems: "center", margin: "10px 0px" }}>
             <h5
               className="modal-title"
               style={{
