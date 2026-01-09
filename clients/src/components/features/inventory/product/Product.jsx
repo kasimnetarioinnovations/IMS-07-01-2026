@@ -709,7 +709,7 @@ const Product = () => {
 
   return (
     <>
-      <div className="py-4 px-4">
+      <div className="p-4">
         {/* back, header, view style */}
         <div
           style={{
@@ -766,6 +766,7 @@ const Product = () => {
             }}
           >
             <button
+              title="Minimum Details"
               style={{
                 padding: "8px",
                 background: viewMode ? "white" : "#1F7FFF",
@@ -784,6 +785,7 @@ const Product = () => {
             </button>
 
             <button
+              title="Full Detail"
               style={{
                 padding: "8px",
                 background: viewMode ? "#1F7FFF" : "white",
@@ -837,6 +839,7 @@ const Product = () => {
                 </span>
               </NavLink> */}
             <button
+              title="Add Product Button"
               className="button-hover"
               onClick={handleClick}
               style={{
@@ -847,9 +850,12 @@ const Product = () => {
                 fontFamily: "Inter",
                 backgroundColor: "white",
                 fontSize: "14px",
-                fontWeight: "500"
+                fontWeight: "500",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
               }}
-            > <MdAddShoppingCart />Add Products</button>
+            > <MdAddShoppingCart /> Add Products</button>
           </div>
         </div>
 
@@ -888,7 +894,7 @@ const Product = () => {
                     borderRadius: 8,
                     flexWrap: "wrap",
                     height: "38px",
-                    width: "50%",
+                    width: "auto",
                   }}
                 >
                   {[
@@ -947,7 +953,7 @@ const Product = () => {
                       color: "rgba(19.75, 25.29, 61.30, 0.40)",
                     }}
                   >
-                    <IoIosSearch />
+                    <IoIosSearch className="fs-4" />
                     <input
                       type="search"
                       placeholder="Search"
@@ -1153,8 +1159,7 @@ const Product = () => {
                               borderBottom: "1px solid #EAEAEA",
                               height: "46px",
                             }}
-                            className={`table-hover ${activeRow === index ? "active-row" : ""
-                              }`}
+                            className={`table-hover ${activeRow === index ? "active-row" : ""}`}
                           >
                             {/* Product Name & Category */}
                             <td
@@ -1510,8 +1515,7 @@ const Product = () => {
                                           background: "white",
                                           padding: 8,
                                           borderRadius: 12,
-                                          boxShadow:
-                                            "0 2px 8px rgba(0,0,0,0.15)",
+                                          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
                                           minWidth: 180,
                                           height: "auto", // height must match dropdownHeight above
                                           display: "flex",

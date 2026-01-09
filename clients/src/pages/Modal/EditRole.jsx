@@ -190,8 +190,7 @@ const EditRole = () => {
   }
 
   return (
-    
-        <div className="px-4 py-4 min-h-screen bg-gray-50" style={{height:"calc(100vh - 70px)", overflow:"hidden"}}>
+        <div className="p-4 min-h-screen bg-gray-50">
           {/* Header */}
           <div className="d-flex align-items-center gap-2" style={{ marginBottom: "20px" }}>
             <div
@@ -226,12 +225,14 @@ const EditRole = () => {
 
           <div
             style={{
-              margin: "0 auto",
-              background: "white",
-              borderRadius: "16px",
-              padding: "20px",
-              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-            }}
+                    margin: "0 auto",
+                    background: "white",
+                    borderRadius: "16px",
+                    padding: "20px",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                    maxHeight: "calc(100vh - 220px)",
+                    overflow: 'hidden'
+                }}
           >
             {/* Role Name Input */}
             <div style={{ marginBottom: "24px", maxWidth: "400px" }}>
@@ -316,7 +317,7 @@ const EditRole = () => {
             </h2>
 
             {/* Permissions Table */}
-            <div style={{ overflowY: "auto", height: "calc(100vh - 430px)", msOverflowStyle: "none", scrollbarWidth: "none" }}>
+            <div style={{ overflowY: "auto", minHeight: "360px", msOverflowStyle: "none",  }}>
               {Object.entries(groupedModules).map(([category, modules]) => (
                 <div key={category} style={{ marginBottom: "40px" }}>
                   <div style={{ borderRadius: "8px", overflow: "hidden", fontFamily: "Inter" }}>
@@ -527,9 +528,10 @@ const EditRole = () => {
                 </div>
               ))}
             </div>
+          </div>
 
             {/* Action Buttons */}
-            <div style={{ marginTop: "32px", display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+            <div style={{ marginTop: "20px", display: "flex", justifyContent: "flex-end", gap: "12px" }}>
               <button
                 onClick={() => navigate("/Users")}
                 style={{
@@ -565,7 +567,6 @@ const EditRole = () => {
                 {saving ? "Updating..." : "Update Role"}
               </button>
             </div>
-          </div>
         </div>
    
   );

@@ -548,7 +548,7 @@ const Users = () => {
             onChange={(e) => setSelectedStatus(e.target.value)}
             style={{
               width: "150px",
-              padding: "10px",
+              padding: "6px 16px 6px 15px",
               backgroundColor: "#FCFCFC",
               border: "1px solid #EAEAEA",
               borderRadius: "8px",
@@ -564,85 +564,71 @@ const Users = () => {
             <option value="Inactive">Inactive</option>
             <option value="Blacklist">Blacklist</option>
           </select>
-
-          {/* <div className="d-flex align-items-center gap-3">
-            <div
-              className="d-flex align-items-center search-box"
+          <div
+            style={{
+              width: "100%",
+              position: "relative",
+              padding: "4px 8px 4px 20px",
+              display: "flex",
+              borderRadius: 8,
+              alignItems: "center",
+              background: "#FCFCFC",
+              border: "1px solid #EAEAEA",
+              gap: "5px",
+              color: "rgba(19.75, 25.29, 61.30, 0.40)",
+            }}
+          >
+            <IoSearch className="fs-5" />
+            <input
+              type="search"
+              placeholder="Search by name, email or phone"
               style={{
+                width: "100%",
+                border: "none",
+                outline: "none",
+                fontSize: 14,
                 background: "#FCFCFC",
-                padding: "4px 20px",
-                borderRadius: 8,
-                border: "1px solid #EAEAEA",
-                minHeight: 32,
+                color: "rgba(19.75, 25.29, 61.30, 0.40)",
               }}
-            >
-              <FiSearch style={{ color: "#14193D66", marginRight: "10px" }} />
-              <input
-                placeholder="Search by name, email or phone"
-                type="text"
-                className="form-control border-0 shadow-none"
-                style={{ background: "transparent", padding: 0 }}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div> */}
-            <div
-                                style={{
-                                  // width: "50%",
-                                  position: "relative",
-                                  padding: "8px 16px 8px 20px",
-                                  display: "flex",
-                                  borderRadius: 8,
-                                  alignItems: "center",
-                                  background: "#FCFCFC",
-                                  border: "1px solid #EAEAEA",
-                                  gap: "5px",
-                                  color: "rgba(19.75, 25.29, 61.30, 0.40)",
-                                }}
-                              >
-                                <IoSearch />
-                                <input
-                                  type="text"
-                                  placeholder="Search by name, email or phone"
-                                  style={{
-                                    width: "100%",
-                                    border: "none",
-                                    outline: "none",
-                                    fontSize: 14,
-                                    background: "#FCFCFC",
-                                    color: "rgba(19.75, 25.29, 61.30, 0.40)",
-                                  }}
-                                   value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                                 
-                                />
-                              </div>
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </>
       );
     } else {
       return (
-        <div className="d-flex align-items-center gap-3">
-          <div
-            className="d-flex align-items-center search-box"
+        <div
+          className=""
+          style={{
+            width: "100%",
+            position: "relative",
+            padding: "4px 8px 4px 20px",
+            display: "flex",
+            borderRadius: 8,
+            alignItems: "center",
+            background: "#FCFCFC",
+            border: "1px solid #EAEAEA",
+            gap: "5px",
+            color: "rgba(19.75, 25.29, 61.30, 0.40)",
+          }}
+        >
+          <FiSearch className="fs-5" />
+          <input
+            placeholder="Search roles..."
+            type="search"
+            className=""
             style={{
+              width: "100%",
+              border: "none",
+              outline: "none",
+              fontSize: 14,
               background: "#FCFCFC",
-              padding: "4px 20px",
-              borderRadius: 8,
-              border: "1px solid #EAEAEA",
-              minHeight: 32,
+              color: "rgba(19.75, 25.29, 61.30, 0.40)",
             }}
-          >
-            <FiSearch style={{ color: "#14193D66", marginRight: "10px" }} />
-            <input
-              placeholder="Search roles..."
-              type="text"
-              className="form-control border-0 shadow-none"
-              style={{ background: "transparent", padding: 0 }}
-              value={roleSearchTerm}
-              onChange={(e) => setRoleSearchTerm(e.target.value)}
-            />
-          </div>
+            value={roleSearchTerm}
+            onChange={(e) => setRoleSearchTerm(e.target.value)}
+          />
         </div>
       );
     }
@@ -659,686 +645,700 @@ const Users = () => {
   }, [users, selectedRoleForView])
 
   return (
-  
-  
-        <div className="px-4 py-4" style={{ fontFamily: '"Inter", sans-serif', overflow:"hidden", height:"calc(100vh - 80px)"}}>
-          {/* Header */}
+    <div className="p-4" style={{ fontFamily: '"Inter", sans-serif', overflow: "hidden", }}>
+      {/* Header */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "20px",
+
+        }}
+      >
+        <span
+          style={{
+            color: "#0E101A",
+            fontWeight: 500,
+            fontSize: "22px",
+            lineHeight: "120%",
+            fontFamily: '"Inter", sans-serif',
+            margin: "10px 0px",
+          }}
+        >
+          User & Roles
+        </span>
+
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          height: "33px",
+        }}>
+          <button
+            className="button-hover"
+            onClick={() => {
+              if (activeTab === "user") {
+                resetCreateForm();
+                setOpenModal("create");
+              } else {
+                navigate("/create-role");
+              }
+            }}
+            style={{
+              borderRadius: "8px",
+              padding: "5px 16px",
+              border: "1px solid #1F7FFF",
+              color: "rgb(31, 127, 255)",
+              fontFamily: "Inter",
+              backgroundColor: "white",
+              fontSize: "14px",
+              fontWeight: "500",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <LuUserPlus /> {activeTab === "user" ? "Add User" : "Add Role"}
+          </button>
+        </div>
+      </div>
+
+      {/* Main Card */}
+      <div
+        style={{
+          width: "100%",
+          padding: "20px",
+          backgroundColor: "white",
+          borderRadius: "16px",
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px",
+          marginTop: "16px",
+          height: "calc(100vh - 180px)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            width: "100%",
+          }}
+        >
+          {/* Tabs */}
           <div
             style={{
               display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "20px",
-            
+              gap: 8,
+              padding: 2,
+              background: "#F3F8FB",
+              borderRadius: 8,
+              flexWrap: "wrap",
+              height: "38px",
+              width: "auto",
             }}
           >
-            <span
+            <div
+              onClick={() => setActiveTab("user")}
               style={{
+                padding: "6px 12px",
+                backgroundColor: activeTab === "user" ? "white" : "transparent",
+                boxShadow: activeTab === "user" ? "0px 1px 4px rgba(0, 0, 0, 0.10)" : "none",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                fontSize: 14,
                 color: "#0E101A",
-                fontWeight: 500,
-                fontSize: "22px",
-                lineHeight: "120%",
-                fontFamily: '"Inter", sans-serif',
-                margin: "10px 0px",
+                cursor: "pointer",
+                borderRadius: 8,
               }}
             >
-              User & Roles
-            </span>
-
-            <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-              <button
-               className="button-hover"
-                onClick={() => {
-                  if (activeTab === "user") {
-                    resetCreateForm();
-                    setOpenModal("create");
-                  } else {
-                    navigate("/create-role");
-                  }
-                }}
+              <div
                 style={{
-                  border: "1px solid #1F7FFF",
-                  borderRadius: "8px",
-                  padding: "8px 16px",
-                  color: "#1F7FFF",
-                  fontWeight: 400,
-                  fontSize: "16px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  backgroundColor: "transparent",
-                  fontFamily: '"Inter", sans-serif',
+                  color: "#0E101A",
+                  fontSize: "14px",
+                  fontWeight: "400",
                 }}
               >
-                <LuUserPlus /> {activeTab === "user" ? "Add User" : "Add Role"}
-              </button>
+                User
+              </div>
+              <div
+                style={{
+                  color: "#727681",
+                  fontSize: "14px",
+                  fontWeight: "400",
+                }}
+              >
+                {users.length}
+              </div>
+            </div>
+            <div
+              style={{
+                padding: "6px 12px",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                fontSize: 14,
+                color: "#0E101A",
+                cursor: "pointer",
+                borderRadius: 8,
+                backgroundColor: activeTab === "roles" ? "white" : "transparent",
+                boxShadow: activeTab === "roles" ? "0px 1px 4px rgba(0, 0, 0, 0.10)" : "none",
+              }}
+              onClick={() => setActiveTab("roles")}
+            >
+              <div
+                style={{
+                  color: "#0E101A",
+                  fontSize: "14px",
+                  fontWeight: "400",
+                }}
+              >
+                Roles
+              </div>
+              <div
+                style={{
+                  color: "#727681",
+                  fontSize: "14px",
+                  fontWeight: "400",
+                }}
+              >
+                {roles.length}
+              </div>
             </div>
           </div>
 
-          {/* Main Card */}
+          {/* Search and Filters Row */}
           <div
             style={{
-              width: "100%",
-              padding: "20px",
-              backgroundColor: "white",
-              borderRadius: "16px",
               display: "flex",
-              flexDirection: "column",
-              gap: "16px",
-              marginTop: "16px",
+              justifyContent: "end",
+              gap: "24px",
+              height: "33px",
             }}
           >
             <div
               style={{
                 display: "flex",
-                justifyContent: "space-between"
+                justifyContent: "flex-start",
+                alignItems: "center",
+                gap: "24px",
               }}
             >
-              {/* Tabs */}
-              <div
+              {renderSearchAndFilters()}
+            </div>
+
+            <div className=""
+              style={{
+                display: "inline-flex",
+                justifyContent: "flex-start",
+                alignItems: "center",
+                gap: 16,
+              }}>
+              <button
+                title="Export"
+                onClick={() => handleExport('pdf')}
                 style={{
-                  padding: "2px",
-                  backgroundColor: "#F3F8FB",
-                  borderRadius: "8px",
                   display: "flex",
                   justifyContent: "flex-start",
                   alignItems: "center",
-                  gap: "8px",
+                  gap: 9,
+                  padding: "8px 16px",
+                  background: "#FCFCFC",
+                  borderRadius: 8,
+                  outline: "1px solid #EAEAEA",
+                  outlineOffset: "-1px",
+                  border: "none",
+                  cursor: "pointer",
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 14,
+                  fontWeight: 400,
+                  color: "#0E101A",
+                  height: "33px",
                 }}
               >
-                <div
-                  onClick={() => setActiveTab("user")}
+                <TbFileExport className="fs-5 text-secondary" />
+                Export
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Table Container */}
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, height: "calc(100vh - 340px)" }}>
+          {activeTab === "roles" && roleViewMode === "users" && (
+            <div style={{ marginBottom: "12px" }}>
+              <button
+                onClick={() => {
+                  setRoleViewMode("roles");
+                  setSelectedRoleForView(null);
+                }}
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  color: "#ccc",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                }}
+              >
+                <FaArrowLeft />  Back to Roles
+              </button>
+            </div>
+          )}
+          <div
+            className="table-responsive"
+            style={{
+              height: "490px",
+              overflowY: "auto",
+              overflowX: "hidden",
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+            }}
+          >
+            {/* USER TAB */}
+            {activeTab === "user" && (
+              <UserTable
+                users={paginatedUsers}
+                loading={!users.length}
+                onEdit={(user) => handleOpenEditModal(user)}
+                onDelete={(user) => {
+                  setSelectedUser(user);
+                  setShowDeleteModal(true);
+                }}
+                openMenuIndex={openMenuIndex}
+                setOpenMenuIndex={setOpenMenuIndex}
+                menuRef={menuRef}
+                selectedUsersForExport={selectedUsersForExport}
+                handleCheckboxChange={handleCheckboxChange}
+                selectAllForExport={selectAllForExport}
+                handleSelectAllForExport={handleSelectAllForExport}
+              />
+            )}
+
+            {/* ROLES TAB – ROLE LIST */}
+            {activeTab === "roles" && roleViewMode === "roles" && (
+              <RoleTable
+                roles={paginatedRoles}
+                loading={!roles.length}
+                openMenuIndex={openMenuIndex}
+                setOpenMenuIndex={setOpenMenuIndex}
+                menuRef={menuRef}
+                onDelete={(role) => {
+                  setSelectedRole(role);
+                  setShowRoleDeleteModal(true);
+                }}
+                onRowClick={handleRoleRowClick}
+                selectedRolesForExport={selectedRolesForExport}
+                handleCheckboxChange={(id) => {
+                  setSelectedRolesForExport(prev =>
+                    prev.includes(id)
+                      ? prev.filter(roleId => roleId !== id)
+                      : [...prev, id]
+                  );
+                }}
+                selectAllForExport={selectAllRolesForExport}
+                handleSelectAllForExport={() => {
+                  if (selectAllRolesForExport) {
+                    setSelectedRolesForExport([]);
+                  } else {
+                    setSelectedRolesForExport(paginatedRoles.map(role => role._id));
+                  }
+                  setSelectAllRolesForExport(!selectAllRolesForExport);
+                }}
+              />
+            )}
+
+            {/* ROLES TAB – USERS OF SELECTED ROLE */}
+            {activeTab === "roles" && roleViewMode === "users" && (
+              <UserTable
+                users={usersBySelectedRole}
+                loading={false}
+                onEdit={(user) => handleOpenEditModal(user)}
+                onDelete={(user) => {
+                  setSelectedUser(user);
+                  setShowDeleteModal(true);
+                }}
+                openMenuIndex={openMenuIndex}
+                setOpenMenuIndex={setOpenMenuIndex}
+                menuRef={menuRef}
+                selectedUsersForExport={selectedUsersForExport}
+                handleCheckboxChange={handleCheckboxChange}
+                selectAllForExport={selectAllForExport}
+                handleSelectAllForExport={handleSelectAllForExport}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Pagination */}
+        <div className="page-redirect-btn px-2">
+          {activeTab === "user" ? (
+            <Pagination
+              currentPage={currentPage}
+              total={filteredUsers.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={(page) => setCurrentPage(page)}
+            />
+          ) : (
+            <Pagination
+              currentPage={roleCurrentPage}
+              total={filteredRoles.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={(page) => setRoleCurrentPage(page)}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Create/Edit User Modal */}
+      {(openModal === "create" || openModal === "edit") && (
+        <div
+          className=""
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            backgroundColor: "rgba(0,0,0,0.27)",
+            backdropFilter: "blur(1px)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 99999999,
+          }}
+        >
+          <div className="" style={{
+            backgroundColor: "white",
+            width: "900px",
+            padding: "20px 100px",
+            borderRadius: "8px",
+          }}>
+            <div className="">
+              <div className="modal-header" style={{ borderBottom: "none", display: "flex", alignItems: "center", justifyContent: "end", borderRadius: "50%", padding: "5px 5px" }}>
+                <button
                   style={{
-                    padding: "6px 12px",
-                    backgroundColor: activeTab === "user" ? "white" : "transparent",
-                    boxShadow: activeTab === "user" ? "0px 1px 4px rgba(0, 0, 0, 0.10)" : "none",
-                    borderRadius: "8px",
-                    display: "flex",
-                    justifyContent: "flex-start",
-                    alignItems: "center",
-                    gap: "8px",
-                    cursor: "pointer",
+                    color: "#727681",
+                    fontSize: "10px",
+                    fontWeight: 800,
+                    border: "2px solid #727681",
+                    borderRadius: "50%",
+                    backgroundColor: "transparent",
+                    width: "30px",
+                    height: "30px",
+                    cursor: "pointer"
+                  }}
+                  type="button"
+                  onClick={() => {
+                    setOpenModal(false);
+                    resetCreateForm();
                   }}
                 >
-                  <div
-                    style={{
-                      color: "#0E101A",
-                      fontSize: "14px",
-                      fontWeight: "400",
-                      lineHeight: "16.8px",
-                    }}
-                  >
-                    User
-                  </div>
-                  <div
-                    style={{
-                      color: "#727681",
-                      fontSize: "14px",
-                      fontWeight: "400",
-                      lineHeight: "16.8px",
-                    }}
-                  >
-                    {users.length}
-                  </div>
-                </div>
-                <div
-                  style={{
-                    padding: "6px 12px",
-                    borderRadius: "8px",
-                    display: "flex",
-                    justifyContent: "flex-start",
-                    alignItems: "center",
-                    gap: "8px",
-                    cursor: "pointer",
-                    backgroundColor: activeTab === "roles" ? "white" : "transparent",
-                    boxShadow: activeTab === "roles" ? "0px 1px 4px rgba(0, 0, 0, 0.10)" : "none",
-                  }}
-                  onClick={() => setActiveTab("roles")}
-                >
-                  <div
-                    style={{
-                      color: "#0E101A",
-                      fontSize: "14px",
-                      fontWeight: "400",
-                      lineHeight: "16.8px",
-                    }}
-                  >
-                    Roles
-                  </div>
-                  <div
-                    style={{
-                      color: "#727681",
-                      fontSize: "14px",
-                      fontWeight: "400",
-                      lineHeight: "16.8px",
-                    }}
-                  >
-                    {roles.length}
-                  </div>
-                </div>
+                  <RxCross2 style={{ color: "#727681", fontSize: "15px", fontWeight: 900 }} />
+                </button>
               </div>
 
-              {/* Search and Filters Row */}
-              <div>
-                <div
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: "10px"
-                  }}
-                >
+              <div style={{ display: "flex", alignItems: "center", margin: "10px 0px" }}>
+                <h5 className="modal-title" style={{ color: "#0E101A", fontWeight: 500, fontSize: "22px", fontFamily: '"Inter", sans-serif', lineHeight: "120%" }}>
+                  {openModal === "create" ? "Add User" : "Edit User"}
+                </h5>
+              </div>
+
+              <form onSubmit={openModal === "create" ? handleAddUser : handleUpdate}>
+                <div className="modal-body">
+                  {/* Image Upload */}
                   <div
                     style={{
                       display: "flex",
-                      justifyContent: "flex-start",
                       alignItems: "center",
-                      gap: "24px",
+                      justifyContent: "space-between",
+                      border: "2px dashed #dadadaff",
+                      padding: "10px",
+                      borderRadius: "8px",
+                      marginBottom: "20px",
                     }}
                   >
-                    {renderSearchAndFilters()}
-                  </div>
-
-                  <div className="d-flex align-items-center gap-3">
-                
-                     <button
-                                            title="Export"
-                                            onClick={() => handleExport('pdf')}
-                                            style={{
-                                              display: "flex",
-                                              justifyContent: "flex-start",
-                                              alignItems: "center",
-                                              gap: 9,
-                                               padding: "10px",
-                                              background: "#FCFCFC",
-                                              borderRadius: 8,
-                                              outline: "1px solid #EAEAEA",
-                                              outlineOffset: "-1px",
-                                              border: "none",
-                                              cursor: "pointer",
-                                              fontFamily: "Inter, sans-serif",
-                                              fontSize: 14,
-                                              fontWeight: 400,
-                                              color: "#0E101A",
-                                            
-                                            }}
-                                          >
-                                            <TbFileExport className="fs-5 text-secondary" />
-                                            Export
-                                          </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Table Container */}
-            <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
-              {activeTab === "roles" && roleViewMode === "users" && (
-                <div style={{ marginBottom: "12px" }}>
-                  <button
-                    onClick={() => {
-                      setRoleViewMode("roles");
-                      setSelectedRoleForView(null);
-                    }}
-                    style={{
-                      border: "none",
-                      background: "transparent",
-                      color: "#ccc",
-                      fontSize: "14px",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <FaArrowLeft />  Back to Roles
-                  </button>
-                </div>
-              )}
-              <div
-                className="table-responsive"
-                style={{
-                  maxHeight: "600px",
-                  overflowY: "auto",
-                  overflowX: "hidden",
-                  scrollbarWidth: "none",
-                  msOverflowStyle: "none",
-                }}
-              >
-                {/* USER TAB */}
-                {activeTab === "user" && (
-                  <UserTable
-                    users={paginatedUsers}
-                    loading={!users.length}
-                    onEdit={(user) => handleOpenEditModal(user)}
-                    onDelete={(user) => {
-                      setSelectedUser(user);
-                      setShowDeleteModal(true);
-                    }}
-                    openMenuIndex={openMenuIndex}
-                    setOpenMenuIndex={setOpenMenuIndex}
-                    menuRef={menuRef}
-                    selectedUsersForExport={selectedUsersForExport}
-                    handleCheckboxChange={handleCheckboxChange}
-                    selectAllForExport={selectAllForExport}
-                    handleSelectAllForExport={handleSelectAllForExport}
-                  />
-                )}
-
-                {/* ROLES TAB – ROLE LIST */}
-                {activeTab === "roles" && roleViewMode === "roles" && (
-                  <RoleTable
-                    roles={paginatedRoles}
-                    loading={!roles.length}
-                    openMenuIndex={openMenuIndex}
-                    setOpenMenuIndex={setOpenMenuIndex}
-                    menuRef={menuRef}
-                    onDelete={(role) => {
-                      setSelectedRole(role);
-                      setShowRoleDeleteModal(true);
-                    }}
-                    onRowClick={handleRoleRowClick}
-                    selectedRolesForExport={selectedRolesForExport}
-                    handleCheckboxChange={(id) => {
-                      setSelectedRolesForExport(prev =>
-                        prev.includes(id)
-                          ? prev.filter(roleId => roleId !== id)
-                          : [...prev, id]
-                      );
-                    }}
-                    selectAllForExport={selectAllRolesForExport}
-                    handleSelectAllForExport={() => {
-                      if (selectAllRolesForExport) {
-                        setSelectedRolesForExport([]);
-                      } else {
-                        setSelectedRolesForExport(paginatedRoles.map(role => role._id));
-                      }
-                      setSelectAllRolesForExport(!selectAllRolesForExport);
-                    }}
-                  />
-                )}
-
-                {/* ROLES TAB – USERS OF SELECTED ROLE */}
-                {activeTab === "roles" && roleViewMode === "users" && (
-                  <UserTable
-                    users={usersBySelectedRole}
-                    loading={false}
-                    onEdit={(user) => handleOpenEditModal(user)}
-                    onDelete={(user) => {
-                      setSelectedUser(user);
-                      setShowDeleteModal(true);
-                    }}
-                    openMenuIndex={openMenuIndex}
-                    setOpenMenuIndex={setOpenMenuIndex}
-                    menuRef={menuRef}
-                    selectedUsersForExport={selectedUsersForExport}
-                    handleCheckboxChange={handleCheckboxChange}
-                    selectAllForExport={selectAllForExport}
-                    handleSelectAllForExport={handleSelectAllForExport}
-                  />
-                )}
-              </div>
-            </div>
-
-            {/* Pagination */}
-            <div className="page-redirect-btn px-2">
-              {activeTab === "user" ? (
-                <Pagination
-                  currentPage={currentPage}
-                  total={filteredUsers.length}
-                  itemsPerPage={itemsPerPage}
-                  onPageChange={(page) => setCurrentPage(page)}
-                />
-              ) : (
-                <Pagination
-                  currentPage={roleCurrentPage}
-                  total={filteredRoles.length}
-                  itemsPerPage={itemsPerPage}
-                  onPageChange={(page) => setRoleCurrentPage(page)}
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Create/Edit User Modal */}
-          {(openModal === "create" || openModal === "edit") && (
-            <div
-              className="modal fade show d-block"
-              style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 1050 }}
-              tabIndex="-1"
-            >
-              <div className="modal-dialog modal-lg" style={{ marginTop: "10%" }}>
-                <div className="modal-content">
-                  <div className="modal-header" style={{ borderBottom: "none", display: "flex", alignItems: "center", justifyContent: "end", borderRadius: "50%", padding: "15px 15px" }}>
-                    <button
+                    <div
+                      className="add-image-circle"
                       style={{
-                        color: "#727681",
-                        fontSize: "10px",
-                        fontWeight: 800,
-                        border: "2px solid #727681",
+                        border: "2px dashed #dadadaff",
+                        width: "100px",
+                        height: "100px",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        color: "grey",
+                        cursor: "pointer",
                         borderRadius: "50%",
-                        backgroundColor: "transparent",
-                        width: "30px",
-                        height: "30px",
-                        cursor: "pointer"
+                        overflow: "hidden",
                       }}
-                      type="button"
-                      onClick={() => {
-                        setOpenModal(false);
-                        resetCreateForm();
-                      }}
+                      onClick={() => openModal === "create" ? addFileInputRef.current?.click() : editFileInputRef.current?.click()}
                     >
-                      <RxCross2 style={{ color: "#727681", fontSize: "15px", fontWeight: 900 }} />
-                    </button>
-                  </div>
+                      {(openModal === "create" ? selectedImages.length > 0 : editUserData.profileImage) ? (
+                        <img
+                          src={openModal === "create" ? URL.createObjectURL(selectedImages[0]) :
+                            (typeof editUserData.profileImage === "string" ? editUserData.profileImage : URL.createObjectURL(editUserData.profileImage))}
+                          alt="Preview"
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            pointerEvents: "none",
+                            borderRadius: "50%",
+                          }}
+                        />
+                      ) : (
+                        <span style={{ color: "#676767", fontSize: "32px", fontWeight: 400, lineHeight: "18px" }}>
+                          +
+                        </span>
+                      )}
+                    </div>
 
-                  <div style={{ display: "flex", alignItems: "center", margin: "10px 20px" }}>
-                    <h5 className="modal-title" style={{ color: "#0E101A", fontWeight: 500, fontSize: "22px", fontFamily: '"Inter", sans-serif', lineHeight: "120%" }}>
-                      {openModal === "create" ? "Add User" : "Edit User"}
-                    </h5>
-                  </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      ref={openModal === "create" ? addFileInputRef : editFileInputRef}
+                      style={{ display: "none" }}
+                      onChange={openModal === "create" ? handleFileChange : handleEditFileChange}
+                    />
 
-                  <form onSubmit={openModal === "create" ? handleAddUser : handleUpdate}>
-                    <div className="modal-body">
-                      {/* Image Upload */}
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
                       <div
                         style={{
                           display: "flex",
                           alignItems: "center",
-                          justifyContent: "space-between",
-                          border: "2px dashed #dadadaff",
-                          padding: "10px",
-                          borderRadius: "8px",
-                          marginBottom: "20px",
+                          justifyContent: "center",
+                          gap: "5px",
+                          textAlign: "center",
+                          backgroundColor: "#E3F3FF",
+                          color: "#1368EC",
+                          border: "1px solid #BBE1FF",
+                          borderRadius: "15px",
+                          width: "150px",
+                          height: "45px",
+                          cursor: "pointer",
                         }}
+                        onClick={() => openModal === "create" ? addFileInputRef.current?.click() : editFileInputRef.current?.click()}
                       >
-                        <div
-                          className="add-image-circle"
-                          style={{
-                            border: "2px dashed #dadadaff",
-                            width: "100px",
-                            height: "100px",
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            color: "grey",
-                            cursor: "pointer",
-                            borderRadius: "50%",
-                            overflow: "hidden",
-                          }}
-                          onClick={() => openModal === "create" ? addFileInputRef.current?.click() : editFileInputRef.current?.click()}
-                        >
-                          {(openModal === "create" ? selectedImages.length > 0 : editUserData.profileImage) ? (
-                            <img
-                              src={openModal === "create" ? URL.createObjectURL(selectedImages[0]) :
-                                (typeof editUserData.profileImage === "string" ? editUserData.profileImage : URL.createObjectURL(editUserData.profileImage))}
-                              alt="Preview"
-                              style={{
-                                width: "100%",
-                                height: "100%",
-                                objectFit: "cover",
-                                pointerEvents: "none",
-                                borderRadius: "50%",
-                              }}
-                            />
-                          ) : (
-                            <span style={{ color: "#676767", fontSize: "32px", fontWeight: 400, lineHeight: "18px" }}>
-                              +
-                            </span>
-                          )}
-                        </div>
-
-                        <input
-                          type="file"
-                          accept="image/*"
-                          ref={openModal === "create" ? addFileInputRef : editFileInputRef}
-                          style={{ display: "none" }}
-                          onChange={openModal === "create" ? handleFileChange : handleEditFileChange}
-                        />
-
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                          <div
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              gap: "5px",
-                              textAlign: "center",
-                              backgroundColor: "#E3F3FF",
-                              color: "#1368EC",
-                              border: "1px solid #BBE1FF",
-                              borderRadius: "15px",
-                              width: "150px",
-                              height: "45px",
-                              cursor: "pointer",
-                            }}
-                            onClick={() => openModal === "create" ? addFileInputRef.current?.click() : editFileInputRef.current?.click()}
-                          >
-                            <img src={Iconss} alt="" style={{ width: "20px", height: "20px" }} />
-                            <span className="setting-imgupload-btn">
-                              {openModal === "create" ? "Upload Image" : "Change Image"}
-                            </span>
-                          </div>
-                          <p style={{ color: "#888888", fontFamily: '"Roboto", sans-serif', fontWeight: 400, fontSize: "12px", marginTop: "10px" }}>
-                            Upload an image below 1MB, Accepted File format JPG, PNG
-                          </p>
-                        </div>
-
-                        <div className="invisible">;lpk</div>
+                        <img src={Iconss} alt="" style={{ width: "20px", height: "20px" }} />
+                        <span className="setting-imgupload-btn">
+                          {openModal === "create" ? "Upload Image" : "Change Image"}
+                        </span>
                       </div>
+                      <p style={{ color: "#888888", fontFamily: '"Roboto", sans-serif', fontWeight: 400, fontSize: "12px", marginTop: "10px" }}>
+                        Upload an image below 1MB, Accepted File format JPG, PNG
+                      </p>
+                    </div>
 
-                      {/* User Details */}
-                      <div style={{ display: "flex", alignItems: "center", margin: "10px 20px" }}>
-                        <h5 className="modal-title" style={{ color: "#0E101A", fontWeight: 500, fontSize: "22px", fontFamily: '"Inter", sans-serif', lineHeight: "120%" }}>User Details</h5>
+                    <div className="invisible">;lpk</div>
+                  </div>
+
+                  {/* User Details */}
+                  <div style={{ display: "flex", alignItems: "center", margin: "10px 0px" }}>
+                    <h5 className="modal-title" style={{ color: "#0E101A", fontWeight: 500, fontSize: "22px", fontFamily: '"Inter", sans-serif', lineHeight: "120%" }}>User Details</h5>
+                  </div>
+
+                  <div className="row">
+                    {/* First Name */}
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label supplierlabel">
+                        Name <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className="form-control supplierinput shadow-none"
+                        placeholder="Enter Name"
+                        value={openModal === "create" ? name : editUserData.name}
+                        onChange={(e) => openModal === "create" ? setName(e.target.value) : setEditUserData({ ...editUserData, name: e.target.value })}
+                        required
+                      />
+                      {errors.name && <p className="text-danger" style={{ fontSize: "12px", marginTop: "5px" }}>{errors.name}</p>}
+                    </div>
+
+                    {/* Phone */}
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label supplierlabel">
+                        Phone No. <span className="text-danger">*</span>
+                      </label>
+                      <div className="input-group">
+                        <span className="input-group-text" style={{ backgroundColor: '#fff' }}>
+                          <img src="https://flagcdn.com/in.svg" alt="India" width="20" className="me-1" />
+                          +91
+                        </span>
+                        <input
+                          type="tel"
+                          className="form-control supplierinput shadow-none"
+                          placeholder="Enter Phone"
+                          value={openModal === "create" ? phone : editUserData.phone}
+                          onChange={(e) => openModal === "create" ? setPhone(e.target.value) : setEditUserData({ ...editUserData, phone: e.target.value })}
+                          required
+                        />
+                      </div>
+                      {errors.phone && <p className="text-danger" style={{ fontSize: "12px", marginTop: "5px" }}>{errors.phone}</p>}
+                    </div>
+                  </div>
+
+                  <div className="row">
+                    {/* Email */}
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label supplierlabel">
+                        Email <span className="text-danger">*</span>
+                      </label>
+                      <input
+                        type="email"
+                        className="form-control supplierinput shadow-none"
+                        placeholder="Enter Email"
+                        value={openModal === "create" ? email : editUserData.email}
+                        onChange={(e) => openModal === "create" ? setEmail(e.target.value) : setEditUserData({ ...editUserData, email: e.target.value })}
+                        required
+                      />
+                      {errors.email && <p className="text-danger" style={{ fontSize: "12px", marginTop: "5px" }}>{errors.email}</p>}
+                    </div>
+
+                    {/* Role */}
+                    <div className="col-md-6 mb-3">
+                      <label className="form-label supplierlabel">
+                        Role <span className="text-danger">*</span>
+                      </label>
+                      <Select
+                        options={activeRoles}
+                        value={openModal === "create" ? selectedRoleForForm : editUserData.role}
+                        onChange={(selectedOption) => openModal === "create" ? setSelectedRoleForForm(selectedOption) : setEditUserData({ ...editUserData, role: selectedOption })}
+                        placeholder="Assign Role"
+                        isSearchable
+                        styles={{
+                          control: (base) => ({
+                            ...base,
+                            border: "1px solid #dee2e6",
+                            borderRadius: "8px",
+                            fontSize: "14px",
+                            minHeight: "38px",
+                          }),
+                        }}
+                      />
+                      {errors.role && <p className="text-danger" style={{ fontSize: "12px", marginTop: "5px" }}>{errors.role}</p>}
+                    </div>
+                  </div>
+
+                  <div className="row">
+                    {/* Status (Edit only) */}
+                    {openModal === "edit" && (
+                      <div className="col-md-6 mb-3">
+                        <label className="form-label supplierlabel">Status</label>
+                        <select
+                          className="form-select supplierselect shadow-none"
+                          value={editUserData.status}
+                          onChange={(e) => setEditUserData({ ...editUserData, status: e.target.value })}
+                        >
+                          <option value="Active">Active</option>
+                          <option value="Inactive">Inactive</option>
+                          <option value="Blacklist">Blacklist</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Login Credentials (Create only) */}
+                  {openModal === "create" && (
+                    <>
+                      <div style={{ display: "flex", alignItems: "center", margin: "10px 20px", marginTop: "30px" }}>
+                        <h5 className="modal-title" style={{ color: "#0E101A", fontWeight: 500, fontSize: "22px", fontFamily: '"Inter", sans-serif', lineHeight: "120%" }}>Login Credentials</h5>
                       </div>
 
                       <div className="row">
-                        {/* First Name */}
+                        {/* Username */}
                         <div className="col-md-6 mb-3">
                           <label className="form-label supplierlabel">
-                            Name <span className="text-danger">*</span>
+                            Username <span className="text-danger">*</span>
                           </label>
                           <input
                             type="text"
                             className="form-control supplierinput shadow-none"
-                            placeholder="Enter Name"
-                            value={openModal === "create" ? name : editUserData.name}
-                            onChange={(e) => openModal === "create" ? setName(e.target.value) : setEditUserData({ ...editUserData, name: e.target.value })}
+                            placeholder="Enter Username"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
                             required
                           />
-                          {errors.name && <p className="text-danger" style={{ fontSize: "12px", marginTop: "5px" }}>{errors.name}</p>}
                         </div>
 
-                        {/* Phone */}
+                        {/* Password */}
                         <div className="col-md-6 mb-3">
                           <label className="form-label supplierlabel">
-                            Phone No. <span className="text-danger">*</span>
-                          </label>
-                          <div className="input-group">
-                            <span className="input-group-text" style={{ backgroundColor: '#fff' }}>
-                              <img src="https://flagcdn.com/in.svg" alt="India" width="20" className="me-1" />
-                              +91
-                            </span>
-                            <input
-                              type="tel"
-                              className="form-control supplierinput shadow-none"
-                              placeholder="Enter Phone"
-                              value={openModal === "create" ? phone : editUserData.phone}
-                              onChange={(e) => openModal === "create" ? setPhone(e.target.value) : setEditUserData({ ...editUserData, phone: e.target.value })}
-                              required
-                            />
-                          </div>
-                          {errors.phone && <p className="text-danger" style={{ fontSize: "12px", marginTop: "5px" }}>{errors.phone}</p>}
-                        </div>
-                      </div>
-
-                      <div className="row">
-                        {/* Email */}
-                        <div className="col-md-6 mb-3">
-                          <label className="form-label supplierlabel">
-                            Email <span className="text-danger">*</span>
+                            Password <span className="text-danger">*</span>
                           </label>
                           <input
-                            type="email"
+                            type="password"
                             className="form-control supplierinput shadow-none"
-                            placeholder="Enter Email"
-                            value={openModal === "create" ? email : editUserData.email}
-                            onChange={(e) => openModal === "create" ? setEmail(e.target.value) : setEditUserData({ ...editUserData, email: e.target.value })}
+                            placeholder="Enter Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                             required
                           />
-                          {errors.email && <p className="text-danger" style={{ fontSize: "12px", marginTop: "5px" }}>{errors.email}</p>}
-                        </div>
-
-                        {/* Role */}
-                        <div className="col-md-6 mb-3">
-                          <label className="form-label supplierlabel">
-                            Role <span className="text-danger">*</span>
-                          </label>
-                          <Select
-                            options={activeRoles}
-                            value={openModal === "create" ? selectedRoleForForm : editUserData.role}
-                            onChange={(selectedOption) => openModal === "create" ? setSelectedRoleForForm(selectedOption) : setEditUserData({ ...editUserData, role: selectedOption })}
-                            placeholder="Assign Role"
-                            isSearchable
-                            styles={{
-                              control: (base) => ({
-                                ...base,
-                                border: "1px solid #dee2e6",
-                                borderRadius: "8px",
-                                fontSize: "14px",
-                                minHeight: "38px",
-                              }),
-                            }}
-                          />
-                          {errors.role && <p className="text-danger" style={{ fontSize: "12px", marginTop: "5px" }}>{errors.role}</p>}
+                          {errors.password && <p className="text-danger" style={{ fontSize: "12px", marginTop: "5px" }}>{errors.password}</p>}
                         </div>
                       </div>
-
-                      <div className="row">
-                        {/* Status (Edit only) */}
-                        {openModal === "edit" && (
-                          <div className="col-md-6 mb-3">
-                            <label className="form-label supplierlabel">Status</label>
-                            <select
-                              className="form-select supplierselect shadow-none"
-                              value={editUserData.status}
-                              onChange={(e) => setEditUserData({ ...editUserData, status: e.target.value })}
-                            >
-                              <option value="Active">Active</option>
-                              <option value="Inactive">Inactive</option>
-                              <option value="Blacklist">Blacklist</option>
-                            </select>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Login Credentials (Create only) */}
-                      {openModal === "create" && (
-                        <>
-                          <div style={{ display: "flex", alignItems: "center", margin: "10px 20px", marginTop: "30px" }}>
-                            <h5 className="modal-title" style={{ color: "#0E101A", fontWeight: 500, fontSize: "22px", fontFamily: '"Inter", sans-serif', lineHeight: "120%" }}>Login Credentials</h5>
-                          </div>
-
-                          <div className="row">
-                            {/* Username */}
-                            <div className="col-md-6 mb-3">
-                              <label className="form-label supplierlabel">
-                                Username <span className="text-danger">*</span>
-                              </label>
-                              <input
-                                type="text"
-                                className="form-control supplierinput shadow-none"
-                                placeholder="Enter Username"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                required
-                              />
-                            </div>
-
-                            {/* Password */}
-                            <div className="col-md-6 mb-3">
-                              <label className="form-label supplierlabel">
-                                Password <span className="text-danger">*</span>
-                              </label>
-                              <input
-                                type="password"
-                                className="form-control supplierinput shadow-none"
-                                placeholder="Enter Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                              />
-                              {errors.password && <p className="text-danger" style={{ fontSize: "12px", marginTop: "5px" }}>{errors.password}</p>}
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                    <div className="modal-footer d-flex align-items-start justify-content-start" style={{ borderTop: "none" }}>
-                      <button type="submit" className="btn btn-primary" disabled={loading}>
-                        {loading ? "Saving..." : openModal === "create" ? "Save" : "Save"}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-                <div
-                  style={{
-                    position: "absolute",
-                    top: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: "100%",
-                    padding: "0 70px",
-                    boxSizing: "border-box",
-                    pointerEvents: "none",
-                  }}
-                >
-                  {successMessage && (
-                    <div
-                      className="create-successfully-msg d-flex justify-content-between align-items-center mb-4"
-                      style={{
-                        border: "1px solid #0D6828",
-                        color: "#0D6828",
-                        background: "#EBFFF1",
-                        borderRadius: "8px",
-                        padding: "10px",
-                        margin: "15px 0",
-                      }}
-                    >
-                      <label style={{ fontFamily: "Inter", fontSize: "14px" }}>
-                        User Successfully Created
-                      </label>
-                    </div>
+                    </>
                   )}
                 </div>
-              </div>
+
+                <div className="modal-footer d-flex align-items-start justify-content-start" style={{ borderTop: "none" }}>
+                  <button type="submit" className="btn btn-primary" disabled={loading}>
+                    {loading ? "Saving..." : openModal === "create" ? "Save" : "Save"}
+                  </button>
+                </div>
+              </form>
             </div>
-          )}
+            <div
+              style={{
 
-          {/* Confirm Delete Modals */}
-          <ConfirmDeleteModal
-            isOpen={showDeleteModal}
-            onCancel={() => {
-              setShowDeleteModal(false);
-              setSelectedUser(null);
-            }}
-            onConfirm={handleDeleteUser}
-            title="Delete User"
-            message={`Are you sure you want to delete ${selectedUser?.name}?`}
-          />
-
-          <ConfirmDeleteModal
-            isOpen={showRoleDeleteModal}
-            onCancel={() => {
-              setShowRoleDeleteModal(false);
-              setSelectedRole(null);
-            }}
-            onConfirm={handleDeleteRole}
-            title="Delete Role"
-            message={`Are you sure you want to delete ${selectedRole?.roleName}?`}
-          />
+              }}
+            >
+              {successMessage && (
+                <div
+                  className="create-successfully-msg d-flex justify-content-between align-items-center mb-4"
+                  style={{
+                    border: "1px solid #0D6828",
+                    color: "#0D6828",
+                    background: "#EBFFF1",
+                    borderRadius: "8px",
+                    padding: "10px",
+                    margin: "15px 0",
+                  }}
+                >
+                  <label style={{ fontFamily: "Inter", fontSize: "14px" }}>
+                    User Successfully Created
+                  </label>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-    
+      )}
+
+      {/* Confirm Delete Modals */}
+      <ConfirmDeleteModal
+        isOpen={showDeleteModal}
+        onCancel={() => {
+          setShowDeleteModal(false);
+          setSelectedUser(null);
+        }}
+        onConfirm={handleDeleteUser}
+        title="Delete User"
+        message={`Are you sure you want to delete ${selectedUser?.name}?`}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={showRoleDeleteModal}
+        onCancel={() => {
+          setShowRoleDeleteModal(false);
+          setSelectedRole(null);
+        }}
+        onConfirm={handleDeleteRole}
+        title="Delete Role"
+        message={`Are you sure you want to delete ${selectedRole?.roleName}?`}
+      />
+    </div>
+
   );
 };
 

@@ -27,7 +27,7 @@ const CreateCategoryModel = ({
         width: "100vw",
         height: "100vh",
         backgroundColor: "rgba(0,0,0,0.27)",
-        // backdropFilter: "blur(1px)",
+        backdropFilter: "blur(1px)",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
