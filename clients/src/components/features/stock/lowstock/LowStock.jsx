@@ -995,7 +995,7 @@ const LowStock = () => {
                                       gap: 4,
                                     }}
                                   >
-                                    <div
+                                    {/* <div
                                       style={{
                                         display: 'flex',
                                         justifyContent: 'flex-start',
@@ -1015,7 +1015,7 @@ const LowStock = () => {
                                     >
                                       <img src={stockin} alt="" />
                                       <span style={{ color: 'black' }}>Add To PO</span>
-                                    </div>
+                                    </div> */}
                                     <div
                                       onClick={() =>
                                         handleDelete(product._id)

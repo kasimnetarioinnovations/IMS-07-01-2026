@@ -377,7 +377,7 @@ const ExpenseReport = ({ item }) => {
                 >
                   <IoIosSearch />
                   <input
-                    type="text"
+                    type="search"
                     placeholder="Search"
                     style={{
                       width: "100%",
