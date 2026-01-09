@@ -63,6 +63,9 @@ const Category = () => {
     useState(false);
   const [selectedSubcategory, setSelectedSubcategory] = useState(null);
 
+  const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0 });
+  const [openUpwards, setOpenUpwards] = useState(false);
+
   // handle button click
   const handleCreateClick = () => {
     setShowCategoryActionsModel((prev) => !prev); // toggles open/close
@@ -443,16 +446,21 @@ const Category = () => {
     const doc = new jsPDF();
     doc.text("Category", 14, 15);
     const tableColumns = [
-      "Category Code",
-      "Category",
-      "Category slug",
-      "Created On",
+      "Category Name",
+      "Sub Categories",
+      "Number of Products",
     ];
     const tableRows = categories.map((e) => [
-      e.categoryCode,
       e.categoryName,
-      // e.categorySlug,
-      e.createdAt,
+      e.subcategories?.map((s) => s.name).join(", ") || 0,
+      // e.products.filter((p) => p.category === e.categoryName).length || 0,
+      e.products?.filter((p) => {
+                                      const productCatId =
+                                        typeof p.category === "string"
+                                          ? p.category
+                                          : p.category?._id;
+                                      return productCatId === e._id && p.isDelete !== true;
+                                    }).length || 0,
     ]);
     autoTable(doc, {
       head: [tableColumns],
@@ -462,7 +470,7 @@ const Category = () => {
       headStyles: { fillColor: [155, 155, 155], textColor: "white" },
       theme: "striped",
     });
-    doc.save("categories.pdf");
+    doc.save("categories-subcategories.pdf");
   };
 
   const toggleRow = (index) => {
@@ -521,361 +529,442 @@ const Category = () => {
   };
 
   return (
- 
-      <div className="px-4 py-4">
-        {categories.length === 0 ? (
-          <>
-            <div
-              className="d-flex flex-column justify-content-center align-items-center py-5 overflow-y-auto"
-              style={{ Height: "calc(100vh - 60px)" }}
-            >
-              <div className="text-center">
-                <h1
-                  style={{
-                    color: "black",
-                    fontSize: 32,
-                    fontFamily: "Inter",
-                    fontWeight: "400",
-                  }}
-                >
-                  Category
-                </h1>
-                <p
-                  style={{
-                    fontSize: "16px",
-                    fontFamily: "Inter",
-                    fontWeight: "400",
-                    color: "#727681",
-                  }}
-                >
-                  You haven’t created any categories yet—add your first one now.
-                </p>
-              </div>
-              <img
-                className="py-5"
-                src={blankCategory_img}
-                alt="blankCategory_img"
-              />
-              <button
-                onClick={() => setShowAddCategoryModel(true)}
-                className="button-hover button-color"
+    <div className="p-4">
+      {categories.length === 0 ? (
+        <>
+          <div
+            className="d-flex flex-column justify-content-center align-items-center py-5 overflow-y-auto"
+            style={{ Height: "calc(100vh - 60px)" }}
+          >
+            <div className="text-center">
+              <h1
                 style={{
-                  border: "none",
-                  // backgroundColor: "rgb(31, 127, 255)",
-                  color: "white",
-                  fontSize: 16,
+                  color: "black",
+                  fontSize: 32,
+                  fontFamily: "Inter",
+                  fontWeight: "400",
+                }}
+              >
+                Category
+              </h1>
+              <p
+                style={{
+                  fontSize: "16px",
+                  fontFamily: "Inter",
+                  fontWeight: "400",
+                  color: "#727681",
+                }}
+              >
+                You haven’t created any categories yet—add your first one now.
+              </p>
+            </div>
+            <img
+              className="py-5"
+              src={blankCategory_img}
+              alt="blankCategory_img"
+            />
+            <button
+              onClick={() => setShowAddCategoryModel(true)}
+              className="button-hover button-color"
+              style={{
+                border: "none",
+                // backgroundColor: "rgb(31, 127, 255)",
+                color: "white",
+                fontSize: 16,
+                fontFamily: "Inter",
+                fontWeight: "500",
+                borderRadius: "8px",
+                padding: "8px 16px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "5px",
+              }}
+            >
+              {" "}
+              <img src={cat_icon} alt="cat_icon" />
+              Create Category
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="">
+            <div style={{
+              width: "100%",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "0px 0px 16px 0px", // Optional: padding for container
+            }}>
+              <h1
+                style={{
+                  color: "#0E101A",
+                  fontSize: 22,
                   fontFamily: "Inter",
                   fontWeight: "500",
-                  borderRadius: "8px",
-                  padding: "8px 16px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "5px",
                 }}
               >
-                {" "}
-                <img src={cat_icon} alt="cat_icon" />
-                Create Category
+                Category
+              </h1>
+              <button
+                onClick={() => setShowAddCategoryModel(true)}
+                className="button-hover d-flex align-items-center gap-1"
+                style={{
+                  borderRadius: "8px",
+                  padding: "5px 16px",
+                  border: "1px solid rgb(31, 127, 255)",
+                  color: "rgb(31, 127, 255)",
+                  fontFamily: "Inter",
+                  backgroundColor: "white",
+                }}
+              >
+                <BiCategory /> Add Category
               </button>
             </div>
-          </>
-        ) : (
-          <>
-            <div className="overflow-y-auto">
-              <div className="category-header d-flex justify-content-between align-items-center">
-                <h1
-                  style={{
-                    color: "#0E101A",
-                    fontSize: 22,
-                    fontFamily: "Inter",
-                    fontWeight: "500",
-                  }}
-                >
-                  Category
-                </h1>
-                <button
-                  onClick={() => setShowAddCategoryModel(true)}
-                  className="button-hover d-flex align-items-center gap-1"
-                  style={{
-                    borderRadius: "8px",
-                    padding: "5px 16px",
-                    border: "1px solid rgb(31, 127, 255)",
-                    color: "rgb(31, 127, 255)",
-                    fontFamily: "Inter",
-                    backgroundColor: "white",
-                  }}
-                >
-                  <BiCategory /> Add Category
-                </button>
-              </div>
 
-              <div
-                className="category-datalist-container my-4"
-                style={{
-                  backgroundColor: "white",
-                  borderRadius: "8px",
-                  padding: "24px",
-                }}
-              >
-                <div className="category-datalist-btn-container d-flex justify-content-between align-items-center flex-wrap">
-                  <div
-                    className="category-btn-container d-flex justify-content-between align-items-center"
+            <div
+              style={{
+                width: "100%",
+                minHeight: "auto",
+                maxHeight: "calc(100vh - 160px)",
+                padding: 16,
+                background: "white",
+                borderRadius: 16,
+                display: "flex",
+                flexDirection: "column",
+                gap: 16,
+                fontFamily: "Inter, sans-serif",
+              }}
+            >
+              <div className="category-datalist-btn-container d-flex justify-content-between align-items-center flex-wrap">
+                <div
+                  className="category-btn-container d-flex justify-content-between align-items-center"
+                  style={{
+                    fontFamily: "Inter",
+                    backgroundColor: "#F3F8FB",
+                    height: "33",
+                    borderRadius: "8px",
+                    padding: "2px",
+                    fontSize: "14px",
+                    gap: "8px",
+                  }}
+                >
+                  {/* CATEGORY BUTTON */}
+                  <button
+                    onClick={() => setActiveTab("category")}
                     style={{
-                      fontFamily: "Inter",
-                      backgroundColor: "#F3F8FB",
-                      height: "33",
-                      borderRadius: "8px",
-                      padding: "2px",
-                      fontSize: "14px",
-                      gap: "8px",
+                      backgroundColor:
+                        activeTab === "category" ? "white" : "transparent",
+                      color: activeTab === "category" ? "#0E101A" : "#000",
+                      boxShadow:
+                        activeTab === "category"
+                          ? "rgba(149, 157, 165, 0.2) 0px 8px 24px"
+                          : "",
+                      borderRadius: activeTab === "category" ? "8px" : "0px",
+                      border: "none",
+                      padding: "6px 12px",
                     }}
                   >
-                    {/* CATEGORY BUTTON */}
-                    <button
-                      onClick={() => setActiveTab("category")}
-                      style={{
-                        backgroundColor:
-                          activeTab === "category" ? "white" : "transparent",
-                        color: activeTab === "category" ? "#0E101A" : "#000",
-                        boxShadow:
-                          activeTab === "category"
-                            ? "rgba(149, 157, 165, 0.2) 0px 8px 24px"
-                            : "",
-                        borderRadius: activeTab === "category" ? "8px" : "0px",
-                        border: "none",
-                        padding: "6px 12px",
-                      }}
-                    >
-                      Category{" "}
-                      <span style={{ color: "#727681" }}>
-                        {categories?.length || 0}
-                      </span>
-                    </button>
-                    {/* SUB CATEGORY BUTTON */}
-                    <button
-                      onClick={() => setActiveTab("subcategory")(setOpenRow(false))}
-                      style={{
-                        backgroundColor:
-                          activeTab === "subcategory" ? "white" : "transparent",
-                        color: activeTab === "subcategory" ? "#0E101A" : "#000",
-                        boxShadow:
-                          activeTab === "subcategory"
-                            ? "rgba(149, 157, 165, 0.2) 0px 8px 24px"
-                            : "",
-                        borderRadius:
-                          activeTab === "subcategory" ? "8px" : "0px",
-                        border: "none",
-                        padding: "6px 12px",
-                      }}
-                    >
-                      Sub-Category{" "}
-                      <span style={{ color: "#727681" }}>
-                        {totalSubCategories}
-                      </span>
-                    </button>
-                  </div>
-                  <div
-                    className="table-search-and-export"
-                    style={{ display: "flex", gap: "24px" }}
+                    Category{" "}
+                    <span style={{ color: "#727681" }}>
+                      {categories?.length || 0}
+                    </span>
+                  </button>
+                  {/* SUB CATEGORY BUTTON */}
+                  <button
+                    onClick={() => setActiveTab("subcategory")(setOpenRow(false))}
+                    style={{
+                      backgroundColor:
+                        activeTab === "subcategory" ? "white" : "transparent",
+                      color: activeTab === "subcategory" ? "#0E101A" : "#000",
+                      boxShadow:
+                        activeTab === "subcategory"
+                          ? "rgba(149, 157, 165, 0.2) 0px 8px 24px"
+                          : "",
+                      borderRadius:
+                        activeTab === "subcategory" ? "8px" : "0px",
+                      border: "none",
+                      padding: "6px 12px",
+                    }}
                   >
-                    <div
-                      className="category-list-search-input d-flex align-items-center"
-                      style={{
-                        backgroundColor: "#ffffffff",
-                        border: "1px solid #e0dedeff",
-                        width: "465px",
-                        padding: "5px 16px",
-                        borderRadius: "8px",
-                      }}
-                    >
-                      <CiSearch size={20} />
-                      <input
-                        type="search"
-                        placeholder="Search"
-                        value={searchTerm}
-                        onChange={(e) => {
-                          setSearchTerm(e.target.value);
-                          setCurrentPage(1); // ✅ IMPORTANT
-                        }}
-                        style={{
-                          border: "none",
-                          outline: "none",
-                          width: "100%",
-                          backgroundColor: "transparent",
-                          fontSize: "15px",
-                        }}
-                      />
-                    </div>
-                    <button
-                      title="Export"
-                      onClick={handlePdf}
-                      style={{
-                        display: "flex",
-                        justifyContent: "flex-start",
-                        alignItems: "center",
-                        gap: 9,
-                        padding: "8px 16px",
-                        background: "#FCFCFC",
-                        borderRadius: 8,
-                        outline: "1px solid #EAEAEA",
-                        outlineOffset: "-1px",
-                        border: "none",
-                        cursor: "pointer",
-                        fontFamily: "Inter, sans-serif",
-                        fontSize: 14,
-                        fontWeight: 400,
-                        color: "#0E101A",
-                        height: "33px",
-                      }}
-                    >
-                      <TbFileExport className="fs-5 text-secondary" />
-                      Export
-                    </button>
-                  </div>
+                    Sub-Category{" "}
+                    <span style={{ color: "#727681" }}>
+                      {totalSubCategories}
+                    </span>
+                  </button>
                 </div>
-                {/* ------- Tables Container ------- */}
                 <div
+                  className=""
                   style={{
-                    maxHeight: "calc(100vh - 320px)",
-                    overflowY: "auto",
-                    overflowX: "auto",
+                    display: "flex",
+                    justifyContent: "end",
+                    gap: "24px",
+                    height: "33px",
+                    width: "50%",
                   }}
                 >
-                  {/* Category-data-table */}
-                  {activeTab === "category" && (
-                    <table className="w-100 my-3">
-                      <thead
-                        style={{ backgroundColor: "#F3F8FB", height: "38px" }}
-                      >
-                        <tr>
-                          <th
-                            style={{
-                              padding: "4px 16px",
-                              color: "#727681",
-                              fontWeight: "400",
-                            }}
-                          >
-                            Category Name
-                          </th>
-                          <th
-                            style={{
-                              padding: "4px 16px",
-                              color: "#727681",
-                              fontWeight: "400",
-                            }}
-                          >
-                            Sub Category
-                          </th>
-                          <th
-                            style={{
-                              padding: "4px 16px",
-                              color: "#727681",
-                              fontWeight: "400",
-                            }}
-                          >
-                            No. Of Products
-                          </th>
-                          <th
-                            style={{
-                              padding: "4px 16px",
-                              color: "#727681",
-                              fontWeight: "400",
-                            }}
-                          >
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody style={{ fontFamily: "Inter", fontSize: "14px" }}>
-                        {paginatedCategories.length === 0 ? (
-                          <>
-                            <tr>
-                              <td
-                                colSpan={4}
+                  <div
+                    className=""
+                    style={{
+                      width: "50%",
+                      position: "relative",
+                      padding: "8px 16px 8px 20px",
+                      display: "flex",
+                      borderRadius: 8,
+                      alignItems: "center",
+                      background: "#FCFCFC",
+                      border: "1px solid #EAEAEA",
+                      gap: "5px",
+                      color: "rgba(19.75, 25.29, 61.30, 0.40)",
+                    }}
+                  >
+                    <CiSearch className="fs-4" />
+                    <input
+                      type="search"
+                      placeholder="Search"
+                      value={searchTerm}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setCurrentPage(1); // ✅ IMPORTANT
+                      }}
+                      style={{
+                        width: "100%",
+                        border: "none",
+                        outline: "none",
+                        fontSize: 14,
+                        background: "#FCFCFC",
+                        color: "rgba(19.75, 25.29, 61.30, 0.40)",
+                      }}
+                    />
+                  </div>
+                  <button
+                    title="Export"
+                    onClick={handlePdf}
+                    style={{
+                      display: "flex",
+                      justifyContent: "flex-start",
+                      alignItems: "center",
+                      gap: 9,
+                      padding: "8px 16px",
+                      background: "#FCFCFC",
+                      borderRadius: 8,
+                      outline: "1px solid #EAEAEA",
+                      outlineOffset: "-1px",
+                      border: "none",
+                      cursor: "pointer",
+                      fontFamily: "Inter, sans-serif",
+                      fontSize: 14,
+                      fontWeight: 400,
+                      color: "#0E101A",
+                      height: "33px",
+                    }}
+                  >
+                    <TbFileExport className="fs-5 text-secondary" />
+                    Export
+                  </button>
+                </div>
+              </div>
+              {/* ------- Tables Container ------- */}
+              <div
+                className="table-responsive"
+                style={{
+                  overflowY: "auto",
+                  maxHeight: "510px",
+                }}
+              >
+                {/* Category-data-table */}
+                {activeTab === "category" && (
+                  <table
+                    className="table-responsive"
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      overflowX: "auto",
+                    }}>
+                    <thead
+                      style={{
+                        position: "sticky",
+                        top: 0,
+                        zIndex: 10,
+                        height: "38px",
+                      }}
+                    >
+                      <tr style={{ background: "#F3F8FB" }}>
+                        <th
+                          style={{
+                            padding: "4px 16px",
+                            color: "#727681",
+                            fontWeight: "400",
+                          }}
+                        >
+                          Category Name
+                        </th>
+                        <th
+                          style={{
+                            padding: "4px 16px",
+                            color: "#727681",
+                            fontWeight: "400",
+                          }}
+                        >
+                          Sub Category
+                        </th>
+                        <th
+                          style={{
+                            padding: "4px 16px",
+                            color: "#727681",
+                            fontWeight: "400",
+                          }}
+                        >
+                          No. Of Products
+                        </th>
+                        <th
+                          style={{
+                            padding: "4px 16px",
+                            color: "#727681",
+                            fontWeight: "400",
+                          }}
+                        >
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody style={{ fontFamily: "Inter", fontSize: "14px" }}>
+                      {paginatedCategories.length === 0 ? (
+                        <>
+                          <tr>
+                            <td
+                              colSpan={4}
+                              style={{
+                                padding: "12px 16px",
+                                verticalAlign: "middle",
+                                textAlign: "center",
+                                fontSize: 14,
+                                color: "#6C748C",
+                                fontStyle: "italic",
+                              }}
+                            >
+                              No Record Found
+                            </td>
+                          </tr>
+                        </>
+                      ) : (
+                        <>
+                          {paginatedCategories.map((item, idx) => (
+                            <React.Fragment key={idx}>
+                              <tr
                                 style={{
-                                  textAlign: "center",
-                                  fontStyle: "italic",
+                                  height: "46px",
+                                  borderBottom:
+                                    "1px solid rgba(233, 233, 241, 1)",
                                 }}
+                                className={`table-hover ${activeRow === idx ? "active-row" : ""}`}
                               >
-                                No Record Found
-                              </td>
-                            </tr>
-                          </>
-                        ) : (
-                          <>
-                            {paginatedCategories.map((item, idx) => (
-                              <React.Fragment key={idx}>
-                                <tr
+                                <td
+                                  onClick={() => toggleRow(idx)}
                                   style={{
-                                    height: "46px",
-                                    borderBottom:
-                                      "1px solid rgba(233, 233, 241, 1)",
+                                    padding: "4px 16px",
+                                    cursor: "pointer",
                                   }}
                                 >
-                                  <td
-                                    onClick={() => toggleRow(idx)}
-                                    style={{
-                                      padding: "4px 16px",
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    {item.categoryName}
-                                  </td>
-                                  <td
-                                    onClick={() => toggleRow(idx)}
-                                    style={{
-                                      padding: "4px 16px",
-                                      cursor: "pointer",
-                                    }}
-                                  >
-                                    {item.subcategories?.length}
-                                  </td>
-                                  <td style={{ padding: "4px 16px" }}>
-                                    {
-                                      products?.filter((p) => {
-                                        const productCatId =
-                                          typeof p.category === "string"
-                                            ? p.category
-                                            : p.category?._id;
-                                        return productCatId === item._id && p.isDelete !== true;
-                                      }).length
-                                    }
-                                  </td>
-                                  <td style={{ padding: "4px 16px" }}>
-                                    <HiOutlineDotsHorizontal
-                                      size={28}
-                                      color="grey"
-                                      onClick={() =>
-                                        setShowActionsFor(
-                                          showActionsFor === item._id
-                                            ? null
-                                            : item._id
-                                        )
-                                      }
-                                      ref={(el) =>
-                                        (buttonRefs.current[item._id] = el)
-                                      }
-                                    />
+                                  {item.categoryName}
+                                </td>
+                                <td
+                                  onClick={() => toggleRow(idx)}
+                                  style={{
+                                    padding: "4px 16px",
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  {item.subcategories?.length}
+                                </td>
+                                <td style={{ padding: "4px 16px" }}>
+                                  {
+                                    products?.filter((p) => {
+                                      const productCatId =
+                                        typeof p.category === "string"
+                                          ? p.category
+                                          : p.category?._id;
+                                      return productCatId === item._id && p.isDelete !== true;
+                                    }).length
+                                  }
+                                </td>
+                                <td style={{ padding: "4px 16px", textAlign: "center", position: "relative" }}>
+                                  <button
+                                    onClick={(e) => {
+                                      const rect =
+                                        e.currentTarget.getBoundingClientRect();
+                                      setShowActionsFor(
+                                        showActionsFor === item._id
+                                          ? null
+                                          : item._id
+                                      )
+                                      const dropdownHeight = 260; // your menu height
+                                      const spaceBelow =
+                                        window.innerHeight - rect.bottom;
+                                      const spaceAbove = rect.top;
 
-                                    {showActionsFor === item._id && (
-                                      // Actions Model
+                                      // decide direction
+                                      if (
+                                        spaceBelow < dropdownHeight &&
+                                        spaceAbove > dropdownHeight
+                                      ) {
+                                        setOpenUpwards(true);
+                                        setDropdownPos({
+                                          x: rect.left,
+                                          y: rect.top - 6, // position above button
+                                        });
+                                      } else {
+                                        setOpenUpwards(false);
+                                        setDropdownPos({
+                                          x: rect.left,
+                                          y: rect.bottom + 6, // position below button
+                                        });
+                                      }
+                                    }}
+                                    className="btn"
+                                    style={{
+                                      border: "none",
+                                      background: "transparent",
+                                      padding: 4,
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      position: "relative",
+                                    }}
+                                    aria-label="actions"
+                                    ref={(el) =>
+                                      (buttonRefs.current[item._id] = el)
+                                    }
+                                  >
+                                    <HiOutlineDotsHorizontal size={28} color="grey" />
+                                  </button>
+
+                                  {showActionsFor === item._id && (
+                                    // Actions Model
+                                    <div
+                                      style={{
+                                        position: "fixed",
+                                        top: openUpwards
+                                          ? dropdownPos.y - 190
+                                          : dropdownPos.y,
+                                        left: dropdownPos.x - 80,
+                                        zIndex: 999999,
+                                      }}
+                                    >
                                       <div
                                         ref={modelRef}
                                         style={{
-                                          backgroundColor: "white",
-                                          padding: "1px 10px",
-                                          borderRadius: "16px",
-
-                                          position: "absolute",
-                                          zIndex: 1000,
-                                          right: "130px",
-
-                                          boxShadow:
-                                            "rgba(149, 157, 165, 0.2) 0px 8px 24px",
+                                          background: "white",
+                                          padding: 8,
+                                          borderRadius: 12,
+                                          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                                          minWidth: 180,
+                                          height: "auto", // height must match dropdownHeight above
                                           display: "flex",
-                                          justifyContent: "center",
-                                          alignItems: "center",
+                                          flexDirection: "column",
+                                          gap: 4,
+                                          cursor: "pointer",
                                         }}
                                       >
                                         <ul
@@ -886,7 +975,6 @@ const Category = () => {
                                             justifyContent: "center",
                                             flexDirection: "column",
                                             gap: "10px",
-                                            padding: "15px 0px",
                                           }}
                                         >
                                           <li
@@ -993,195 +1081,259 @@ const Category = () => {
                                           </li>
                                         </ul>
                                       </div>
-                                    )}
-                                  </td>
-                                </tr>
-                                {/* COLLAPSE ROW EXACT SAME DESIGN KE NICHE */}
-                                <tr>
-                                  <td colSpan="7" style={{ padding: "0" }}>
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                              {/* COLLAPSE ROW EXACT SAME DESIGN KE NICHE */}
+                              <tr>
+                                <td colSpan="7" style={{ padding: "0" }}>
+                                  <div
+                                    style={{
+                                      maxHeight:
+                                        openRow === idx ? "500px" : "0px",
+                                      overflow: "hidden",
+                                      transition: "max-height 0.4s ease",
+                                      backgroundColor: "#E5F0FF",
+                                    }}
+                                  >
+                                    {/* Collapse Content */}
                                     <div
                                       style={{
-                                        maxHeight:
-                                          openRow === idx ? "500px" : "0px",
-                                        overflow: "hidden",
-                                        transition: "max-height 0.4s ease",
-                                        backgroundColor: "#E5F0FF",
+                                        padding: "16px",
+                                        display: "flex",
+                                        gap: "80px",
                                       }}
                                     >
-                                      {/* Collapse Content */}
-                                      <div
-                                        style={{
-                                          padding: "16px",
-                                          display: "flex",
-                                          gap: "80px",
-                                        }}
-                                      >
-                                        <label htmlFor="">Sub Category:-</label>
-                                        <span>
-                                          {item.subcategories.length === 0 ? (
-                                            <>
-                                              <span
-                                                style={{ fontStyle: "italic" }}
-                                              >
-                                                Empty Sub Category
-                                              </span>
-                                            </>
-                                          ) : (
-                                            <>
-                                              {item.subcategories?.map(
-                                                (sub, i) => {
-                                                  const { background, text } =
-                                                    getTextAndBgColor(sub.name);
+                                      <label htmlFor="">Sub Category:-</label>
+                                      <span>
+                                        {item.subcategories.length === 0 ? (
+                                          <>
+                                            <span
+                                              style={{ fontStyle: "italic" }}
+                                            >
+                                              Empty Sub Category
+                                            </span>
+                                          </>
+                                        ) : (
+                                          <>
+                                            {item.subcategories?.map(
+                                              (sub, i) => {
+                                                const { background, text } =
+                                                  getTextAndBgColor(sub.name);
 
-                                                  return (
-                                                    <span
-                                                      key={sub._id || i}
-                                                      style={{
-                                                        backgroundColor:
-                                                          background,
-                                                        color: text,
-                                                        margin: "2px",
-                                                        padding: "4px 8px",
-                                                        borderRadius: "36px",
-                                                        display: "inline-block",
-                                                        fontSize: "12px",
-                                                        fontWeight: 500,
-                                                      }}
-                                                    >
-                                                      {sub.name}
-                                                    </span>
-                                                  );
-                                                }
-                                              )}
-                                            </>
-                                          )}
-                                        </span>
-                                      </div>
+                                                return (
+                                                  <span
+                                                    key={sub._id || i}
+                                                    style={{
+                                                      backgroundColor:
+                                                        background,
+                                                      color: text,
+                                                      margin: "2px",
+                                                      padding: "4px 8px",
+                                                      borderRadius: "36px",
+                                                      display: "inline-block",
+                                                      fontSize: "12px",
+                                                      fontWeight: 500,
+                                                    }}
+                                                  >
+                                                    {sub.name}
+                                                  </span>
+                                                );
+                                              }
+                                            )}
+                                          </>
+                                        )}
+                                      </span>
                                     </div>
-                                  </td>
-                                </tr>
-                              </React.Fragment>
-                            ))}
-                          </>
-                        )}
-                      </tbody>
-                    </table>
-                  )}
+                                  </div>
+                                </td>
+                              </tr>
+                            </React.Fragment>
+                          ))}
+                        </>
+                      )}
+                    </tbody>
+                  </table>
+                )}
 
-                  {/* Sub-category-data-table */}
-                  {activeTab === "subcategory" && (
-                    <table className="w-100 my-3">
-                      <thead
-                        style={{ backgroundColor: "#F3F8FB", height: "38px" }}
-                      >
+                {/* Sub-category-data-table */}
+                {activeTab === "subcategory" && (
+                  <table
+                    className="table-responsive"
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      overflowX: "auto",
+                    }}>
+                    <thead
+                      style={{
+                        position: "sticky",
+                        top: 0,
+                        zIndex: 10,
+                        height: "38px",
+                      }}
+                    >
+                      <tr style={{ background: "#F3F8FB" }}>
+                        <th
+                          style={{
+                            padding: "4px 16px",
+                            color: "#727681",
+                            fontWeight: "400",
+                          }}
+                        >
+                          Sub-Category Name
+                        </th>
+                        <th
+                          style={{
+                            padding: "4px 16px",
+                            color: "#727681",
+                            fontWeight: "400",
+                          }}
+                        >
+                          Parent Category
+                        </th>
+                        <th
+                          style={{
+                            padding: "4px 16px",
+                            color: "#727681",
+                            fontWeight: "400",
+                          }}
+                        >
+                          No. Of Products
+                        </th>
+                        <th
+                          style={{
+                            padding: "4px 16px",
+                            color: "#727681",
+                            fontWeight: "400",
+                          }}
+                        >
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody style={{ fontFamily: "Inter", fontSize: "14px" }}>
+                      {currentItems.length === 0 ? (
                         <tr>
-                          <th
+                          <td
+                            colSpan={4}
                             style={{
-                              padding: "4px 16px",
-                              color: "#727681",
-                              fontWeight: "400",
+                              padding: "12px 16px",
+                              verticalAlign: "middle",
+                              textAlign: "center",
+                              fontSize: 14,
+                              color: "#6C748C",
+                              fontStyle: "italic",
                             }}
                           >
-                            Sub-Category Name
-                          </th>
-                          <th
-                            style={{
-                              padding: "4px 16px",
-                              color: "#727681",
-                              fontWeight: "400",
-                            }}
-                          >
-                            Parent Category
-                          </th>
-                          <th
-                            style={{
-                              padding: "4px 16px",
-                              color: "#727681",
-                              fontWeight: "400",
-                            }}
-                          >
-                            No. Of Products
-                          </th>
-                          <th
-                            style={{
-                              padding: "4px 16px",
-                              color: "#727681",
-                              fontWeight: "400",
-                            }}
-                          >
-                            Actions
-                          </th>
+                            No Record Found
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody style={{ fontFamily: "Inter", fontSize: "14px" }}>
-                        {currentItems.length === 0 ? (
-                          <tr>
-                            <td
-                              colSpan={4}
-                              style={{
-                                textAlign: "center",
-                                fontStyle: "italic",
-                              }}
-                            >
-                              No Record Found
+                      ) : (
+                        currentItems.map((sub, idx) => (
+                          <tr
+                            key={sub._id}
+                            style={{
+                              height: "46px",
+                              borderBottom: "1px solid rgb(233, 233, 241)",
+                            }}
+                            className={`table-hover ${activeRow === idx ? "active-row" : ""}`}
+                          >
+                            <td style={{ padding: "4px 16px" }}>
+                              {sub.name}
                             </td>
-                          </tr>
-                        ) : (
-                          currentItems.map((sub) => (
-                            <tr
-                              key={sub._id}
-                              style={{
-                                height: "46px",
-                                borderBottom: "1px solid rgb(233, 233, 241)",
-                              }}
-                            >
-                              <td style={{ padding: "4px 16px" }}>
-                                {sub.name}
-                              </td>
-                              <td style={{ padding: "4px 16px" }}>
-                                {sub.parentCategory}
-                              </td>
-                              <td style={{ padding: "4px 16px" }}>
-                                {
-                                  products?.filter((p) => {
-                                    const productSubId =
-                                      typeof p.subcategory === "string"
-                                        ? p.subcategory
-                                        : p.subcategory?._id;
-                                    return (
-                                      productSubId === sub._id &&
-                                      p.isDelete !== true
-                                    );
-                                  }).length
+                            <td style={{ padding: "4px 16px" }}>
+                              {sub.parentCategory}
+                            </td>
+                            <td style={{ padding: "4px 16px" }}>
+                              {
+                                products?.filter((p) => {
+                                  const productSubId =
+                                    typeof p.subcategory === "string"
+                                      ? p.subcategory
+                                      : p.subcategory?._id;
+                                  return (
+                                    productSubId === sub._id &&
+                                    p.isDelete !== true
+                                  );
+                                }).length
+                              }
+                            </td>
+                            <td style={{ padding: "4px 16px" }}>
+                              <button
+                                onClick={(e) => {
+                                  const rect =
+                                    e.currentTarget.getBoundingClientRect();
+                                  setShowActionsFor(
+                                    showActionsFor === sub._id
+                                      ? null
+                                      : sub._id
+                                  )
+                                  const dropdownHeight = 260; // your menu height
+                                  const spaceBelow =
+                                    window.innerHeight - rect.bottom;
+                                  const spaceAbove = rect.top;
+
+                                  // decide direction
+                                  if (
+                                    spaceBelow < dropdownHeight &&
+                                    spaceAbove > dropdownHeight
+                                  ) {
+                                    setOpenUpwards(true);
+                                    setDropdownPos({
+                                      x: rect.left,
+                                      y: rect.top - 6, // position above button
+                                    });
+                                  } else {
+                                    setOpenUpwards(false);
+                                    setDropdownPos({
+                                      x: rect.left,
+                                      y: rect.bottom + 6, // position below button
+                                    });
+                                  }
+                                }}
+                                ref={(el) =>
+                                  (buttonRefs.current[sub._id] = el)
                                 }
-                              </td>
-                              <td style={{ padding: "4px 16px" }}>
-                                <HiOutlineDotsHorizontal
-                                  size={28}
-                                  color="grey"
-                                  onClick={() =>
-                                    setShowActionsFor(
-                                      showActionsFor === sub._id
-                                        ? null
-                                        : sub._id
-                                    )
-                                  }
-                                  ref={(el) =>
-                                    (buttonRefs.current[sub._id] = el)
-                                  }
-                                />
-                                {showActionsFor === sub._id && (
+                                className="btn"
+                                style={{
+                                  border: "none",
+                                  background: "transparent",
+                                  padding: 4,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  position: "relative",
+                                }}
+                                aria-label="actions"
+                              >
+                                <HiOutlineDotsHorizontal size={28} color="grey" />
+                              </button>
+                              {showActionsFor === sub._id && (
+                                <div
+                                  style={{
+                                    position: "fixed",
+                                    top: openUpwards
+                                      ? dropdownPos.y - 190
+                                      : dropdownPos.y,
+                                    left: dropdownPos.x - 80,
+                                    zIndex: 999999,
+                                  }}
+                                >
                                   <div
                                     ref={modelRef}
                                     style={{
-                                      backgroundColor: "white",
-                                      padding: "1px 10px",
-                                      borderRadius: "16px",
-                                      position: "absolute",
-                                      zIndex: 1000,
-                                      right: "130px",
-                                      boxShadow:
-                                        "rgba(149, 157, 165, 0.2) 0px 8px 24px",
+                                      background: "white",
+                                      padding: 8,
+                                      borderRadius: 12,
+                                      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                                      minWidth: 180,
+                                      height: "auto", // height must match dropdownHeight above
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      gap: 4,
+                                      cursor: "pointer",
                                     }}
                                   >
                                     <ul
@@ -1191,7 +1343,6 @@ const Category = () => {
                                         display: "flex",
                                         flexDirection: "column",
                                         gap: "10px",
-                                        padding: "15px 0px",
                                       }}
                                     >
                                       <li
@@ -1226,7 +1377,7 @@ const Category = () => {
                                           Edit
                                         </label>
                                       </li>
-                                      <li
+                                      {/* <li
                                         className="button-action"
                                         style={{
                                           color: "#0E101A",
@@ -1252,7 +1403,7 @@ const Category = () => {
                                         >
                                           View Details
                                         </label>
-                                      </li>
+                                      </li> */}
                                       <li
                                         onClick={() => {
                                           handleDeleteClick(
@@ -1289,112 +1440,113 @@ const Category = () => {
                                       </li>
                                     </ul>
                                   </div>
-                                )}
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  )}
-                </div>
-                <div className="page-redirect-btn">
-                  <Pagination
-                    currentPage={currentPage}
-                    total={totalItems} // Dynamic total based on tab
-                    itemsPerPage={itemsPerPage}
-                    onPageChange={(page) => setCurrentPage(page)}
-                    onItemsPerPageChange={(count) => {
-                      setItemsPerPage(count);
-                      setCurrentPage(1);
-                    }}
-                  />
-                </div>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+              <div className="page-redirect-btn">
+                <Pagination
+                  currentPage={currentPage}
+                  total={totalItems} // Dynamic total based on tab
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={(page) => setCurrentPage(page)}
+                  onItemsPerPageChange={(count) => {
+                    setItemsPerPage(count);
+                    setCurrentPage(1);
+                  }}
+                />
               </div>
             </div>
-          </>
-        )}
-        {showAddCategoryModel && (
-          <CreateCategoryModal
-            closeModal={() => setShowAddCategoryModel(false)}
-            modalId="categoryModal"
-            title={isEditMode ? [t("Edit Category")] : [t("Add Category")]}
-            isEditMode={isEditMode}
-            categoryName={isEditMode ? editCategoryName : categoryName}
-            subCategoryName={subCategoryName} // ✅ ADD THIS
-            onSubCategoryChange={(e) => setSubCategoryName(e.target.value)}
-            onCategoryChange={handleCategoryNameChange}
-            onSubmit={handleSubmit}
-            submitLabel={isEditMode ? [t("Update")] : [t("Save")]}
-            errors={errors}
-          />
-        )}
-        {showAddSubCategoryModel && (
-          <CreateSubCategoryModel
-            modelAddRef={modelAddRef}
-            closeModal={() => setShowAddSubCategoryModel(false)}
-            categoryName={selectedCategory?.categoryName} // ✅
-            subCategoryName={subCategoryName} // ✅
-            onSubCategoryChange={(e) => setSubCategoryName(e.target.value)}
-            onSubmit={handleAddSubCategory}
-          />
-        )}
-        {showDeleteModel && (
-          <ConfirmDelete
-            isOpen={showDeleteModel}
-            onCancel={() => {
+          </div>
+        </>
+      )}
+      {showAddCategoryModel && (
+        <CreateCategoryModal
+          closeModal={() => setShowAddCategoryModel(false)}
+          modalId="categoryModal"
+          title={isEditMode ? [t("Edit Category")] : [t("Add Category")]}
+          isEditMode={isEditMode}
+          categoryName={isEditMode ? editCategoryName : categoryName}
+          subCategoryName={subCategoryName} // ✅ ADD THIS
+          onSubCategoryChange={(e) => setSubCategoryName(e.target.value)}
+          onCategoryChange={handleCategoryNameChange}
+          onSubmit={handleSubmit}
+          submitLabel={isEditMode ? [t("Update")] : [t("Save")]}
+          errors={errors}
+        />
+      )}
+      {showAddSubCategoryModel && (
+        <CreateSubCategoryModel
+          modelAddRef={modelAddRef}
+          closeModal={() => setShowAddSubCategoryModel(false)}
+          categoryName={selectedCategory?.categoryName} // ✅
+          subCategoryName={subCategoryName} // ✅
+          onSubCategoryChange={(e) => setSubCategoryName(e.target.value)}
+          onSubmit={handleAddSubCategory}
+        />
+      )}
+      {showDeleteModel && (
+        <ConfirmDelete
+          isOpen={showDeleteModel}
+          onCancel={() => {
+            setShowDeleteModel(false);
+            setSelectedCategory(null);
+            setSelectedSubcategory(null);
+          }}
+          onConfirm={async () => {
+            try {
+              if (selectedSubcategory) {
+                // Delete subcategory
+                await api.delete(`/api/subcategory/${selectedSubcategory}`);
+                toast.success("Subcategory deleted successfully!");
+              } else if (selectedCategory) {
+                // Delete category
+                await api.delete(
+                  `/api/category/categories/${selectedCategory}`
+                );
+                toast.success("Category deleted successfully!");
+              }
+              fetchCategories();
+            } catch (error) {
+              console.error("Delete error:", error);
+              toast.error("Failed to delete item");
+            } finally {
               setShowDeleteModel(false);
               setSelectedCategory(null);
               setSelectedSubcategory(null);
-            }}
-            onConfirm={async () => {
-              try {
-                if (selectedSubcategory) {
-                  // Delete subcategory
-                  await api.delete(`/api/subcategory/${selectedSubcategory}`);
-                  toast.success("Subcategory deleted successfully!");
-                } else if (selectedCategory) {
-                  // Delete category
-                  await api.delete(
-                    `/api/category/categories/${selectedCategory}`
-                  );
-                  toast.success("Category deleted successfully!");
-                }
-                fetchCategories();
-              } catch (error) {
-                console.error("Delete error:", error);
-                toast.error("Failed to delete item");
-              } finally {
-                setShowDeleteModel(false);
-                setSelectedCategory(null);
-                setSelectedSubcategory(null);
-              }
-            }}
-            title="Confirm Deletion"
-            message={
-              selectedSubcategory
-                ? "Are you sure you want to delete this subcategory? This action cannot be undone."
-                : "Are you sure you want to delete this category? All associated subcategories will also be affected."
             }
-          />
-        )}
-        {showEditCategoryModel && (
-          <CreateEditCategoryModel
-            closeModal={() => setShowEditCategoryModel(false)}
-            category={selectedCategory} // 👈 pass full object
-            onSubmit={handleUpdate}
-            submitLabel="Update"
-          />
-        )}
-        {showEditSubCategoryModel && (
-          <CreateEditSubCategoryModel
-            closeModal={() => setShowEditSubCategoryModel(false)}
-            subcategory={selectedSubcategory}
-            onSubmit={handleEditSubCategory}
-          />
-        )}
-      </div>
-   
+          }}
+          title="Confirm Deletion"
+          message={
+            selectedSubcategory
+              ? "Are you sure you want to delete this subcategory? This action cannot be undone."
+              : "Are you sure you want to delete this category? All associated subcategories will also be affected."
+          }
+        />
+      )}
+      {showEditCategoryModel && (
+        <CreateEditCategoryModel
+          closeModal={() => setShowEditCategoryModel(false)}
+          category={selectedCategory} // 👈 pass full object
+          onSubmit={handleUpdate}
+          submitLabel="Update"
+        />
+      )}
+      {showEditSubCategoryModel && (
+        <CreateEditSubCategoryModel
+          closeModal={() => setShowEditSubCategoryModel(false)}
+          subcategory={selectedSubcategory}
+          onSubmit={handleEditSubCategory}
+        />
+      )}
+    </div>
+
   );
 };
 

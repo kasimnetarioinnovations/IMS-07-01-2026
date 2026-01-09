@@ -1,11 +1,12 @@
 // components/Role/RoleTable.jsx
-import React from "react";
+import React, { useState } from "react";
 import { FaUser } from "react-icons/fa";
 import { BsThreeDots } from "react-icons/bs";
 import { useNavigate } from "react-router-dom";
 import DeleteICONImg from "../../assets/images/delete.png";
 import ViewDetailsImg from "../../assets/images/view-details.png";
 import EditICONImg from "../../assets/images/edit.png";
+import { HiOutlineDotsHorizontal } from "react-icons/hi";
 
 const RoleTable = ({
   roles = [],
@@ -23,13 +24,28 @@ const RoleTable = ({
 }) => {
   const navigate = useNavigate();
 
+  const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0 });
+  const [openUpwards, setOpenUpwards] = useState(false);
+
+    const [activeRow, setActiveRow] = useState(null);
+
+    const toggleRow = (index) => {
+        const newOpen = openRow === index ? null : index;
+        setOpenRow(newOpen);
+        if (newOpen === null && activeRow === index) {
+            setActiveRow(null);
+        } else if (newOpen !== null) {
+            setActiveRow(index);
+        }
+    };
+
   const getPermissionsSummary = (role) => {
     if (!role.modulePermissions || Object.keys(role.modulePermissions).length === 0) return "Limited";
 
     const allFull = Object.values(role.modulePermissions).every(modulePerms => {
       return modulePerms.create && modulePerms.read && modulePerms.update && modulePerms.delete;
     });
-  
+
 
     return allFull ? "Full" : "Limited";
   };
@@ -82,8 +98,11 @@ const RoleTable = ({
 
   return (
     <table
-      className="table mb-0"
-      style={{ borderSpacing: 0, borderCollapse: "separate" }}
+      style={{
+        width: "100%",
+        borderSpacing: "0 0px",
+        fontFamily: "Inter",
+      }}
     >
       <thead>
         <tr>
@@ -136,11 +155,15 @@ const RoleTable = ({
       </thead>
       <tbody>
         {roles.map((role, index) => (
-          <tr key={role._id} style={{ verticalAlign: "middle", cursor: "pointer", backgroundColor: selectedRolesForExport.includes(role._id) ? "#f0f8ff" : "transparent" }} onClick={() => onRowClick?.(role)}>
+          <tr key={role._id} 
+          style={{ verticalAlign: "middle", cursor: "pointer", borderBottom: "1px solid #EAEAEA", }} 
+          onClick={() => onRowClick?.(role)}
+          className={`table-hover ${activeRow === index ? "active-row" : ""}`}
+          >
             {/* Checkbox Cell */}
             <td
               style={{
-                padding: "14px 16px",
+                padding: "4px 16px",
                 width: "50px"
               }}
               onClick={(e) => e.stopPropagation()}
@@ -160,14 +183,14 @@ const RoleTable = ({
               </div>
             </td>
             {/* Role Name */}
-            <td style={{ padding: "14px 16px" }}>
+            <td style={{ padding: "4px 16px" }}>
               <div style={{ fontSize: 14, color: "#0E101A" }}>
                 {role.roleName}
               </div>
             </td>
 
             {/* Members Count */}
-            <td style={{ padding: "14px 16px" }}>
+            <td style={{ padding: "4px 16px" }}>
               <div className="d-flex align-items-center" style={{ gap: 8 }}>
                 <span style={{ color: "#0E101A", fontSize: 14 }}>
                   {role.memberCount || 0}
@@ -177,7 +200,7 @@ const RoleTable = ({
             </td>
 
             {/* Permissions */}
-            <td style={{ padding: "14px 16px" }}>
+            <td style={{ padding: "4px 16px" }}>
               <span
                 style={{
                   padding: "4px 12px",
@@ -192,107 +215,172 @@ const RoleTable = ({
             </td>
 
             {/* Actions */}
-            <td style={{ padding: "8px 16px", position: "relative" }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "start",
-                  alignItems: "center",
-                  position: "relative",
-                  cursor: "pointer",
-                }}
+            <td style={{ padding: "4px 16px", textAlign: "center", position: "relative" }} onClick={(e) => e.stopPropagation()}>
+              {/* Three dots button */}
+              <button
                 onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenMenuIndex(openMenuIndex === index ? null : index);
+                  const rect =
+                    e.currentTarget.getBoundingClientRect();
+                  setOpenMenuIndex(openMenuIndex === index ? null : index)
+
+                  const dropdownHeight = 260; // your menu height
+                  const spaceBelow =
+                    window.innerHeight - rect.bottom;
+                  const spaceAbove = rect.top;
+
+                  // decide direction
+                  if (
+                    spaceBelow < dropdownHeight &&
+                    spaceAbove > dropdownHeight
+                  ) {
+                    setOpenUpwards(true);
+                    setDropdownPos({
+                      x: rect.left,
+                      y: rect.top - 6, // position above button
+                    });
+                  } else {
+                    setOpenUpwards(false);
+                    setDropdownPos({
+                      x: rect.left,
+                      y: rect.bottom + 6, // position below button
+                    });
+                  }
                 }}
+                className="btn"
+                style={{
+                  border: "none",
+                  background: "transparent",
+                  padding: 4,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  position: "relative",
+                }}
+                aria-label="actions"
               >
-                {/* Three dots button */}
+                <HiOutlineDotsHorizontal size={28} color="grey" />
+              </button>
+
+              {/* Dropdown menu */}
+              {openMenuIndex === index && (
                 <div
                   style={{
-                    width: 24,
-                    height: 24,
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
+                    position: "fixed",
+                    top: openUpwards
+                      ? dropdownPos.y - 190
+                      : dropdownPos.y,
+                    left: dropdownPos.x - 80,
+                    zIndex: 999999,
                   }}
                 >
-                  <div style={{ width: 4, height: 4, background: "#6C748C", borderRadius: 2 }} />
-                  <div style={{ width: 4, height: 4, background: "#6C748C", borderRadius: 2 }} />
-                  <div style={{ width: 4, height: 4, background: "#6C748C", borderRadius: 2 }} />
-                </div>
-
-                {/* Dropdown menu */}
-                {openMenuIndex === index && (
                   <div
                     ref={menuRef}
                     style={{
-                      position: "absolute",
-                      top: "100%",
-                      right: 0,
-                      marginTop: 6,
-                      width: 180,
-                      backgroundColor: "#fff",
+                      background: "white",
+                      padding: 8,
                       borderRadius: 12,
                       boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                      border: "1px solid #E5E7EB",
-                      zIndex: 9999,
-                      overflow: "hidden",
+                      minWidth: 180,
+                      height: "auto", // height must match dropdownHeight above
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 4,
                     }}
                   >
-                    <div
-                      onClick={() => handleMenuAction("edit", role)}
-                      className="button-action"
+                    <ul
                       style={{
+                        listStyle: "none",
+                        marginBottom: "0",
                         display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                        padding: "10px 12px",
-                        fontFamily: "Inter, sans-serif",
-                        fontSize: 14,
-                        fontWeight: 400,
-                        cursor: "pointer",
-                        color: "#333",
+                        justifyContent: "center",
+                        flexDirection: "column",
+                        gap: "10px",
+                        cursor: 'pointer'
+                        // padding: "15px 0px",
                       }}
                     >
-                      <img src={EditICONImg} alt="edit" />  Edit
-                    </div>
-                    <div
-                      onClick={() => handleMenuAction("permissions", role)}
-                      className="button-action"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                        padding: "10px 12px",
-                        fontFamily: "Inter, sans-serif",
-                        fontSize: 14,
-                        fontWeight: 400,
-                        cursor: "pointer",
-                        color: "#333",
-                      }}
-                    >
-                      <img src={ViewDetailsImg} alt="viewdetails" />  View Permissions
-                    </div>
-                    <div
-                      onClick={() => handleMenuAction("delete", role)}
-                      className="button-action"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 12,
-                        padding: "10px 12px",
-                        fontFamily: "Inter, sans-serif",
-                        fontSize: 14,
-                        fontWeight: 400,
-                        cursor: "pointer",
-                        color: "#333",
-                      }}
-                    >
-                      <img src={DeleteICONImg} alt="delete" />  Delete
-                    </div>
+                      <li
+                        onClick={() => handleMenuAction("edit", role)}
+                        className="button-action"
+                        style={{
+                          color: "#0E101A",
+                          fontFamily: "Inter",
+                          fontSize: "16px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          padding: " 5px 10px",
+                          borderRadius: "8px",
+                        }}
+                      >
+                        <img src={EditICONImg} alt="edit" />
+                        <label
+                          style={{
+                            color: "#0E101A",
+                            fontFamily: "Inter",
+                            fontSize: "16px",
+                            textDecoration: "none",
+                          }}
+                        >
+                          Edit
+                        </label>
+                      </li>
+                      {/* <li
+                        onClick={() => handleMenuAction("permissions", role)}
+                        className="button-action"
+                        style={{
+                          color: "#0E101A",
+                          fontFamily: "Inter",
+                          fontSize: "16px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          padding: " 5px 10px",
+                          borderRadius: "8px",
+                        }}
+                      >
+                        <img src={ViewDetailsImg} alt="viewdetails" />
+                        <label
+                          style={{
+                            color: "#0E101A",
+                            fontFamily: "Inter",
+                            fontSize: "16px",
+                            textDecoration: "none",
+                          }}
+                        >
+                          View Permissions
+                        </label>
+                      </li> */}
+                      <li
+                        onClick={() => handleMenuAction("delete", role)}
+                        className="button-action"
+                        style={{
+                          color: "#0E101A",
+                          fontFamily: "Inter",
+                          fontSize: "16px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          padding: " 5px 10px",
+                          borderRadius: "8px",
+                        }}
+                      >
+                        <img src={DeleteICONImg} alt="delete" />
+                        <label
+                          style={{
+                            color: "#0E101A",
+                            fontFamily: "Inter",
+                            fontSize: "16px",
+                            textDecoration: "none",
+                          }}
+                        >
+                          Delete
+                        </label>
+                      </li>
+                    </ul>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </td>
           </tr>
         ))}

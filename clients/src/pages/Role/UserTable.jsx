@@ -1,5 +1,5 @@
 // components/Users/UserTable.jsx
-import React from "react";
+import React, { useState } from "react";
 import { BsThreeDots } from "react-icons/bs";
 import { HiOutlineArrowsUpDown } from "react-icons/hi2";
 import { FiEdit } from "react-icons/fi";
@@ -36,6 +36,18 @@ const UserTable = ({
     }
   };
 
+  const [activeRow, setActiveRow] = useState(null);
+
+  const toggleRow = (index) => {
+    const newOpen = openRow === index ? null : index;
+    setOpenRow(newOpen);
+    if (newOpen === null && activeRow === index) {
+      setActiveRow(null);
+    } else if (newOpen !== null) {
+      setActiveRow(index);
+    }
+  };
+
   const formatLastLogin = (dateString) => {
     if (!dateString) return "Never";
     const date = new Date(dateString);
@@ -53,6 +65,9 @@ const UserTable = ({
     return date.toLocaleDateString();
   };
 
+  const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0 });
+  const [openUpwards, setOpenUpwards] = useState(false);
+
   if (loading) {
     return <div className="text-center py-5">Loading users...</div>;
   }
@@ -65,33 +80,35 @@ const UserTable = ({
     <table
       style={{
         width: "100%",
-        borderCollapse: "separate",
-        borderSpacing: "0 10px",
+        borderSpacing: "0 0px",
         fontFamily: "Inter",
       }}
     >
       <thead style={{ position: "sticky", top: 0, zIndex: 9 }}>
         <tr style={{ backgroundColor: "#F3F8FB", textAlign: "left" }}>
           <th
-            style={{
-              padding: "8px 16px",
-              color: "#727681",
-              fontSize: "14px",
-              fontWeight: 400,
-            }}
+            style={{ padding: "8px 16px" }}
           >
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <input
               type="checkbox"
               id="select-all-users"
               checked={selectAllForExport}
               onChange={handleSelectAllForExport}
               style={{ marginRight: "8px" }}
-            />
-            User
+              />
+            <span style={{
+              color: "#727681",
+              fontSize: "14px",
+              fontWeight: 400,
+            }}>
+              User
+              </span>
+            </div>
           </th>
           <th
             style={{
-              padding: "8px 16px",
+              padding: "12px 16px",
               color: "#727681",
               fontSize: "14px",
               fontWeight: 400,
@@ -101,7 +118,7 @@ const UserTable = ({
           </th>
           <th
             style={{
-              padding: "8px 16px",
+              padding: "12px 16px",
               color: "#727681",
               fontSize: "14px",
               fontWeight: 400,
@@ -111,7 +128,7 @@ const UserTable = ({
           </th>
           <th
             style={{
-              padding: "8px 16px",
+              padding: "12px 16px",
               color: "#727681",
               fontSize: "14px",
               fontWeight: 400,
@@ -121,7 +138,7 @@ const UserTable = ({
           </th>
           <th
             style={{
-              padding: "8px 16px",
+              padding: "12px 16px",
               color: "#727681",
               fontSize: "14px",
               fontWeight: 400,
@@ -132,7 +149,7 @@ const UserTable = ({
           </th>
           <th
             style={{
-              padding: "8px 16px",
+              padding: "12px 16px",
               color: "#727681",
               fontSize: "14px",
               fontWeight: 400,
@@ -148,12 +165,13 @@ const UserTable = ({
           <tr
             key={user._id || index}
             style={{
-              backgroundColor: "white",
-              borderBottom: "1px solid #FCFCFC",
+              borderBottom: "1px solid #EAEAEA",
+              // height: "46px",
             }}
+            className={`table-hover ${activeRow === index ? "active-row" : ""}`}
           >
             {/* User column */}
-            <td style={{ padding: "8px 16px" }}>
+            <td style={{ padding: "4px 16px" }}>
               <div
                 style={{ display: "flex", alignItems: "center", gap: "12px" }}
               >
@@ -171,8 +189,8 @@ const UserTable = ({
                       src={user.avatar}
                       alt="Profile"
                       style={{
-                        width: "38px",
-                        height: "38px",
+                        width: "32px",
+                        height: "32px",
                         borderRadius: "8px",
                         objectFit: "cover",
                       }}
@@ -180,8 +198,8 @@ const UserTable = ({
                   ) : (
                     <div
                       style={{
-                        width: "38px",
-                        height: "38px",
+                        width: "32px",
+                        height: "32px",
                         borderRadius: "8px",
                         backgroundColor: "#D9D9D9",
                         display: "flex",
@@ -199,7 +217,7 @@ const UserTable = ({
                     style={{
                       display: "flex",
                       flexDirection: "column",
-                      gap: "4px",
+                      gap: "1px",
                     }}
                   >
                     <span style={{ color: "#0E101A", fontSize: "14px" }}>
@@ -217,7 +235,7 @@ const UserTable = ({
             {/* Role */}
             <td
               style={{
-                padding: "8px 16px",
+                padding: "4px 16px",
                 color: "#0E101A",
                 fontSize: "14px",
               }}
@@ -228,7 +246,7 @@ const UserTable = ({
             {/* Last Login */}
             <td
               style={{
-                padding: "8px 16px",
+                padding: "4px 16px",
                 color: "#0E101A",
                 fontSize: "14px",
               }}
@@ -239,7 +257,7 @@ const UserTable = ({
             {/* Permissions */}
             <td
               style={{
-                padding: "8px 16px",
+                padding: "4px 16px",
                 color: "#0E101A",
                 fontSize: "14px",
               }}
@@ -248,7 +266,7 @@ const UserTable = ({
             </td>
 
             {/* Status */}
-            <td style={{ padding: "8px 16px" }}>
+            <td style={{ padding: "4px 16px" }}>
               <span
                 style={{
                   padding: "4px 12px",
@@ -262,11 +280,37 @@ const UserTable = ({
             </td>
 
             {/* Actions */}
-            <td style={{ padding: "8px 16px", textAlign: "center" }}>
+            <td style={{ padding: "4px 16px", textAlign: "center", position: "relative" }}>
+
               <button
-                onClick={() =>
+                onClick={(e) => {
+                  const rect =
+                    e.currentTarget.getBoundingClientRect();
                   setOpenMenuIndex(openMenuIndex === index ? null : index)
-                }
+
+                  const dropdownHeight = 260; // your menu height
+                  const spaceBelow =
+                    window.innerHeight - rect.bottom;
+                  const spaceAbove = rect.top;
+
+                  // decide direction
+                  if (
+                    spaceBelow < dropdownHeight &&
+                    spaceAbove > dropdownHeight
+                  ) {
+                    setOpenUpwards(true);
+                    setDropdownPos({
+                      x: rect.left,
+                      y: rect.top - 6, // position above button
+                    });
+                  } else {
+                    setOpenUpwards(false);
+                    setDropdownPos({
+                      x: rect.left,
+                      y: rect.bottom + 6, // position below button
+                    });
+                  }
+                }}
                 className="btn"
                 style={{
                   border: "none",
@@ -274,127 +318,139 @@ const UserTable = ({
                   padding: 4,
                   display: "flex",
                   alignItems: "center",
+                  justifyContent: "center",
+                  position: "relative",
                 }}
                 aria-label="actions"
               >
                 <HiOutlineDotsHorizontal size={28} color="grey" />
               </button>
+
               {openMenuIndex === index && (
                 <div
-                  ref={menuRef}
                   style={{
-                    backgroundColor: "white",
-                    padding: "1px 10px",
-                    borderRadius: "16px",
-                    position: "absolute",
-                    zIndex: 1000,
-                    right: "130px",
-                    boxShadow: "rgba(149, 157, 165, 0.2) 0px 8px 24px",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
+                    position: "fixed",
+                    top: openUpwards
+                      ? dropdownPos.y - 190
+                      : dropdownPos.y,
+                    left: dropdownPos.x - 80,
+                    zIndex: 999999,
                   }}
                 >
-                  <ul
+                  <div
+                    ref={menuRef}
                     style={{
-                      listStyle: "none",
-                      marginBottom: "0",
+                      background: "white",
+                      padding: 8,
+                      borderRadius: 12,
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                      minWidth: 180,
+                      height: "auto", // height must match dropdownHeight above
                       display: "flex",
-                      justifyContent: "center",
                       flexDirection: "column",
-                      gap: "10px",
-                      padding: "15px 0px",
+                      gap: 4,
                     }}
                   >
-                    <li
-                      onClick={() => {
-                      onEdit?.(user);
-                      setOpenMenuIndex(null);
-                    }}
-                      className="button-action"
+                    <ul
                       style={{
-                        color: "#0E101A",
-                        fontFamily: "Inter",
-                        fontSize: "16px",
+                        listStyle: "none",
+                        marginBottom: "0",
                         display: "flex",
-                        alignItems: "center",
+                        justifyContent: "center",
+                        flexDirection: "column",
                         gap: "10px",
-                        padding: " 5px 10px",
-                        borderRadius: "8px",
+                        cursor: 'pointer'
                       }}
                     >
-                      <img src={EditICONImg} alt="cat_actions_icon" />
-                      <label
+                      <li
+                        onClick={() => {
+                          onEdit?.(user);
+                          setOpenMenuIndex(null);
+                        }}
+                        className="button-action"
                         style={{
                           color: "#0E101A",
                           fontFamily: "Inter",
                           fontSize: "16px",
-                          textDecoration: "none",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          padding: " 5px 10px",
+                          borderRadius: "8px",
                         }}
                       >
-                        Edit
-                      </label>
-                    </li>
-
-                    <li
-                      onClick={() => {
-                      onViewDetails?.(user);
-                      setOpenMenuIndex(null);
-                    }}
-                      className="button-action"
-                      style={{
-                        color: "#0E101A",
-                        fontFamily: "Inter",
-                        fontSize: "16px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        padding: " 5px 10px",
-                        borderRadius: "8px",
-                      }}
-                    >
-                      <img src={ViewDetailsImg} alt="cat_actions_icon" />
-                      <label
+                        <img src={EditICONImg} alt="cat_actions_icon" />
+                        <label
+                          style={{
+                            color: "#0E101A",
+                            fontFamily: "Inter",
+                            fontSize: "16px",
+                            textDecoration: "none",
+                          }}
+                        >
+                          Edit
+                        </label>
+                      </li>
+                      {/* <li
+                        onClick={() => {
+                          onViewDetails?.(user);
+                          setOpenMenuIndex(null);
+                        }}
+                        className="button-action"
                         style={{
                           color: "#0E101A",
                           fontFamily: "Inter",
                           fontSize: "16px",
-                          textDecoration: "none",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          padding: " 5px 10px",
+                          borderRadius: "8px",
                         }}
                       >
-                       View Details
-                      </label>
-                    </li>
-                    <li
-                      onClick={() => {
-                      onDelete?.(user);
-                      setOpenMenuIndex(null);
-                    }}
-                      className="button-action"
-                      style={{
-                        color: "#0E101A",
-                        fontFamily: "Inter",
-                        fontSize: "16px",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        padding: " 5px 10px",
-                        borderRadius: "8px",
-                      }}
-                    >
-                      <img src={DeleteICONImg} alt="cat_actions_icon" />
-                      <label
+                        <img src={ViewDetailsImg} alt="cat_actions_icon" />
+                        <label
+                          style={{
+                            color: "#0E101A",
+                            fontFamily: "Inter",
+                            fontSize: "16px",
+                            textDecoration: "none",
+                          }}
+                        >
+                          View Details
+                        </label>
+                      </li> */}
+                      <li
+                        onClick={() => {
+                          onDelete?.(user);
+                          setOpenMenuIndex(null);
+                        }}
+                        className="button-action"
                         style={{
                           color: "#0E101A",
                           fontFamily: "Inter",
                           fontSize: "16px",
-                          textDecoration: "none",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          padding: " 5px 10px",
+                          borderRadius: "8px",
                         }}
                       >
-                       Delete
-                      </label>
-                    </li>
-                  </ul>
+                        <img src={DeleteICONImg} alt="cat_actions_icon" />
+                        <label
+                          style={{
+                            color: "#0E101A",
+                            fontFamily: "Inter",
+                            fontSize: "16px",
+                            textDecoration: "none",
+                          }}
+                        >
+                          Delete
+                        </label>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
               )}
             </td>

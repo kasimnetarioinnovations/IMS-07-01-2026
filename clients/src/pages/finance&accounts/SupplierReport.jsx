@@ -297,9 +297,9 @@ function SupplierReport() {
                     height: "33px",
                   }}
                 >
-                  <IoIosSearch style={{ fontSize: '25px' }} />
+                  <IoIosSearch className="fs-4" />
                   <input
-                    type="text"
+                    type="search"
                     placeholder="Search"
                     style={{
                       width: "100%",

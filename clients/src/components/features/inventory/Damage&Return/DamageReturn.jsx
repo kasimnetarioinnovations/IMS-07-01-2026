@@ -214,6 +214,7 @@ function DamageReturn() {
                     }}
                   >
                     <button
+                      className="button-hover"
                       onClick={handleDamageReportModel}
                       ref={addButtonRef}
                       style={{
@@ -230,7 +231,7 @@ function DamageReturn() {
                       }}
                     >
                       <LuPackageSearch className="fs-5" />
-                      <span className="fs-6">Record Damage</span>
+                      <span className="fs-6"> Record Damage</span>
                     </button>
                   </div>
                 </div>
@@ -313,7 +314,7 @@ function DamageReturn() {
                       >
                         <IoIosSearch className="fs-5" />
                         <input
-                          type="text"
+                          type="search"
                           placeholder="Search"
                           style={{
                             width: "100%",
