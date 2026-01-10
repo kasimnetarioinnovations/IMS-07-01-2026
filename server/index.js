@@ -63,6 +63,7 @@ const PrintTemplateRoutes = require("./routes/settings/printTemplateRoutes.js");
 const barcodeSettingsRoutes = require("./routes/settings/barcodeSettingsRoutes");
 const notesTermsRoutes = require("./routes/settings/notesTermsRoutes.js")
 const taxGstRoutes = require("./routes/settings/taxGstRoutes.js")
+const companyBankRoutes = require("./routes/settings/companyBankRoutes.js")
 
 const http = require("http");
 const emailrouter = require("./routes/emailroutes.js");
@@ -169,6 +170,11 @@ app.use("/uploads", express.static("uploads"));
 // company setting
 // register companyprofile api
 app.use("/api/companyprofile", companysettingrouter);
+// company  bank 
+app.use("/api/company-bank", companyBankRoutes);
+
+
+// 
 // Localization api
 app.use("/api/localizationsetting", localizationrouter);
 // cloudnary configuration

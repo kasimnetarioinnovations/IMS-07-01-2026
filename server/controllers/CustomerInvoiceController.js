@@ -3,7 +3,10 @@ const Customer = require("../models/customerModel");
 const Product = require("../models/productModels");
 const cloudinary = require("../utils/cloudinary/cloudinary");
 const mongoose = require("mongoose");
-const { updateCustomerDueAmount } = require("../controllers/customerController");
+const {
+  updateCustomerDueAmount,
+} = require("../controllers/customerController");
+const CompanyBank = require("../models/settings/companyBankModel");
 
 // Helper: Generate unique invoice number - MATCHING FRONTEND FORMAT
 const generateInvoiceNo = async () => {
@@ -154,9 +157,9 @@ exports.createInvoice = async (req, res) => {
     // Validate customer exists
     const customer = await Customer.findById(customerId); // NO SESSION
     if (!customer) {
-      return res.status(404).json({ 
-        success: false, 
-        error: "Customer not found" 
+      return res.status(404).json({
+        success: false,
+        error: "Customer not found",
       });
     }
 
@@ -251,6 +254,16 @@ exports.createInvoice = async (req, res) => {
       finalStatus = "partial";
     }
 
+    // Fetch default company bank (snapshot)
+    const defaultBank = await CompanyBank.findOne({ isDefault: true });
+
+    if (!defaultBank) {
+      return res.status(400).json({
+        success: false,
+        error:
+          "No default company bank account found. Please set a default bank.",
+      });
+    }
     // Create invoice - USING VALUES FROM FRONTEND
     const invoice = new Invoice({
       customerId,
@@ -259,6 +272,15 @@ exports.createInvoice = async (req, res) => {
       dueDate: dueDate
         ? new Date(dueDate)
         : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      bankDetails: {
+        bankName: defaultBank.bankName,
+        accountHolderName: defaultBank.accountHolderName,
+        accountNumber: defaultBank.accountNumber,
+        ifsc: defaultBank.ifsc,
+        branch: defaultBank.branch,
+        upiId: defaultBank.upiId,
+        qrCode: defaultBank.qrCode,
+      },
       items: validatedItems,
       billingAddress: billingAddress || customer.address || "",
       shippingAddress:
@@ -316,27 +338,22 @@ exports.createInvoice = async (req, res) => {
       finalPaidAmount > 0 ? Math.floor(finalPaidAmount / POINTS_RATE) : 0;
 
     // Update customer points and purchase history - NO SESSION
-    await Customer.findByIdAndUpdate(
-      customerId,
-      {
-        $inc: {
-          availablePoints: pointsEarned - shoppingPointsUsed,
-          totalPointsEarned: pointsEarned,
-          totalPointsRedeemed: shoppingPointsUsed,
-          totalPurchases: 1,
-          totalPurchaseAmount: grandTotal,
-        },
-        $set: {
-          lastPurchaseDate: new Date(),
-          lastPointsEarnedDate:
-            pointsEarned > 0 ? new Date() : customer.lastPointsEarnedDate,
-          lastPointsRedeemedDate:
-            shoppingPointsUsed > 0
-              ? new Date()
-              : customer.lastPointsRedeemedDate,
-        },
-      }
-    );
+    await Customer.findByIdAndUpdate(customerId, {
+      $inc: {
+        availablePoints: pointsEarned - shoppingPointsUsed,
+        totalPointsEarned: pointsEarned,
+        totalPointsRedeemed: shoppingPointsUsed,
+        totalPurchases: 1,
+        totalPurchaseAmount: grandTotal,
+      },
+      $set: {
+        lastPurchaseDate: new Date(),
+        lastPointsEarnedDate:
+          pointsEarned > 0 ? new Date() : customer.lastPointsEarnedDate,
+        lastPointsRedeemedDate:
+          shoppingPointsUsed > 0 ? new Date() : customer.lastPointsRedeemedDate,
+      },
+    });
 
     // Update customer due amount
     await updateCustomerDueAmount(customerId);
@@ -344,10 +361,9 @@ exports.createInvoice = async (req, res) => {
     // Update product stock quantities
     for (const item of validatedItems) {
       if (item.productId) {
-        await Product.findByIdAndUpdate(
-          item.productId,
-          { $inc: { stockQuantity: -item.qty } }
-        );
+        await Product.findByIdAndUpdate(item.productId, {
+          $inc: { stockQuantity: -item.qty },
+        });
       }
     }
 
@@ -608,9 +624,9 @@ exports.updateInvoice = async (req, res) => {
 
     const invoice = await Invoice.findById(req.params.id); // NO SESSION
     if (!invoice) {
-      return res.status(404).json({ 
-        success: false, 
-        error: "Invoice not found" 
+      return res.status(404).json({
+        success: false,
+        error: "Invoice not found",
       });
     }
 
@@ -697,7 +713,8 @@ exports.updateInvoice = async (req, res) => {
           }
 
           // Update customer points
-          customer.availablePoints = (customer.availablePoints || 0) - pointsDiff;
+          customer.availablePoints =
+            (customer.availablePoints || 0) - pointsDiff;
           customer.usedPoints = (customer.usedPoints || 0) + pointsDiff;
           await customer.save(); // NO SESSION
         }
@@ -764,8 +781,10 @@ exports.updateInvoice = async (req, res) => {
             : 0;
 
         // Update customer earned points
-        customer.totalPointsEarned = (customer.totalPointsEarned || 0) + pointsEarned;
-        customer.availablePoints = (customer.availablePoints || 0) + pointsEarned;
+        customer.totalPointsEarned =
+          (customer.totalPointsEarned || 0) + pointsEarned;
+        customer.availablePoints =
+          (customer.availablePoints || 0) + pointsEarned;
         customer.lastPointsEarnedDate = new Date();
         await customer.save(); // NO SESSION
       }
@@ -826,9 +845,9 @@ exports.deleteInvoice = async (req, res) => {
 
     const invoice = await Invoice.findById(req.params.id); // NO SESSION
     if (!invoice) {
-      return res.status(404).json({ 
-        success: false, 
-        error: "Invoice not found" 
+      return res.status(404).json({
+        success: false,
+        error: "Invoice not found",
       });
     }
 
@@ -842,8 +861,12 @@ exports.deleteInvoice = async (req, res) => {
     if (shoppingPointsUsed > 0) {
       const customer = await Customer.findById(customerId); // NO SESSION
       if (customer) {
-        customer.availablePoints = (customer.availablePoints || 0) + shoppingPointsUsed;
-        customer.usedPoints = Math.max(0, (customer.usedPoints || 0) - shoppingPointsUsed);
+        customer.availablePoints =
+          (customer.availablePoints || 0) + shoppingPointsUsed;
+        customer.usedPoints = Math.max(
+          0,
+          (customer.usedPoints || 0) - shoppingPointsUsed
+        );
         await customer.save(); // NO SESSION
       }
     }
@@ -858,8 +881,14 @@ exports.deleteInvoice = async (req, res) => {
         const POINTS_RATE = 10;
         const pointsEarned = Math.floor(paidAmount / POINTS_RATE);
 
-        customer.availablePoints = Math.max(0, (customer.availablePoints || 0) - pointsEarned);
-        customer.totalPointsEarned = Math.max(0, (customer.totalPointsEarned || 0) - pointsEarned);
+        customer.availablePoints = Math.max(
+          0,
+          (customer.availablePoints || 0) - pointsEarned
+        );
+        customer.totalPointsEarned = Math.max(
+          0,
+          (customer.totalPointsEarned || 0) - pointsEarned
+        );
         await customer.save(); // NO SESSION
       }
     }
@@ -890,7 +919,8 @@ exports.deleteInvoice = async (req, res) => {
 
       // Recalculate average order value
       if (customer.totalPurchases > 0) {
-        customer.averageOrderValue = customer.totalPurchaseAmount / customer.totalPurchases;
+        customer.averageOrderValue =
+          customer.totalPurchaseAmount / customer.totalPurchases;
       } else {
         customer.averageOrderValue = 0;
       }
@@ -987,7 +1017,9 @@ exports.addPayment = async (req, res) => {
     if (paymentAmount > remainingDue) {
       return res.status(400).json({
         success: false,
-        error: `Payment amount exceeds due amount. Due: ₹${remainingDue.toFixed(2)}`,
+        error: `Payment amount exceeds due amount. Due: ₹${remainingDue.toFixed(
+          2
+        )}`,
         dueAmount: remainingDue,
         maxPayment: remainingDue,
       });
@@ -1037,8 +1069,10 @@ exports.addPayment = async (req, res) => {
     if (pointsEarned > 0) {
       const customer = await Customer.findById(invoice.customerId); // NO SESSION
       if (customer) {
-        customer.availablePoints = (customer.availablePoints || 0) + pointsEarned;
-        customer.totalPointsEarned = (customer.totalPointsEarned || 0) + pointsEarned;
+        customer.availablePoints =
+          (customer.availablePoints || 0) + pointsEarned;
+        customer.totalPointsEarned =
+          (customer.totalPointsEarned || 0) + pointsEarned;
         customer.lastPointsEarnedDate = new Date();
 
         // Update payment history
@@ -1151,11 +1185,17 @@ exports.getInvoiceStats = async (req, res) => {
         if (period === "today") {
           matchStage.invoiceDate.$gte = new Date(now.setHours(0, 0, 0, 0));
         } else if (period === "week") {
-          matchStage.invoiceDate.$gte = new Date(now.setDate(now.getDate() - 7));
+          matchStage.invoiceDate.$gte = new Date(
+            now.setDate(now.getDate() - 7)
+          );
         } else if (period === "month") {
-          matchStage.invoiceDate.$gte = new Date(now.setMonth(now.getMonth() - 1));
+          matchStage.invoiceDate.$gte = new Date(
+            now.setMonth(now.getMonth() - 1)
+          );
         } else if (period === "year") {
-          matchStage.invoiceDate.$gte = new Date(now.setFullYear(now.getFullYear() - 1));
+          matchStage.invoiceDate.$gte = new Date(
+            now.setFullYear(now.getFullYear() - 1)
+          );
         }
       }
 
@@ -1383,9 +1423,9 @@ exports.getInvoicesByCustomer = async (req, res) => {
 
     // Build filter
     const filter = { customerId };
-    
+
     // Add status filter if provided
-    if (status && status !== 'all') {
+    if (status && status !== "all") {
       filter.status = status;
     }
 
@@ -1398,7 +1438,9 @@ exports.getInvoicesByCustomer = async (req, res) => {
 
     // Get invoices
     const invoices = await Invoice.find(filter)
-      .select('invoiceNo invoiceDate dueDate grandTotal paidAmount dueAmount status paymentMethod')
+      .select(
+        "invoiceNo invoiceDate dueDate grandTotal paidAmount dueAmount status paymentMethod"
+      )
       .sort({ invoiceDate: -1 })
       .limit(parseInt(limit));
 
@@ -1444,13 +1486,18 @@ exports.getOverdueInvoicesByCustomer = async (req, res) => {
       customerId,
       dueDate: { $lt: today },
       dueAmount: { $gt: 0 },
-      status: { $in: ['sent', 'partial'] }
+      status: { $in: ["sent", "partial"] },
     })
-    .select('invoiceNo invoiceDate dueDate grandTotal paidAmount dueAmount status')
-    .sort({ dueDate: 1 });
+      .select(
+        "invoiceNo invoiceDate dueDate grandTotal paidAmount dueAmount status"
+      )
+      .sort({ dueDate: 1 });
 
     // Calculate total overdue amount
-    const totalOverdue = overdueInvoices.reduce((sum, inv) => sum + inv.dueAmount, 0);
+    const totalOverdue = overdueInvoices.reduce(
+      (sum, inv) => sum + inv.dueAmount,
+      0
+    );
 
     res.json({
       success: true,
@@ -1484,10 +1531,12 @@ exports.getUnpaidInvoicesByCustomer = async (req, res) => {
     const unpaidInvoices = await Invoice.find({
       customerId,
       dueAmount: { $gt: 0 },
-      status: { $in: ['sent', 'partial'] }
+      status: { $in: ["sent", "partial"] },
     })
-    .select('invoiceNo invoiceDate dueDate grandTotal paidAmount dueAmount status')
-    .sort({ dueDate: 1 });
+      .select(
+        "invoiceNo invoiceDate dueDate grandTotal paidAmount dueAmount status"
+      )
+      .sort({ dueDate: 1 });
 
     res.json({
       success: true,

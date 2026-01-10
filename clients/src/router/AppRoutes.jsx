@@ -179,6 +179,7 @@ import Quotation from "../pages/Invoices/Quotation.jsx";
 import DebitNoteViewEdit from "../components/features/creditDebit/debitNote/DebitNoteViewEdit.jsx";
 import EmptyDebitNote from "../components/features/creditDebit/debitNote/EmptyDebitNote.jsx";
 import CreditNoteList from "../components/features/creditDebit/creditNote/CreditNoteList.jsx";
+import SettingCompanyBank from "../components/componentSetting/companySettings/SettingCompanyBank.jsx";
 // import {Pos} from "../pages/pos/Pos.jsx";
 
 
@@ -252,8 +253,8 @@ const AppRoutes = () => {
       <Route
         element={
           <PrivateRoute>
-          
-            <MainLayouts/>
+
+            <MainLayouts />
           </PrivateRoute>
         }
       >
@@ -390,8 +391,8 @@ const AppRoutes = () => {
         <Route path="/show-purchase-orders/:invoiceId" element={<ShowPurchaseOrderInvoice />} />
         <Route path="/create-supplier-debitnote/:supplierId" element={<SupplierDebitNote />} />
         <Route path="/empty-debitnote" element={<EmptyDebitNote />} />
-          <Route path="/edit-debitnote/:id" element={<DebitNoteViewEdit />} />
-  <Route path="/debitnote-details/:id" element={<DebitNoteViewEdit />} />
+        <Route path="/edit-debitnote/:id" element={<DebitNoteViewEdit />} />
+        <Route path="/debitnote-details/:id" element={<DebitNoteViewEdit />} />
         <Route path="/quotation" element={<Quotation />} />
 
         {/* ------------------ MAIL ROUTES ------------------ */}
@@ -434,17 +435,18 @@ const AppRoutes = () => {
         <Route path="/expense-report" element={<ExpenseReport />} />
 
 
-           <Route path="/settings" element={<SettingsLayouts />} >
-            <Route path="user-profile-settings" element={<UserProfile />} />
-            <Route path="company-settings" element={<SettingsCompanyDetails />} />
-            <Route path="barcode-print" element={<BarCodePrint/>} />
-            <Route path="normal-print" element={<NormalPrint />} />
-            <Route path="normalprint-invoice" element={<NormalPrintInvoice />} />
-            <Route path="thermalprint-invoice" element={<ThermalPrintInvoice />} />
-            <Route path="thermal-print" element={<ThermalPrint />} />
-            <Route path="notes-term-condition" element={<NotesTermCondition />} />
-            <Route path="taxes-gst" element={<Taxes_GST />} />
-          </Route>
+        <Route path="/settings" element={<SettingsLayouts />} >
+          <Route path="user-profile-settings" element={<UserProfile />} />
+          <Route path="company-settings" element={<SettingsCompanyDetails />} />
+          <Route path="company-bank" element={<SettingCompanyBank />} />
+          <Route path="barcode-print" element={<BarCodePrint />} />
+          <Route path="normal-print" element={<NormalPrint />} />
+          <Route path="normalprint-invoice" element={<NormalPrintInvoice />} />
+          <Route path="thermalprint-invoice" element={<ThermalPrintInvoice />} />
+          <Route path="thermal-print" element={<ThermalPrint />} />
+          <Route path="notes-term-condition" element={<NotesTermCondition />} />
+          <Route path="taxes-gst" element={<Taxes_GST />} />
+        </Route>
 
       </Route>
 

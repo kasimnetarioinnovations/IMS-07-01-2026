@@ -47,6 +47,16 @@ const invoiceSchema = new mongoose.Schema(
     billingAddress: { type: String, required: true },
     shippingAddress: { type: String },
 
+    bankDetails: {
+      bankName: String,
+      accountHolderName: String,
+      accountNumber: String,
+      ifsc: String,
+      branch: String,
+      upiId: String,
+      qrCode: String,
+    },
+
     subtotal: { type: Number, required: true, min: 0 },
     totalTax: { type: Number, default: 0 },
     totalDiscount: { type: Number, default: 0 },
