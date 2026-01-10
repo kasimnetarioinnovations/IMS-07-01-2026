@@ -13,15 +13,64 @@ import SearchningFor from "./SearchningFor";
 import { useAuth } from "../../components/auth/AuthContext";
 import { SIDEBAR_SEARCH_ROUTES } from "../../utils/sidebarSearchConfig";
 import { TbMaximize, TbZoomScan } from "react-icons/tb";
+import { useSocket } from "../../Context/SocketContext";
+import api from "../../pages/config/axiosInstance";
+import Activities from '../layouts/Navbar/activities'
 
 const Navbar = () => {
   const [sidebarActive, setSidebarActive] = useState(false);
   const serchingRef = useRef(null);
   const serchingBtnRef = useRef(null);
   const [showRecentSearch, setShowRecentSearch] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
+  const [dropdownActive, setDropdownActive] = useState(false);
 
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { connectSocket, getSocket } = useSocket();
+
+  const fetchNotificationCount = async () => {
+    try {
+      if (!user) return;
+
+      // console.log('🔔 Fetching notification count for user:', user?._id);
+
+      const res = await api.get(`/api/notifications/unread/${user?._id}`);
+      setNotificationCount(res.data.count || 0);
+    } catch (error) {
+      // console.error("Error fetching notification count:", error);
+    }
+  };
+
+
+  useEffect(() => {
+    if (!user) return;
+    fetchNotificationCount(); // Fetch notification count
+
+    // Initialize socket connection for real-time notifications
+    const socket = connectSocket(api.defaults.baseURL);
+
+    if (socket) {
+      // Register current user so server can route events correctly
+      try {
+        socket.emit("add-user", user?._id);
+      } catch (e) {
+        // console.error("Failed to register user on socket:", e);
+      }
+
+      // Listen for new notifications
+      socket.on("new-notification", (notificationData) => {
+        setNotificationCount((prev) => prev + 1);
+      });
+    }
+
+    return () => {
+    };
+  }, [user]);
+
+  const handleUnreadCountChange = (count) => {
+    setNotificationCount(Math.max(0, Number(count) || 0));
+  };
 
   const settingGoToPage = () => {
     navigate("/settings/user-profile-settings");
@@ -40,9 +89,7 @@ const Navbar = () => {
 
     // If no permissions or module not defined → deny
     if (!permissions || !permissions[module]) {
-      console.warn(
-        `Module "${module}" not found in permissions for user ${user?.name}`
-      );
+      // console.warn(`Module "${module}" not found in permissions for user ${user?.name}`);
       return false;
     }
 
@@ -110,7 +157,7 @@ const Navbar = () => {
         setIsFullscreen(false);
       }
     } catch (err) {
-      console.error("Fullscreen toggle failed:", err);
+      // console.error("Fullscreen toggle failed:", err);
     }
   };
 
@@ -148,9 +195,8 @@ const Navbar = () => {
       >
         {/*Mobile Toggle Button  */}
         <div
-          className={`mobile-toggle-btn d-none ${
-            sidebarActive ? "active" : ""
-          }`}
+          className={`mobile-toggle-btn d-none ${sidebarActive ? "active" : ""
+            }`}
           id="mobileToggleBtn"
           onClick={handleSidebarToggle}
           style={{ border: "2px solid rgb(31, 127, 255)" }}
@@ -213,10 +259,10 @@ const Navbar = () => {
         <div className="d-flex align-items-center gap-3">
           <TbZoomScan
             id="btnFullscreen"
-            style={{ cursor: "pointer" , fontSize:"25px"}}
+            style={{ cursor: "pointer", fontSize: "25px" }}
             onClick={handleFullscreen}
             title="Max&Min"
-            
+
           />
 
           <div className="nav-user-info  d-flex align-items-center gap-3">
@@ -230,23 +276,60 @@ const Navbar = () => {
                 />
               </div>
             )}
-            <div className="icon-hover">
+            <div style={{ position: "relative" }}
+              className="icon-hover"
+              onClick={(e) => {
+                e.preventDefault();
+                setDropdownActive(!dropdownActive);
+              }}>
               <PiBellThin size={26} cursor="pointer" title="Notifications" />
+              {notificationCount > 0 && (
+                <span
+                  className="badge rounded-pill"
+                  style={{
+                    position: "absolute",
+                    top: "-8px",
+                    right: "-8px",
+                    backgroundColor: "red",
+                    color: "white",
+                    fontSize: "10px",
+                    minWidth: "18px",
+                    height: "20px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "50%",
+                    border: "1px solid white",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                  }}
+                >
+                  {notificationCount > 99 ? "99+" : notificationCount}
+                </span>
+              )}
             </div>
+
+            {dropdownActive && (
+              <div
+                className=""
+                style={{ borderRadius: "8px", position: "absolute", top: "55px", right: "80px", zIndex: 1000, }}
+              >
+                <Activities onUnreadCountChange={handleUnreadCountChange} onClose={() => setDropdownActive(false)} />
+              </div>
+            )}
           </div>
 
           {canAccess("POS", "read") && (
             <button
               className="button-color button-hover d-flex justify-content-center align-items-center"
-               data-bs-toggle="tooltip"
-  data-bs-placement="top"
-  title="POS MACHINE"
+              data-bs-toggle="tooltip"
+              data-bs-placement="top"
+              title="POS MACHINE"
               style={{
                 padding: "8px",
                 width: "65px",
                 height: "36px",
                 gap: "4px",
-              
+
               }}
             >
               <img src={pos_icon} alt="pos_icon" />
@@ -257,8 +340,8 @@ const Navbar = () => {
                   color: "white",
                   fontFamily: "Inter",
                   fontSize: "14px",
-                  
-                  
+
+
                 }}
               >
                 POS

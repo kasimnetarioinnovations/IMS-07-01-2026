@@ -16,6 +16,16 @@ import autoTable from "jspdf-autotable";
 import { hasPermission } from '../../../../utils/permission/hasPermission';
 import api from "../../../../pages/config/axiosInstance"
 
+import { Link, NavLink } from "react-router-dom";
+import { IoIosSearch, IoIosArrowDown } from "react-icons/io";
+import { FaArrowLeft, FaBarcode, FaFileImport } from "react-icons/fa6";
+import { MdOutlineViewSidebar, MdAddShoppingCart } from "react-icons/md";
+import { TbFileImport, TbFileExport } from "react-icons/tb";
+import Pagination from "../../../../components/Pagination";
+import DeleteModal from "../../../ConfirmDelete";
+import edit from "../../../../assets/images/edit.png";
+import deletebtn from "../../../../assets/images/delete.png";
+
 const HSNList = () => {
   const [data, setData] = useState([]);
   const [page, setPage] = useState(1);
@@ -27,9 +37,15 @@ const HSNList = () => {
   const [showModal, setShowModal] = useState(false);
   const [errors, setErrors] = useState({});
   const hsnRegex = /^[0-9]{2,8}$/;
-  // === BULK DELETE STATE ===
-  const [selectedHSN, setSelectedHSN] = useState([]);
+  const [selectedRowIds, setSelectedRowIds] = useState(new Set());
+  const [allVisibleSelected, setAllVisibleSelected] = useState(false);
 
+  const [activeRow, setActiveRow] = useState(null);
+  const [viewOptions, setViewOptions] = useState(false);
+  const buttonRefs = useRef([]);
+  const modelRef = useRef(null);
+  const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0 });
+  const [openUpwards, setOpenUpwards] = useState(false);
 
   useEffect(() => { load(); }, [page, limit, search]);
 
@@ -43,21 +59,33 @@ const HSNList = () => {
       setPages(res.data.pages);
       setTotal(res.data.total);
     } catch (err) {
-      console.error('Error loading HSN:', err);
+      // console.error('Error loading HSN:', err);
     }
   };
 
-  const remove = async (id) => {
-    const confirmed = await DeleteAlert({});
-    if (!confirmed) return;
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
 
+  const handleDelete = (id) => {
+    setDeleteTargetId(id);
+    setShowDeleteModal(true);
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setDeleteTargetId(null);
+  };
+
+  const confirmDelete = async (id) => {
+    if (!deleteTargetId) return;
     try {
-      // const token = localStorage.getItem("token")
-      await api.delete(`/api/hsn/${id}`);
+      await api.delete(`/api/hsn/${deleteTargetId}`);
+      setShowDeleteModal(false);
+      setDeleteTargetId(null);
       load();
       toast.success("HSN deleted successfully!");
     } catch (err) {
-      console.error('Error deleting HSN:', err);
+      // console.error('Error deleting HSN:', err);
       toast.error("Failed to delete HSN. Please try again.");
     }
   };
@@ -75,11 +103,10 @@ const HSNList = () => {
       document.body.appendChild(link);
       link.click();
     } catch (err) {
-      console.error('Export error:', err);
+      // console.error('Export error:', err);
     }
   };
 
-  // PDF download functionality
   const handlePdf = () => {
     const doc = new jsPDF();
     doc.text("HSN List", 14, 15);
@@ -89,7 +116,11 @@ const HSNList = () => {
       "Created Date",
     ];
 
-    const tableRows = data.map((e) => [
+    const dataToExport = selectedRowIds.size > 0
+      ? data.filter(item => selectedRowIds.has(item._id))
+      : data;
+
+    const tableRows = dataToExport.map((e) => [
       e.hsnCode,
       e.description,
       new Date(e.createdAt).toLocaleDateString(),
@@ -112,7 +143,6 @@ const HSNList = () => {
     doc.save("hsn-list.pdf");
   };
 
-  // Excel export functionality
   const handleExcel = () => {
     // Prepare data for Excel export
     const excelData = data.map((hsn) => ({
@@ -139,7 +169,6 @@ const HSNList = () => {
     // Generate Excel file and trigger download
     XLSX.writeFile(workbook, "hsn-list.xlsx");
   };
-
 
   const fileInputRef = useRef(null);
 
@@ -174,11 +203,10 @@ const HSNList = () => {
 
       reader.readAsArrayBuffer(file);
     } catch (error) {
-      console.error(error);
+      // console.error(error);
       toast.error("Import failed");
     }
   };
-
 
   const handleModalSubmit = async () => {
     let newErrors = {};
@@ -234,7 +262,7 @@ const HSNList = () => {
       setErrors({});
       load();
     } catch (err) {
-      console.error('Save error:', err);
+      // console.error('Save error:', err);
 
       // Handle specific error cases
       if (err.response?.status === 400) {
@@ -259,269 +287,665 @@ const HSNList = () => {
     setShowModal(true);
   };
 
-  // === BULK DELETE HANDLERS ===
-  const handleCheckboxChange = (id) => {
-    setSelectedHSN((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  };
+  const handleBulkDelete = async () => {
+    if (selectedRowIds.size === 0) return;
+    if (!window.confirm(`Delete ${selectedRowIds.size} selected HSN records?`)) return;
 
-  const handleSelectAll = (e) => {
-    if (e.target.checked) {
-      const allIds = data.map((item) => item._id); // current page data
-      setSelectedHSN(allIds);
-    } else {
-      setSelectedHSN([]);
+    try {
+      await Promise.all(
+        Array.from(selectedRowIds).map((id) => api.delete(`/api/hsn/${id}`))
+      );
+      toast.success("Selected HSNs deleted");
+      setSelectedRowIds(new Set());
+      load();
+    } catch (err) {
+      // console.error("Bulk delete error:", err);
+      toast.error("Failed to delete selected HSNs");
     }
   };
 
-  // bulk delete start from here
-
-  // const handleBulkDelete = async () => {
-  //   if (selectedHSN.length === 0) return;
-  //   if (!window.confirm(`Delete ${selectedHSN.length} selected HSN records?`)) return;
-
-  //   try {
-  //     // const token = localStorage.getItem("token")
-  //     await Promise.all(
-  //       selectedHSN.map((id) => axios.delete(`${BASE_URL}/api/hsn/${id}`))
-  //     );
-  //     toast.success("Selected HSNs deleted");
-  //     setSelectedHSN([]);
-  //     load();
-  //   } catch (err) {
-  //     console.error("Bulk delete error:", err);
-  //     toast.error("Failed to delete selected HSNs");
-  //   }
-  // };
-
   useEffect(() => {
-    setSelectedHSN((prev) => prev.filter((id) => data.some((d) => d._id === id)));
-  }, [data]);
-
-
+    const allCurrentPageIds = data.map(item => item._id);
+    const allSelected = allCurrentPageIds.length > 0 && allCurrentPageIds.every(id => selectedRowIds.has(id));
+    setAllVisibleSelected(allSelected);
+  }, [data, selectedRowIds]);
 
   return (
- 
-      <div className="px-4 py-4">
-        <div className="page-header">
-          <div className="add-item d-flex">
-            <div className="page-title">
-              <h4 className="fw-bold">Hsn List</h4>
-              <h6>Manage your Hsn</h6>
-            </div>
-          </div>
-          <div className="table-top-head me-2">
-            <li>
+    <div className="p-4">
+      {/* header, view style */}
+      <div
+        style={{
+          width: "100%",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          padding: "0px 0px 16px 0px", // Optional: padding for container
+        }}
+      >
+        {/* Left: Title + Icon */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 11,
+            height: '33px'
+          }}
+        >
+          <h2
+            style={{
+              margin: 0,
+              color: "black",
+              fontSize: 22,
+              fontFamily: "Inter, sans-serif",
+              fontWeight: 500,
+              height: '33px'
+            }}
+          >
+            HSN
+          </h2>
+        </div>
 
-              {selectedHSN.length > 0 && (
-                <button className="btn btn-danger me-2" onClick={handleBulkDelete}>
-                  Delete ({selectedHSN.length}) Selected
-                </button>
-              )}
-
-            </li>
-            {hasPermission("HSN", "export") && (
-            <li style={{ display: "flex", alignItems: "center", gap: '5px' }} className="icon-btn">
-              <label className="" title="">Export : </label>
-              <button onClick={handlePdf} title="Download PDF" style={{
-                backgroundColor: "white",
-                display: "flex",
-                alignItems: "center",
-                border: "none",
-              }}><FaFilePdf className="fs-20" style={{ color: "red" }} /></button>
-              <button onClick={handleExcel} title="Download Excel" style={{
-                backgroundColor: "white",
-                display: "flex",
-                alignItems: "center",
-                border: "none",
-              }}><FaFileExcel className="fs-20" style={{ color: "orange" }} /></button>
-            </li>
-            )}
-            {hasPermission("HSN", "import") && (
-            <li style={{ display: "flex", alignItems: "center", gap: '5px' }} className="icon-btn">
-              <label className="" title="">Import : </label>
-              <label className="" title="Import Excel">
-                <input
-                  type="file"
-                  accept=".xlsx,.xls,.csv"
-                  hidden
-                  onChange={handleImport}
-                  ref={fileInputRef}
-                />
-                <FaFileExcel style={{ color: 'green', cursor: 'pointer' }} />
-              </label>
-            </li>
-            )}
-            {/* <li>
-              <button type="button" className="icon-btn" title="Export Excel" onClick={handleExcel}>
-                <FaFileExcel />
-              </button>
-            </li> */}
-          </div>
-          <div className="page-btn">
-            {hasPermission("HSN", "write") && (
-            <a
-              href="#"
-              className="btn btn-primary"
-              data-bs-toggle="modal"
+        {/* Right: Action Buttons */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+            height: "33px",
+          }}
+        >
+          {hasPermission("HSN", "write") && (
+            <button
               onClick={() => openModal()}
+              style={{
+                padding: "6px 16px",
+                background: "white",
+                border: "1px solid #1F7FFF",
+                color: "#1F7FFF",
+                borderRadius: 8,
+                textDecoration: "none",
+                fontSize: "14px",
+                display: "flex",
+                gap: "8px",
+                alignItems: "center",
+                height: "33px",
+              }}
             >
-              <CiCirclePlus className=" me-1" />
-              Add Hsn
-            </a>
+              <MdAddShoppingCart className="fs-5" />
+              <span className="fs-6">Add HSN</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div
+        style={{
+          width: "100%",
+          minHeight: "auto",
+          maxHeight: "calc(100vh - 160px)",
+          padding: 16,
+          background: "white",
+          borderRadius: 16,
+          display: "flex",
+          flexDirection: "column",
+          gap: 16,
+          fontFamily: "Inter, sans-serif",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            width: "100%",
+          }}
+        >
+          {/* Tabs */}
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              padding: 2,
+              background: "#F3F8FB",
+              borderRadius: 8,
+              flexWrap: "wrap",
+              height: "38px",
+              width: "auto",
+            }}
+          >
+            {[
+              { label: "All", count: total },
+            ].map((tab) => (
+              <div
+                key={tab.label}
+                style={{
+                  padding: "6px 12px",
+                  background: "white",
+                  borderRadius: 8,
+                  boxShadow: "0px 1px 4px rgba(0, 0, 0, 0.10)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: 14,
+                  color: "#0E101A",
+                  cursor: "pointer",
+                }}
+                onClick={() => setListTab(tab.label)}
+              >
+                {tab.label}
+                <span style={{ color: "#727681" }}>{tab.count}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* select delete + Search Bar + export import */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "end",
+              gap: "24px",
+              height: "33px",
+              width: "50%",
+            }}
+          >
+
+            {selectedRowIds.size > 0 && (
+              <button className="btn btn-danger me-2" onClick={handleBulkDelete}>
+                Delete ({selectedRowIds.size}) Selected
+              </button>
+            )}
+
+            <div
+              style={{
+                width: "50%",
+                position: "relative",
+                padding: "8px 16px 8px 20px",
+                display: "flex",
+                borderRadius: 8,
+                alignItems: "center",
+                background: "#FCFCFC",
+                border: "1px solid #EAEAEA",
+                gap: "5px",
+                color: "rgba(19.75, 25.29, 61.30, 0.40)",
+              }}
+            >
+              <IoIosSearch className="fs-4" />
+              <input
+                type="search"
+                placeholder="Search"
+                style={{
+                  width: "100%",
+                  border: "none",
+                  outline: "none",
+                  fontSize: 14,
+                  background: "#FCFCFC",
+                  color: "rgba(19.75, 25.29, 61.30, 0.40)",
+                }}
+                value={search}
+                onChange={e => { setSearch(e.target.value); setPage(1); }}
+              />
+            </div>
+
+            {hasPermission("HSN", "export") && (
+              <div
+                style={{
+                  display: "inline-flex",
+                  justifyContent: "flex-start",
+                  alignItems: "center",
+                  gap: 16,
+                }}
+              >
+                {/* Export Button */}
+                <button
+                  title="Download Pdf"
+                  onClick={handlePdf}
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-start",
+                    alignItems: "center",
+                    gap: 9,
+                    padding: "8px 16px",
+                    background: "#FCFCFC",
+                    borderRadius: 8,
+                    outline: "1px solid #EAEAEA",
+                    outlineOffset: "-1px",
+                    border: "none",
+                    cursor: "pointer",
+                    fontFamily: "Inter, sans-serif",
+                    fontSize: 14,
+                    fontWeight: 400,
+                    color: "#0E101A",
+                    height: "33px",
+                  }}
+                >
+                  <TbFileExport className="fs-5 text-secondary" />
+                  Export
+                </button>
+              </div>
             )}
           </div>
         </div>
-        {/* /product list */}
-        <div className="card">
-          <div className="card-header d-flex align-items-center justify-content-between flex-wrap row-gap-3">
-            <div className="search-set">
-              <div className="search-input">
-                <input
-                  type="text"
-                  placeholder="Search hsn code or description..."
-                  className="form-control"
-                  value={search}
-                  onChange={e => { setSearch(e.target.value); setPage(1); }}
-                />
-              </div>
-            </div>
-          </div>
-          <div className="card-body p-0">
-            <div className="table-responsive">
-              <table className="table datatable">
-                <thead className="thead-light">
-                  <tr style={{ textAlign: 'start' }}>
-                    <th className="no-sort">
-                      <label className="checkboxs">
-                        <input type="checkbox" id="select-all" checked={data.length > 0 && selectedHSN.length === data.length}
-                          onChange={handleSelectAll} />
-                        <span className="checkmarks" />
-                      </label>
-                    </th>
-                    <th>HSN Code</th>
-                    <th>Description</th>
-                    <th>Created Date</th>
-                    <th style={{ textAlign: 'center', width: '120px' }}>Action</th>
+
+        {/* Table */}
+        <div
+          className="table-responsive"
+          style={{
+            overflowY: "auto",
+            maxHeight: "510px",
+          }}
+        >
+          <table
+            className="table-responsive"
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              overflowX: "auto",
+            }}
+          >
+            {/* Header */}
+            <thead
+              style={{
+                position: "sticky",
+                top: 0,
+                zIndex: 10,
+                height: "38px",
+              }}
+            >
+              <tr style={{ background: "#F3F8FB" }}>
+                <th
+                  style={{
+                    textAlign: "left",
+                    padding: "4px 16px",
+                    color: "#727681",
+                    fontSize: 14,
+                    width: "auto",
+                    fontWeight: "400",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      style={{ width: 18, height: 18 }}
+                      checked={allVisibleSelected}
+                      onChange={(e) => {
+                        const next = new Set(selectedRowIds);
+                        if (e.target.checked) {
+                          data.forEach((row) => row._id && next.add(row._id));
+                        } else {
+                          data.forEach((row) => row._id && next.delete(row._id));
+                        }
+                        setSelectedRowIds(next);
+                      }}
+                    />
+                    HSN Code
+                  </div>
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    padding: "4px 16px",
+                    color: "#727681",
+                    fontSize: 14,
+                    width: "auto",
+                    fontWeight: "400",
+                  }}
+                >
+                  Description
+                </th>
+                <th
+                  style={{
+                    textAlign: "left",
+                    padding: "4px 16px",
+                    color: "#727681",
+                    fontSize: 14,
+                    width: "auto",
+                    fontWeight: "400",
+                  }}
+                >
+                  Created Date
+                </th>
+                <th
+                  style={{
+                    textAlign: "center",
+                    padding: "4px 16px",
+                    color: "#727681",
+                    fontSize: 14,
+                    width: "auto",
+                    fontWeight: "400",
+                  }}
+                >
+                  Actions
+                </th>
+              </tr>
+            </thead>
+
+            <tbody style={{ overflowY: "auto" }}>
+              {data.length === 0 ? (
+                <>
+                  <tr>
+                    <td
+                      colSpan={5}
+                      style={{
+                        padding: "12px 16px",
+                        verticalAlign: "middle",
+                        textAlign: "center",
+                        fontSize: 14,
+                        color: "#6C748C",
+                        fontStyle: "italic",
+                      }}
+                    >
+                      No HSN Data Available
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {data.length === 0 ? (
-                    <tr>
-                      <td colSpan="5" className="text-center">No HSN records found.</td>
-                    </tr>
-                  ) : (
-                    data.map((hsn) => (
-                      <tr key={hsn._id}>
-                        <td>
-                          <label className="checkboxs">
-                            <input type="checkbox" checked={selectedHSN.includes(hsn._id)}
-                              onChange={() => handleCheckboxChange(hsn._id)} />
-                            <span className="checkmarks" />
-                          </label>
-                        </td>
-                        <td>{hsn.hsnCode}</td>
-                        <td>{hsn.description.length > 100 ? hsn.description.slice(0, 100) + '...' : hsn.description}</td>
-                        <td>{new Date(hsn.createdAt).toLocaleDateString("en-GB", {
+                </>
+              ) : (
+                <>
+                  {data.map((hsn, index) => (
+                    <tr
+                      key={hsn._id}
+                      style={{
+                        borderBottom: "1px solid #EAEAEA",
+                        height: "46px",
+                      }}
+                      className={`table-hover ${activeRow === index ? "active-row" : ""}`}
+                    >
+                      {/* hsn code */}
+                      <td
+                        style={{
+                          padding: "4px 16px",
+                          verticalAlign: "middle",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 12,
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            style={{ width: 18, height: 18 }}
+                            checked={selectedRowIds.has(hsn._id)}
+                            onChange={(e) => {
+                              const next = new Set(selectedRowIds);
+                              if (e.target.checked) {
+                                if (hsn._id) next.add(hsn._id);
+                              } else {
+                                if (hsn._id) next.delete(hsn._id);
+                              }
+                              setSelectedRowIds(next);
+                            }}
+                          />
+                          <div
+                            style={{
+                              fontSize: 14,
+                              color: "#0E101A",
+                              whiteSpace: "nowrap",
+                              display: "flex",
+                              gap: "5px",
+                              justifyContent: "center",
+                              alignItems: "center",
+                              cursor: "pointer",
+                            }}
+                          >
+                            {hsn.hsnCode}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* description */}
+                      <td
+                        style={{
+                          padding: "4px 16px",
+                          fontSize: 14,
+                          color: "#0E101A",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <span>{hsn.description.length > 100 ? hsn.description.slice(0, 100) + '...' : hsn.description}</span>
+                      </td>
+
+                      {/* created date */}
+                      <td
+                        style={{
+                          padding: "4px 16px",
+                          fontSize: 14,
+                          color: "#0E101A",
+                        }}
+                      >
+                        {new Date(hsn.createdAt).toLocaleDateString("en-GB", {
                           day: '2-digit',
                           month: 'short',
                           year: 'numeric'
-                        })}</td>
-                        <td className="action-table-data">
-                          <div className="edit-delete-action">
-                            {hasPermission("HSN", "update") && (
-                            <a
-                              className="me-2 p-2"
-                              href="#"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                openModal(hsn);
-                              }}
-                            >
-                              <TbEdit />
-                            </a>
-                            )}
-                            {hasPermission("HSN", "delete") && (
-                            <a
-                              className="p-2"
-                              onClick={() => remove(hsn._id)}
-                            >
-                              <TbTrash />
-                            </a>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-            {/* pagination */}
-            <div
-              className="d-flex justify-content-end gap-3"
-              style={{ padding: "10px 20px" }}
-            >
-              <select
-                value={limit}
-                onChange={(e) => {
-                  setLimit(Number(e.target.value));
-                  setPage(1);
-                }}
-                className="form-select w-auto"
-              >
-                <option value={10}>10 Per Page</option>
-                <option value={25}>25 Per Page</option>
-                <option value={50}>50 Per Page</option>
-                <option value={100}>100 Per Page</option>
-              </select>
+                        })}
+                      </td>
 
-              <span
-                style={{
-                  backgroundColor: "white",
-                  boxShadow: "rgb(0 0 0 / 4%) 0px 3px 8px",
-                  padding: "7px",
-                  borderRadius: "5px",
-                  border: "1px solid #e4e0e0ff",
-                  color: "gray",
-                }}
-              >
-                {total === 0
-                  ? "0 of 0"
-                  : `${(page - 1) * limit + 1}-${Math.min(page * limit, total)} of ${total}`}
-                <button
-                  style={{
-                    border: "none",
-                    color: "grey",
-                    backgroundColor: "white",
-                  }}
-                  onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-                  disabled={page === 1}
-                >
-                  <GrFormPrevious />
-                </button>
-                <button
-                  style={{ border: "none", backgroundColor: "white" }}
-                  onClick={() => setPage((prev) => Math.min(prev + 1, pages))}
-                  disabled={page === pages}
-                >
-                  <MdNavigateNext />
-                </button>
-              </span>
-            </div>
-          </div>
+                      {/* Actions */}
+                      <td
+                        style={{
+                          padding: "4px 16px",
+                          position: "relative",
+                          overflow: "visible",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            position: "relative",
+                            cursor: "pointer",
+                          }}
+                          onClick={() =>
+                            setViewOptions(
+                              viewOptions === index ? false : index
+                            )
+                          }
+                          ref={(el) => (buttonRefs.current[index] = el)}
+                        >
+                          <div
+                            style={{
+                              width: 24,
+                              height: 24,
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                            }}
+                            onClick={(e) => {
+                              const rect =
+                                e.currentTarget.getBoundingClientRect();
+
+                              const dropdownHeight = 260; // your menu height
+                              const spaceBelow =
+                                window.innerHeight - rect.bottom;
+                              const spaceAbove = rect.top;
+
+                              // decide direction
+                              if (
+                                spaceBelow < dropdownHeight &&
+                                spaceAbove > dropdownHeight
+                              ) {
+                                setOpenUpwards(true);
+                                setDropdownPos({
+                                  x: rect.left,
+                                  y: rect.top - 6, // position above button
+                                });
+                              } else {
+                                setOpenUpwards(false);
+                                setDropdownPos({
+                                  x: rect.left,
+                                  y: rect.bottom + 6, // position below button
+                                });
+                              }
+
+                              setViewOptions(
+                                viewOptions === index ? false : index
+                              );
+                            }}
+                            ref={(el) =>
+                              (buttonRefs.current[index] = el)
+                            }
+                          >
+                            <div
+                              style={{
+                                width: 4,
+                                height: 4,
+                                background: "#6C748C",
+                                borderRadius: 2,
+                              }}
+                            />
+                            <div
+                              style={{
+                                width: 4,
+                                height: 4,
+                                background: "#6C748C",
+                                borderRadius: 2,
+                              }}
+                            />
+                            <div
+                              style={{
+                                width: 4,
+                                height: 4,
+                                background: "#6C748C",
+                                borderRadius: 2,
+                              }}
+                            />
+                          </div>
+                          {viewOptions === index && (
+                            <>
+                              <div
+                                style={{
+                                  position: "fixed",
+                                  top: openUpwards
+                                    ? dropdownPos.y - 110
+                                    : dropdownPos.y,
+                                  left: dropdownPos.x - 80,
+                                  zIndex: 999999,
+                                }}
+                              >
+                                <div
+                                  ref={modelRef}
+                                  style={{
+                                    background: "white",
+                                    padding: 8,
+                                    borderRadius: 12,
+                                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                                    minWidth: 180,
+                                    height: "auto", // height must match dropdownHeight above
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 4,
+                                  }}
+                                >
+                                  {hasPermission("HSN", "update") && (
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        justifyContent: "flex-start",
+                                        alignItems: "center",
+                                        gap: 8,
+                                        padding: "8px 12px",
+                                        borderRadius: 8,
+                                        border: "none",
+                                        cursor: "pointer",
+                                        fontFamily: "Inter, sans-serif",
+                                        fontSize: 16,
+                                        fontWeight: 400,
+                                        color: "#6C748C",
+                                        textDecoration: "none",
+                                      }}
+                                      className="button-action"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        openModal(hsn);
+                                      }}
+                                    >
+                                      <img src={edit} alt="" />
+                                      <span style={{ color: "black" }}>
+                                        Edit
+                                      </span>
+                                    </div>
+                                  )}
+
+                                  {hasPermission("HSN", "delete") && (
+                                    <div
+                                      onClick={() => handleDelete(hsn._id)}
+                                      style={{
+                                        display: "flex",
+                                        justifyContent: "flex-start",
+                                        alignItems: "center",
+                                        gap: 8,
+                                        padding: "8px 12px",
+                                        borderRadius: 8,
+                                        border: "none",
+                                        cursor: "pointer",
+                                        fontFamily: "Inter, sans-serif",
+                                        fontSize: 16,
+                                        fontWeight: 400,
+                                        color: "#6C748C",
+                                        textDecoration: "none",
+                                      }}
+                                      className="button-action"
+                                    >
+                                      <img src={deletebtn} alt="" />
+                                      <span style={{ color: "black" }}>
+                                        Delete
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </>
+              )}
+            </tbody>
+          </table>
         </div>
-        <AddHsnModals
-          show={showModal}
-          onClose={() => setShowModal(false)}
-          modalData={modalData}
-          setModalData={setModalData}
-          onSubmit={handleModalSubmit}
-          errors={errors}
-        />
+
+        {/* Pagination */}
+        <div className="page-redirect-btn px-2">
+          <Pagination
+            currentPage={page}
+            total={total}
+            itemsPerPage={limit}
+            onPageChange={(p) => setPage(p)}
+            onItemsPerPageChange={(n) => {
+              setLimit(n);
+              setPage(1);
+            }}
+          />
+        </div>
       </div>
-    
+
+      <AddHsnModals
+        show={showModal}
+        onClose={() => setShowModal(false)}
+        modalData={modalData}
+        setModalData={setModalData}
+        onSubmit={handleModalSubmit}
+        errors={errors}
+      />
+
+      <DeleteModal
+        isOpen={showDeleteModal}
+        onCancel={cancelDelete}
+        onConfirm={confirmDelete}
+        itemName="product"
+      />
+
+    </div>
+
   );
 };
 
