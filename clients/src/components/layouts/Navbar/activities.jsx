@@ -5,13 +5,13 @@ import { TbBell, TbCirclePlus, TbCommand, TbDeviceLaptop, TbDotsVertical, TbFile
 import { FaTrash } from 'react-icons/fa';
 import { useSocket } from '../../../Context/SocketContext';
 import './activities.css'; // Import your CSS file for styles
-import BASE_URL from "../../../pages/config/config";
+// import BASE_URL from "../../../pages/config/config";
 import axios from "axios";
 import api from "../../../pages/config/axiosInstance"
-import {useAuth} from "../../auth/AuthContext"
+import { useAuth } from "../../auth/AuthContext"
 
 
-const Activities = ({ onUnreadCountChange }) => {
+const Activities = ({ onUnreadCountChange, onClose }) => {
   const { user } = useAuth();
   const { t } = useTranslation();
   const [notifications, setNotifications] = useState([]);
@@ -28,7 +28,7 @@ const Activities = ({ onUnreadCountChange }) => {
   //     return null;
   //   }
   // }, []);
-  const backendurl = BASE_URL;
+  // const backendurl = api.defaults.baseURL;
   const { connectSocket, getSocket, isSocketConnected } = useSocket();
 
   // Fetch notifications
@@ -40,9 +40,9 @@ const Activities = ({ onUnreadCountChange }) => {
       if (!userId) return;
 
       const res = await api.get(`/api/notifications/${userId}`);
-        setNotifications(res.data.notifications || []);
+      setNotifications(res.data.notifications || []);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      // console.error('Error fetching notifications:', error);
     } finally {
       setLoading(false);
     }
@@ -57,13 +57,13 @@ const Activities = ({ onUnreadCountChange }) => {
       if (!userId) return;
 
       const res = await api.get(`/api/notifications/unread/${userId}`);
-        const count = res.data.count || 0;
-        setUnreadCount(count);
-        if (onUnreadCountChange) {
-          onUnreadCountChange(count);
-        }
+      const count = res.data.count || 0;
+      setUnreadCount(count);
+      if (onUnreadCountChange) {
+        onUnreadCountChange(count);
+      }
     } catch (error) {
-      console.error('Error fetching unread count:', error);
+      // console.error('Error fetching unread count:', error);
     }
   };
 
@@ -93,7 +93,7 @@ const Activities = ({ onUnreadCountChange }) => {
         onUnreadCountChange(newUnreadCount);
       }
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      // console.error('Error marking notification as read:', error);
     }
   };
 
@@ -116,7 +116,7 @@ const Activities = ({ onUnreadCountChange }) => {
         onUnreadCountChange(0);
       }
     } catch (error) {
-      console.error('Error marking all notifications as read:', error);
+      // console.error('Error marking all notifications as read:', error);
     }
   };
 
@@ -129,27 +129,27 @@ const Activities = ({ onUnreadCountChange }) => {
       if (!userId) return;
 
       const res = await api.delete(`/api/notifications/${notificationId}`);
-        // Check if the notification was unread before deleting
-        const notificationToDelete = notifications.find(n => n._id === notificationId);
-        const wasUnread = notificationToDelete && !notificationToDelete.read;
+      // Check if the notification was unread before deleting
+      const notificationToDelete = notifications.find(n => n._id === notificationId);
+      const wasUnread = notificationToDelete && !notificationToDelete.read;
 
-        // Remove from local state
-        setNotifications(prev =>
-          prev.filter(notification => notification._id !== notificationId)
-        );
+      // Remove from local state
+      setNotifications(prev =>
+        prev.filter(notification => notification._id !== notificationId)
+      );
 
-        // Update unread count if the deleted notification was unread
-        if (wasUnread) {
-          const newUnreadCount = Math.max(0, unreadCount - 1);
-          setUnreadCount(newUnreadCount);
+      // Update unread count if the deleted notification was unread
+      if (wasUnread) {
+        const newUnreadCount = Math.max(0, unreadCount - 1);
+        setUnreadCount(newUnreadCount);
 
-          // Inform Navbar of the updated count
-          if (onUnreadCountChange) {
-            onUnreadCountChange(newUnreadCount);
-          }
+        // Inform Navbar of the updated count
+        if (onUnreadCountChange) {
+          onUnreadCountChange(newUnreadCount);
         }
+      }
     } catch (error) {
-      console.error('Error deleting notification:', error);
+      // console.error('Error deleting notification:', error);
     }
   };
 
@@ -200,7 +200,7 @@ const Activities = ({ onUnreadCountChange }) => {
     const userId = user?.id || user?._id;
     let socket = getSocket();
     if (!socket || !isSocketConnected()) {
-      socket = connectSocket(BASE_URL);
+      socket = connectSocket(api.defaults.baseURL);
     }
     if (!socket) return;
     if (userId) {
@@ -216,9 +216,8 @@ const Activities = ({ onUnreadCountChange }) => {
     };
   }, [user]);
 
-
   return (
-    <div>
+    <div style={{ backgroundColor: '#FDFDFD', borderRadius: '8px', boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)' }}>
       <div className="" style={{ padding: '5px 12px', backgroundColor: '#FDFDFD', borderTopLeftRadius: '8px', borderTopRightRadius: '8px', borderBottom: '1px solid white', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <h5 className="notification-title" style={{ color: '#262626', marginTop: '8px' }}>{t("Notification")}</h5>
         <a href="#" className="clear-noti" style={{ color: '#1368EC', textDecoration: 'none' }} onClick={(e) => {
@@ -240,7 +239,7 @@ const Activities = ({ onUnreadCountChange }) => {
             <li className="notification-message">
               <div className="media d-flex">
                 <div className="flex-grow-1">
-                  <p className="noti-details" style={{ marginTop: '10px', textAlign: 'center' }}>{t("No Notifications yet !!")}</p>
+                  <p className="noti-details" style={{ marginTop: '10px', textAlign: 'center' }}>{t("No Notifications !!")}</p>
                 </div>
               </div>
             </li>
@@ -301,7 +300,7 @@ const Activities = ({ onUnreadCountChange }) => {
                 </div>
 
                 {/* Delete button */}
-                <button
+                {/* <button
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -326,7 +325,7 @@ const Activities = ({ onUnreadCountChange }) => {
                   title="Delete notification"
                 >
                   <FaTrash style={{ fontSize: '25px' }} />
-                </button>
+                </button> */}
 
                 {!notification.read && (
                   <div style={{
@@ -347,10 +346,17 @@ const Activities = ({ onUnreadCountChange }) => {
         </ul>
       </div>
       <div className="" style={{ padding: '8px', backgroundColor: '#FDFDFD', borderBottomLeftRadius: '10px', borderBottomRightRadius: '10px', textAlign: 'center' }} onClick={(e) => {
-          e.preventDefault();
-          markAllAsRead();
-        }}>
-        <Link to="/ViewAllNotifications" className="" style={{ width: '100%', color: '#1368EC', backgroundColor: '#F9F9F9', textAlign: 'center', textDecoration: 'none' }} >{t("View All")}</Link>
+        e.preventDefault();
+        markAllAsRead();
+      }}>
+        <Link
+          onClick={() => {
+            if (onClose) onClose();
+          }}
+          to="/ViewAllNotifications"
+          style={{ width: '100%', color: '#1368EC', backgroundColor: '#F9F9F9', textAlign: 'center', textDecoration: 'none' }} >
+          {t("View All")}
+        </Link>
       </div>
     </div>
   )

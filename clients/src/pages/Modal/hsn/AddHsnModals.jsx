@@ -4,7 +4,20 @@ const AddHsnModals = ({ show, onClose, modalData, setModalData, onSubmit, errors
     if (!show) return null;
 
     return (
-        <div className="modal d-block" tabIndex="-1" role="dialog" style={{ backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+        <div className="modal d-block" tabIndex="-1" role="dialog"
+            style={{
+                position: "fixed",
+                top: 0,
+                left: 0,
+                width: "100vw",
+                height: "100vh",
+                backgroundColor: "rgba(0,0,0,0.27)",
+                backdropFilter: "blur(1px)",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                zIndex: 99999999,
+            }}>
             <div className="modal-dialog modal-dialog-centered" role="document">
                 <div className="modal-content">
                     <div className="modal-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

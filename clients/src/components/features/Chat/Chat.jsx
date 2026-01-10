@@ -22,20 +22,22 @@ import { TbFolderUp } from "react-icons/tb";
 import { HiMenu, HiX } from "react-icons/hi";
 import { useSocket } from '../../../Context/SocketContext';
 import ChatIcon from '../../../assets/img/icons/chat.png';
-import BASE_URL from '../../../pages/config/config';
 import DeleteAlert from "../../../utils/sweetAlert/DeleteAlert";
 import axios from "axios";
 import api from "../../../pages/config/axiosInstance"
-import { useAuth } from '../../auth/AuthContext';
+// import { useAuth } from '../../auth/AuthContext';
+import { useAuth } from '../../../components/auth/AuthContext';
 
-const SOCKET_URL = BASE_URL;
+const SOCKET_URL = api.defaults.baseURL;
 // const socket = io("http://localhost:5000"); // same as backend port
 
 const Chat = () => {
-  const {userss} = useAuth();
-  // console.log('🔍 Chat component rendered');
+  const userss = useAuth();
+  // console.log('🔍 Chat login user data:', userss);
+
   const [users, setUsers] = useState([]);
-  // console.log('🔍 Initial unreadCounts state:', {});
+  // console.log('🔍 Initial unreadCounts state:', users);
+
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [error, setError] = useState('');
@@ -62,7 +64,7 @@ const Chat = () => {
   const messageContainerRef = useRef(null);
 
   // const backendurl = import.meta.env.BACKEND_URL || 'http://localhost:5000';
-  const backendurl = BASE_URL;
+  const backendurl = api.defaults.baseURL;
 
   const [clickDropdown, setClickDropdown] = useState();
   const [clickDropdowntwo, setClickDropdownTwo] = useState();
@@ -344,7 +346,7 @@ const Chat = () => {
           formData.append('from', currentUserId);
           formData.append('to', selectedUser._id);
 
-          const uploadUrl = `${BASE_URL}/api/cloudinary-signature/upload-file`;
+          const uploadUrl = `${api.defaults.baseURL}/api/cloudinary-signature/upload-file`;
           const response = await api.get(uploadUrl, {
             method: 'POST',
             // headers: { 'Authorization': `Bearer ${token}` },
@@ -715,7 +717,7 @@ const Chat = () => {
     if (!currentUserId) return;
 
     // Use the centralized socket connection
-    const socketInstance = connectSocket(BASE_URL);
+    const socketInstance = connectSocket(api.defaults.baseURL);
 
     if (socketInstance) {
       socket.current = socketInstance;
@@ -1901,7 +1903,7 @@ const Chat = () => {
                                     if (window.confirm('Are you sure you want to clear all messages in this conversation?')) {
                                       try {
                                         const token = localStorage.getItem('token');
-                                        await fetch(`${BASE_URL}/api/messages/clear`, {
+                                        await fetch(`${api.defaults.baseURL}/api/messages/clear`, {
                                           method: 'DELETE',
                                           headers: {
                                             'Content-Type': 'application/json',

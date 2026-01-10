@@ -8,12 +8,16 @@ const ConfirmDeleteModal = ({ isOpen, onCancel, onConfirm, itemName = "this item
     <div
       style={{
         position: "fixed",
-        inset: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.30)",
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        backgroundColor: "rgba(0,0,0,0.27)",
+        backdropFilter: "blur(1px)",
         display: "flex",
-        alignItems: "center",
         justifyContent: "center",
-        zIndex: 9999,
+        alignItems: "center",
+        zIndex: 99999999,
       }}
       onClick={onCancel} // click outside → close
     >
@@ -68,7 +72,7 @@ const ConfirmDeleteModal = ({ isOpen, onCancel, onConfirm, itemName = "this item
               borderRadius: "50%",
             }}
           >
-            <RxCross2  />
+            <RxCross2 />
           </button>
         </div>
 

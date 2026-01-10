@@ -385,12 +385,9 @@ const AdminDashboard = () => {
 
 
 
-  console.log(recentSales, "recentSales before filtering");
-  console.log(
-    recentSales.map((s) => s.createdAt),
-    "createdAt values"
-  );
-  console.log(recentSalesFilter, "recentSalesFilter value");
+  // console.log(recentSales, "recentSales before filtering");
+  // console.log(recentSales.map((s) => s.createdAt), "createdAt values");
+  // console.log(recentSalesFilter, "recentSalesFilter value");
 
 
 
@@ -427,7 +424,7 @@ const AdminDashboard = () => {
       try {
         const res = await api.get("/api/products");
         const products = res.data.products || res.data || [];
-        console.log("dfdf", products);
+        // console.log("dfdf", products);
 
         // ⭐ TOTAL INVENTORY VALUE
         const totalValue = products.reduce((sum, p) => {
@@ -544,7 +541,7 @@ const AdminDashboard = () => {
 
   const topSellingProducts = (() => {
     const productSales = {};
-    console.log("all sales", allSales);
+    // console.log("all sales", allSales);
 
     const filteredTopSales = allSales.filter((sale) => {
       if (!sale.createdAt) return false;
@@ -895,7 +892,7 @@ const AdminDashboard = () => {
       const res = await api.get(url);
       return res.data;
     } catch (err) {
-      console.error(err);
+      // console.error(err);
       return {};
     }
   };
@@ -1076,1604 +1073,1602 @@ const AdminDashboard = () => {
 
 
   return (
-  
-    
-        <div className="dashboard px-4 py-4  d-flex flex-column gap-4" style={{ overflowY: "auto", height: "calc(100vh - 60px)" }}>
-          {/* Dashboard-header */}
-          <div className="dashboard-header-mobile">
+    <div className="dashboard p-4  d-flex flex-column gap-4" style={{ overflowY: "auto", height: "calc(100vh - 60px)" }}>
+      {/* Dashboard-header */}
+      <div className="dashboard-header-mobile">
+        <h1
+          className="dashboard-title-mobile d-none"
+          style={{
+            fontFamily: '"Inter", sans-serif',
+            fontSize: "30px",
+            marginBottom: "0",
+          }}
+        >
+          Dashbaord
+        </h1>
+        <div
+          className="dashbaord-header d-flex justify-content-between align-items-center"
+          style={{
+            borderBottom: "1px solid rgb(194, 201, 209)",
+            paddingBottom: "24px",
+          }}
+        >
+          <div className="d-flex align-items-center" style={{ gap: "19px" }}>
             <h1
-              className="dashboard-title-mobile d-none"
+              className="dashboard-title"
               style={{
                 fontFamily: '"Inter", sans-serif',
                 fontSize: "30px",
                 marginBottom: "0",
+                color: 'black',
               }}
             >
               Dashbaord
             </h1>
             <div
-              className="dashbaord-header d-flex justify-content-between align-items-center"
               style={{
-                borderBottom: "1px solid rgb(194, 201, 209)",
-                paddingBottom: "24px",
+                backgroundColor: "white",
+                border: "1px solid rgb(224, 222, 222)",
+                borderRadius: "8px",
+                fontFamily: "Inter",
+
+                fontSize: "14px",
+                padding: "4px 12px",
+                width: "180px",
+                height: "30px",
+                display: "flex",
+                justifyItems: "center",
+                alignItems: "center",
+                fontFamily: "Inter",
               }}
             >
-              <div className="d-flex align-items-center" style={{ gap: "19px" }}>
-                <h1
-                  className="dashboard-title"
-                  style={{
-                    fontFamily: '"Inter", sans-serif',
-                    fontSize: "30px",
-                    marginBottom: "0",
-                    color: 'black',
-                  }}
-                >
-                  Dashbaord
-                </h1>
-                <div
-                  style={{
-                    backgroundColor: "white",
-                    border: "1px solid rgb(224, 222, 222)",
-                    borderRadius: "8px",
-                    fontFamily: "Inter",
+              <img src={select_range_date} alt="select_range_date" />
+              <select
+                name=""
+                id=""
+                style={{
+                  backgroundColor: "transparent",
+                  width: "100%",
+                  outline: "none",
+                  border: "none",
+                  color: "#0e101aab",
+                }}
+              >
+                <option style={{ width: "300px" }} value="">
+                  Select Date Range
+                </option>
+                <option style={{ width: "300px" }} value="">
+                  Today
+                </option>
+                <option style={{ width: "300px" }} value="">
+                  Yesterday
+                </option>
+                <option style={{ width: "300px" }} value="">
+                  Last Month
+                </option>
+                <option style={{ width: "300px" }} value="">
+                  Last Week
+                </option>
+                <option style={{ width: "300px" }} value="">
+                  Last 15 Days
+                </option>
+                <option style={{ width: "300px" }} value="">
+                  Custom
+                </option>
+              </select>
+            </div>
+          </div>
+          <button
+            className=""
+            style={{
+              backgroundColor: "white",
+              border: "1px solid rgb(224, 222, 222)",
+              borderRadius: "8px",
+              color: "hsla(0, 1%, 36%, 1.00)",
+              fontFamily: "Inter",
+              fontSize: "15px",
+              padding: "4px 12px",
+            }}
+          >
+            Last Updated 20 min ago <MdUpdate />
+          </button>
+        </div>
+      </div>
+      {/* <div className="all-page-scrollbar-y d-flex flex-column gap-4"> */}
+      {/* Dashboard Card */}
+      <div className="dashboard-card">
+        <div className="dhaboard-card-1-container d-flex justify-content-between" style={{ gap: "30px", }}>
+          {/* Total Inventory Value */}
+          <div
+            className="dash-card d-flex justify-content-between align-items-center bg-white position-relative"
+            style={{
 
+              height: "86px",
+              paddingRight: "24px",
+              paddingTop: "16px",
+              paddingBottom: "16px",
+              fontFamily: "Inter",
+              boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
+              border: "1px solid #E5F0FF",
+              borderRadius: "8px",
+            }}
+          >
+            <div className="d-flex align-items-center" style={{ gap: "24px" }}>
+              <span
+                style={{
+                  borderTopRightRadius: "4px",
+                  borderBottomRightRadius: "4px",
+                  borderLeft: "4px solid #1F7FFF",
+                  width: "3px",
+                  height: "50px",
+                }}
+              ></span>
+              <div className="d-flex flex-column " style={{ gap: "11px" }}>
+                <h6
+                  className="mb-0 dash-card-title"
+                  style={{ fontSize: "14px", color: "#727681" }}
+                >
+                  Total Inventory Value
+                </h6>
+                <div className="d-flex align-items-end gap-2">
+                  <h5
+                    className="mb-0 dash-card-title"
+                    style={{ fontSize: "22px", color: "#0E101A" }}
+                  >
+                    {totalInventoryValue.toLocaleString()}
+                    <span style={{ color: "grey", fontSize: "20px" }}>
+                      {String(totalInventoryValue).length > 7 && ".."}
+                    </span>
+                  </h5>
+                  <span
+                    className=""
+                    style={{ fontSize: "14px", color: "#0E101A" }}
+                  >
+                    INR
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="d-flex justify-content-center align-items-center rounded-circle"
+              style={{
+                width: "50px",
+                height: "50px",
+                backgroundColor: "#FFFFFF",
+                border: "1px solid #E5F0FF",
+              }}
+            >
+              <img
+                src={dashcard_icon1}
+                alt=""
+                style={{ objectFit: "contain", width: "100%", height: "40px" }}
+              />
+            </div>
+          </div>
+          {/* Total Order Amount */}
+          <div
+            className="dash-card d-flex justify-content-between align-items-center bg-white position-relative"
+            onClick={goTotalOrders}
+            style={{
+              height: "86px",
+              paddingRight: "24px",
+              paddingTop: "16px",
+              paddingBottom: "16px",
+              fontFamily: "Inter",
+              boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
+              border: "1px solid #E5F0FF",
+              borderRadius: "8px",
+              cursor: "pointer"
+            }}
+          >
+            <div className="d-flex align-items-center" style={{ gap: "24px" }}>
+              <span
+                style={{
+                  borderTopRightRadius: "4px",
+                  borderBottomRightRadius: "4px",
+                  borderLeft: "4px solid #1F7FFF",
+                  width: "3px",
+                  height: "50px",
+                }}
+              ></span>
+              <div className="d-flex flex-column " style={{ gap: "11px" }}>
+                <h6
+                  className="mb-0 dash-card-title"
+                  style={{ fontSize: "14px", color: "#727681" }}
+                >
+                  Total Order Amount
+                </h6>
+                <div className="d-flex align-items-end gap-2">
+                  <h5
+                    className="mb-0 dash-card-title"
+                    style={{ fontSize: "22px", color: "#0E101A" }}
+                  >
+                    {totalSaleValue.toLocaleString()}
+                    <span style={{ color: "grey", fontSize: "20px" }}>
+                      {String(totalSaleValue).length > 7 && ".."}
+                    </span>
+
+
+
+                  </h5>
+                  <span
+                    className=""
+                    style={{ fontSize: "14px", color: "#0E101A" }}
+                  >
+                    INR
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="d-flex justify-content-center align-items-center rounded-circle"
+              style={{
+                width: "50px",
+                height: "50px",
+                backgroundColor: "#FFFFFF",
+                border: "1px solid #E5F0FF",
+              }}
+            >
+              <img
+                src={dashcard_icon2}
+                alt=""
+                style={{ objectFit: "contain", width: "100%", height: "40px" }}
+              />
+            </div>
+          </div>
+          {/* Average Selling */}
+          <div
+            className="dash-card d-flex justify-content-between align-items-center bg-white position-relative"
+            style={{
+
+
+              height: "86px",
+              paddingRight: "24px",
+              paddingTop: "16px",
+              paddingBottom: "16px",
+              fontFamily: "Inter",
+              boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
+              border: "1px solid #E5F0FF",
+              borderRadius: "8px",
+            }}
+          >
+            <div className="d-flex align-items-center" style={{ gap: "24px" }}>
+              <span
+                style={{
+                  borderTopRightRadius: "4px",
+                  borderBottomRightRadius: "4px",
+                  borderLeft: "4px solid #1F7FFF",
+                  width: "3px",
+                  height: "50px",
+                }}
+              ></span>
+              <div className="d-flex flex-column " style={{ gap: "11px" }}>
+                <h6
+                  className="mb-0 dash-card-title"
+                  style={{ fontSize: "14px", color: "#727681" }}
+                >
+                  Average Selling
+                </h6>
+                <div className="d-flex align-items-end gap-2">
+                  <h5
+                    className="mb-0 dash-card-title"
+                    style={{ fontSize: "22px", color: "#0E101A" }}
+                  >
+                    {avgSelling.toLocaleString()}
+                    <span style={{ color: "grey", fontSize: "20px" }}>
+                      {String(avgSelling).length > 7 && ".."}
+                    </span>
+
+                  </h5>
+                  <span
+                    className=""
+                    style={{ fontSize: "14px", color: "#0E101A" }}
+                  >
+                    INR
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="d-flex justify-content-center align-items-center rounded-circle"
+              style={{
+                width: "50px",
+                height: "50px",
+                backgroundColor: "#FFFFFF",
+                border: "1px solid #E5F0FF",
+              }}
+            >
+              <img
+                src={dashcard_icon3}
+                alt=""
+                style={{ objectFit: "contain", width: "100%", height: "40px" }}
+              />
+            </div>
+          </div>
+          {/* Due Payments */}
+          <div
+            className="dash-card d-flex justify-content-between align-items-center bg-white position-relative"
+            style={{
+
+              height: "86px",
+              paddingRight: "24px",
+              paddingTop: "16px",
+              paddingBottom: "16px",
+              fontFamily: "Inter",
+              boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
+              border: "1px solid #E5F0FF",
+              borderRadius: "8px",
+            }}
+          >
+            <div className="d-flex align-items-center" style={{ gap: "24px" }}>
+              <span
+                style={{
+                  borderTopRightRadius: "4px",
+                  borderBottomRightRadius: "4px",
+                  borderLeft: "4px solid #1F7FFF",
+                  width: "3px",
+                  height: "50px",
+                }}
+              ></span>
+              <div className="d-flex flex-column " style={{ gap: "11px" }}>
+                <h6
+                  className="mb-0 dash-card-title"
+                  style={{ fontSize: "14px", color: "#727681" }}
+                >
+                  Due Payments
+                </h6>
+                <div className="d-flex align-items-end gap-2">
+                  <h5
+                    className="mb-0 dash-card-title"
+                    style={{ fontSize: "22px", color: "#0E101A" }}
+                  >
+                    {totalInvoiceDue.toLocaleString()}
+                    <span style={{ color: "grey", fontSize: "20px" }}>{String(totalInvoiceDue).length > 7 && ".."}</span>
+                  </h5>
+                  <span
+                    className=""
+                    style={{ fontSize: "14px", color: "#0E101A" }}
+                  >
+                    INR
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="d-flex justify-content-center align-items-center rounded-circle"
+              style={{
+                width: "50px",
+                height: "50px",
+                backgroundColor: "#FFFFFF",
+                border: "1px solid #E5F0FF",
+              }}
+            >
+              <img
+                src={dashcard_icon4}
+                alt=""
+                style={{ objectFit: "contain", width: "100%", height: "40px" }}
+              />
+            </div>
+          </div>
+        </div>
+        <div className="dashboard-card-2-container d-flex justify-content-between" style={{ gap: "30px", }}>
+          {/* Newly Added */}
+          <div
+            className="dash-card d-flex justify-content-between align-items-center bg-white position-relative"
+            style={{
+
+              //  width:"100%",
+              // minWidth: "372.25px",
+              height: "86px",
+              paddingRight: "24px",
+              paddingTop: "16px",
+              paddingBottom: "16px",
+              fontFamily: "Inter",
+              boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
+              border: "1px solid #E5F0FF",
+              borderRadius: "8px",
+            }}
+          >
+            <div className="d-flex align-items-center" style={{ gap: "24px" }}>
+              <span
+                style={{
+                  borderTopRightRadius: "4px",
+                  borderBottomRightRadius: "4px",
+                  borderLeft: "4px solid #1F7FFF",
+                  width: "3px",
+                  height: "50px",
+                }}
+              ></span>
+              <div className="d-flex flex-column " style={{ gap: "11px" }}>
+                <h6
+                  className="mb-0 dash-card-title"
+                  style={{ fontSize: "14px", color: "#727681" }}
+                >
+                  Newly Added
+                </h6>
+                <div className="d-flex align-items-end gap-2">
+                  <h5
+                    className="mb-0 dash-card-title"
+                    style={{ fontSize: "22px", color: "#0E101A" }}
+                  >
+                    {newlyAddedProducts.length}
+                    <span style={{ color: "grey", fontSize: "20px" }}>
+                      {String(newlyAddedProducts.length).length > 2 && ".."}
+                    </span>
+
+                  </h5>
+                  <span
+                    className=""
+                    style={{ fontSize: "14px", color: "#0E101A" }}
+                  >
+
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="d-flex justify-content-center align-items-center rounded-circle"
+              style={{
+                width: "50px",
+                height: "50px",
+                backgroundColor: "#FFFFFF",
+                border: "1px solid #E5F0FF",
+              }}
+            >
+              <img
+                src={dashcard_icon5}
+                alt=""
+                style={{ objectFit: "contain", width: "100%", height: "40px" }}
+              />
+            </div>
+          </div>
+          {/*  Low Stocks */}
+          <div
+            onClick={goToLowStocksPage}
+            className="dash-card d-flex justify-content-between align-items-center bg-white position-relative cursor-pointer"
+            style={{
+
+              //  width:"100%",
+              // minWidth: "372.25px",
+              height: "86px",
+              paddingRight: "24px",
+              paddingTop: "16px",
+              paddingBottom: "16px",
+              fontFamily: "Inter",
+              boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
+              border: "1px solid #E5F0FF",
+              borderRadius: "8px",
+              cursor: "pointer"
+            }}
+          >
+            <div className="d-flex align-items-center" style={{ gap: "24px" }}>
+              <span
+                style={{
+                  borderTopRightRadius: "4px",
+                  borderBottomRightRadius: "4px",
+                  borderLeft: "4px solid #1F7FFF",
+                  width: "3px",
+                  height: "50px",
+                }}
+              ></span>
+              <div className="d-flex flex-column " style={{ gap: "11px" }}>
+
+
+                <h6
+                  className="mb-0 dash-card-title"
+                  style={{ fontSize: "14px", color: "#727681" }}
+                >
+                  Low Stocks
+                </h6>
+                <div className="d-flex align-items-end gap-2">
+                  {/* {lowStockProducts.map((prod, idx)=> ( */}
+                  <h5
+
+                    className="mb-0 dash-card-title"
+                    style={{ fontSize: "22px", color: "#0E101A" }}
+                  >
+                    {lowStockProducts.reduce((sum, item) => sum + (item.availableQty || 0), 0)}
+                    <span style={{ color: "grey", fontSize: "20px" }}>
+                      {String(lowStockProducts.reduce((sum, item) => sum + (item.availableQty || 0), 0)).length > 7 && ".."}
+                    </span>
+
+                  </h5>
+                  {/* ))} */}
+
+                  {/* <span
+                  className=""
+                  style={{ fontSize: "14px", color: "#0E101A" }}
+                >
+                  INR
+                </span> */}
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="d-flex justify-content-center align-items-center rounded-circle"
+              style={{
+                width: "50px",
+                height: "50px",
+                backgroundColor: "#FFFFFF",
+                border: "1px solid #E5F0FF",
+              }}
+            >
+              <img
+                src={dashcard_icon6}
+                alt=""
+                style={{ objectFit: "contain", width: "100%", height: "40px" }}
+              />
+            </div>
+          </div>
+          {/*  Out Of Stocks */}
+          <div
+            className="dash-card d-flex justify-content-between align-items-center bg-white position-relative"
+            style={{
+
+              //  width:"100%",
+              // minWidth: "372.25px",
+              height: "86px",
+              paddingRight: "24px",
+              paddingTop: "16px",
+              paddingBottom: "16px",
+              fontFamily: "Inter",
+              boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
+              border: "1px solid #E5F0FF",
+              borderRadius: "8px",
+            }}
+          >
+            <div className="d-flex align-items-center" style={{ gap: "24px" }}>
+              <span
+                style={{
+                  borderTopRightRadius: "4px",
+                  borderBottomRightRadius: "4px",
+                  borderLeft: "4px solid #1F7FFF",
+                  width: "3px",
+                  height: "50px",
+                }}
+              ></span>
+              <div className="d-flex flex-column " style={{ gap: "11px" }}>
+                <h6
+                  className="mb-0 dash-card-title"
+                  style={{ fontSize: "14px", color: "#727681" }}
+                >
+                  Out Of Stocks
+                </h6>
+                <div className="d-flex align-items-end gap-2">
+                  <h5
+                    className="mb-0 dash-card-title"
+                    style={{ fontSize: "22px", color: "#0E101A" }}
+                  >
+                    {outOfStockProducts.length}
+                  </h5>
+                  {/* <span
+                  className=""
+                  style={{ fontSize: "14px", color: "#0E101A" }}
+                >
+                  INR
+                </span> */}
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="d-flex justify-content-center align-items-center rounded-circle"
+              style={{
+                width: "50px",
+                height: "50px",
+                backgroundColor: "#FFFFFF",
+                border: "1px solid #E5F0FF",
+              }}
+            >
+              <img
+                src={dashcard_icon7}
+                alt=""
+                style={{ objectFit: "contain", width: "100%", height: "40px" }}
+              />
+            </div>
+          </div>
+          {/*  Total Order */}
+          <div
+            className="dash-card d-flex justify-content-between align-items-center bg-white position-relative"
+            style={{
+
+              //  width:"100%",
+              // minWidth: "372.25px",
+              //  maxWidth: "372.25px",  
+              height: "86px",
+              paddingRight: "24px",
+              paddingTop: "16px",
+              paddingBottom: "16px",
+              fontFamily: "Inter",
+              boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
+              border: "1px solid #E5F0FF",
+              borderRadius: "8px",
+            }}
+          >
+            <div className="d-flex align-items-center" style={{ gap: "24px" }}>
+              <span
+                style={{
+                  borderTopRightRadius: "4px",
+                  borderBottomRightRadius: "4px",
+                  borderLeft: "4px solid #1F7FFF",
+                  width: "3px",
+                  height: "50px",
+                }}
+              ></span>
+              <div className="d-flex flex-column " style={{ gap: "11px" }}>
+                <h6
+                  className="mb-0 dash-card-title"
+                  style={{ fontSize: "14px", color: "#727681" }}
+                >
+                  Total Order
+                </h6>
+                <div className="d-flex align-items-end gap-2">
+                  <h5
+                    className="mb-0 dash-card-title"
+                    style={{ fontSize: "22px", color: "#0E101A" }}
+                  >
+                    {totalOrderCount}
+                    <span style={{ color: "grey", fontSize: "20px" }}>
+                      {String(totalOrderCount).length > 7 && ".."}
+                    </span>
+                  </h5>
+                  {/* <span
+                  className=""
+                  style={{ fontSize: "14px", color: "#0E101A" }}
+                >
+                  INR
+                </span> */}
+                </div>
+              </div>
+            </div>
+
+            <div
+              className="d-flex justify-content-center align-items-center rounded-circle"
+              style={{
+                width: "50px",
+                height: "50px",
+                backgroundColor: "#FFFFFF",
+                border: "1px solid #E5F0FF",
+              }}
+            >
+              <img
+                src={dashcard_icon8}
+                alt=""
+                style={{ objectFit: "contain", width: "100%", height: "40px" }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="graph-main-dashboard" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        {/* Graph Container */}
+        <div className="graph-container">
+          {/* Retail vs Wholesale Sales */}
+          <div className="graph-1-dash" style={styles.Graphcard}>
+
+            <div style={{ objectFit: "content", width: "100$" }}>
+              <div style={{ borderBottom: "1px solid #C2C9D1" }}>
+                <div style={styles.Graphheader}>
+                  <span style={styles.Graphtitle}>
+                    Retail vs Wholesale Sales <img src={i_icon} alt="i_icon" />
+                  </span>
+                  <span style={styles.Graphbadge}>+20%</span>
+                </div>
+                <p style={styles.Graphsubtext}>Last 7 days</p>
+              </div>
+
+              <div style={styles.GraphsalesRow}>
+                <div
+                  className=" w-100"
+                  style={{
+                    padding: "16px 0",
+                    fontFamily: '"Poppins", sans-serif',
+                    fontWeight: "500",
                     fontSize: "14px",
-                    padding: "4px 12px",
-                    width: "180px",
-                    height: "30px",
-                    display: "flex",
-                    justifyItems: "center",
-                    alignItems: "center",
-                    fontFamily: "Inter",
+                    color: "#727681",
+                    borderBottom: "1px solid #C2C9D1",
                   }}
                 >
-                  <img src={select_range_date} alt="select_range_date" />
-                  <select
-                    name=""
-                    id=""
-                    style={{
-                      backgroundColor: "transparent",
-                      width: "100%",
-                      outline: "none",
-                      border: "none",
-                      color: "#0e101aab",
-                    }}
-                  >
-                    <option style={{ width: "300px" }} value="">
-                      Select Date Range
-                    </option>
-                    <option style={{ width: "300px" }} value="">
-                      Today
-                    </option>
-                    <option style={{ width: "300px" }} value="">
-                      Yesterday
-                    </option>
-                    <option style={{ width: "300px" }} value="">
-                      Last Month
-                    </option>
-                    <option style={{ width: "300px" }} value="">
-                      Last Week
-                    </option>
-                    <option style={{ width: "300px" }} value="">
-                      Last 15 Days
-                    </option>
-                    <option style={{ width: "300px" }} value="">
-                      Custom
-                    </option>
-                  </select>
-                </div>
-              </div>
-              <button
-                className=""
-                style={{
-                  backgroundColor: "white",
-                  border: "1px solid rgb(224, 222, 222)",
-                  borderRadius: "8px",
-                  color: "hsla(0, 1%, 36%, 1.00)",
-                  fontFamily: "Inter",
-                  fontSize: "15px",
-                  padding: "4px 12px",
-                }}
-              >
-                Last Updated 20 min ago <MdUpdate />
-              </button>
-            </div>
-          </div>
-          {/* <div className="all-page-scrollbar-y d-flex flex-column gap-4"> */}
-          {/* Dashboard Card */}
-          <div className="dashboard-card">
-            <div className="dhaboard-card-1-container d-flex justify-content-between" style={{ gap: "30px", }}>
-              {/* Total Inventory Value */}
-              <div
-                className="dash-card d-flex justify-content-between align-items-center bg-white position-relative"
-                style={{
-
-                  height: "86px",
-                  paddingRight: "24px",
-                  paddingTop: "16px",
-                  paddingBottom: "16px",
-                  fontFamily: "Inter",
-                  boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
-                  border: "1px solid #E5F0FF",
-                  borderRadius: "8px",
-                }}
-              >
-                <div className="d-flex align-items-center" style={{ gap: "24px" }}>
-                  <span
-                    style={{
-                      borderTopRightRadius: "4px",
-                      borderBottomRightRadius: "4px",
-                      borderLeft: "4px solid #1F7FFF",
-                      width: "3px",
-                      height: "50px",
-                    }}
-                  ></span>
-                  <div className="d-flex flex-column " style={{ gap: "11px" }}>
-                    <h6
-                      className="mb-0 dash-card-title"
-                      style={{ fontSize: "14px", color: "#727681" }}
-                    >
-                      Total Inventory Value
-                    </h6>
-                    <div className="d-flex align-items-end gap-2">
-                      <h5
-                        className="mb-0 dash-card-title"
-                        style={{ fontSize: "22px", color: "#0E101A" }}
-                      >
-                        {totalInventoryValue.toLocaleString()}
-                        <span style={{ color: "grey", fontSize: "20px" }}>
-                          {String(totalInventoryValue).length > 7 && ".."}
-                        </span>
-                      </h5>
-                      <span
-                        className=""
-                        style={{ fontSize: "14px", color: "#0E101A" }}
-                      >
-                        INR
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  className="d-flex justify-content-center align-items-center rounded-circle"
-                  style={{
-                    width: "50px",
-                    height: "50px",
-                    backgroundColor: "#FFFFFF",
-                    border: "1px solid #E5F0FF",
-                  }}
-                >
-                  <img
-                    src={dashcard_icon1}
-                    alt=""
-                    style={{ objectFit: "contain", width: "100%", height: "40px" }}
-                  />
-                </div>
-              </div>
-              {/* Total Order Amount */}
-              <div
-                className="dash-card d-flex justify-content-between align-items-center bg-white position-relative"
-                onClick={goTotalOrders}
-                style={{
-                  height: "86px",
-                  paddingRight: "24px",
-                  paddingTop: "16px",
-                  paddingBottom: "16px",
-                  fontFamily: "Inter",
-                  boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
-                  border: "1px solid #E5F0FF",
-                  borderRadius: "8px",
-                  cursor: "pointer"
-                }}
-              >
-                <div className="d-flex align-items-center" style={{ gap: "24px" }}>
-                  <span
-                    style={{
-                      borderTopRightRadius: "4px",
-                      borderBottomRightRadius: "4px",
-                      borderLeft: "4px solid #1F7FFF",
-                      width: "3px",
-                      height: "50px",
-                    }}
-                  ></span>
-                  <div className="d-flex flex-column " style={{ gap: "11px" }}>
-                    <h6
-                      className="mb-0 dash-card-title"
-                      style={{ fontSize: "14px", color: "#727681" }}
-                    >
-                      Total Order Amount
-                    </h6>
-                    <div className="d-flex align-items-end gap-2">
-                      <h5
-                        className="mb-0 dash-card-title"
-                        style={{ fontSize: "22px", color: "#0E101A" }}
-                      >
-                        {totalSaleValue.toLocaleString()}
-                        <span style={{ color: "grey", fontSize: "20px" }}>
-                          {String(totalSaleValue).length > 7 && ".."}
-                        </span>
-
-
-
-                      </h5>
-                      <span
-                        className=""
-                        style={{ fontSize: "14px", color: "#0E101A" }}
-                      >
-                        INR
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  className="d-flex justify-content-center align-items-center rounded-circle"
-                  style={{
-                    width: "50px",
-                    height: "50px",
-                    backgroundColor: "#FFFFFF",
-                    border: "1px solid #E5F0FF",
-                  }}
-                >
-                  <img
-                    src={dashcard_icon2}
-                    alt=""
-                    style={{ objectFit: "contain", width: "100%", height: "40px" }}
-                  />
-                </div>
-              </div>
-              {/* Average Selling */}
-              <div
-                className="dash-card d-flex justify-content-between align-items-center bg-white position-relative"
-                style={{
-
-
-                  height: "86px",
-                  paddingRight: "24px",
-                  paddingTop: "16px",
-                  paddingBottom: "16px",
-                  fontFamily: "Inter",
-                  boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
-                  border: "1px solid #E5F0FF",
-                  borderRadius: "8px",
-                }}
-              >
-                <div className="d-flex align-items-center" style={{ gap: "24px" }}>
-                  <span
-                    style={{
-                      borderTopRightRadius: "4px",
-                      borderBottomRightRadius: "4px",
-                      borderLeft: "4px solid #1F7FFF",
-                      width: "3px",
-                      height: "50px",
-                    }}
-                  ></span>
-                  <div className="d-flex flex-column " style={{ gap: "11px" }}>
-                    <h6
-                      className="mb-0 dash-card-title"
-                      style={{ fontSize: "14px", color: "#727681" }}
-                    >
-                      Average Selling
-                    </h6>
-                    <div className="d-flex align-items-end gap-2">
-                      <h5
-                        className="mb-0 dash-card-title"
-                        style={{ fontSize: "22px", color: "#0E101A" }}
-                      >
-                        {avgSelling.toLocaleString()}
-                        <span style={{ color: "grey", fontSize: "20px" }}>
-                          {String(avgSelling).length > 7 && ".."}
-                        </span>
-
-                      </h5>
-                      <span
-                        className=""
-                        style={{ fontSize: "14px", color: "#0E101A" }}
-                      >
-                        INR
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  className="d-flex justify-content-center align-items-center rounded-circle"
-                  style={{
-                    width: "50px",
-                    height: "50px",
-                    backgroundColor: "#FFFFFF",
-                    border: "1px solid #E5F0FF",
-                  }}
-                >
-                  <img
-                    src={dashcard_icon3}
-                    alt=""
-                    style={{ objectFit: "contain", width: "100%", height: "40px" }}
-                  />
-                </div>
-              </div>
-              {/* Due Payments */}
-              <div
-                className="dash-card d-flex justify-content-between align-items-center bg-white position-relative"
-                style={{
-
-                  height: "86px",
-                  paddingRight: "24px",
-                  paddingTop: "16px",
-                  paddingBottom: "16px",
-                  fontFamily: "Inter",
-                  boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
-                  border: "1px solid #E5F0FF",
-                  borderRadius: "8px",
-                }}
-              >
-                <div className="d-flex align-items-center" style={{ gap: "24px" }}>
-                  <span
-                    style={{
-                      borderTopRightRadius: "4px",
-                      borderBottomRightRadius: "4px",
-                      borderLeft: "4px solid #1F7FFF",
-                      width: "3px",
-                      height: "50px",
-                    }}
-                  ></span>
-                  <div className="d-flex flex-column " style={{ gap: "11px" }}>
-                    <h6
-                      className="mb-0 dash-card-title"
-                      style={{ fontSize: "14px", color: "#727681" }}
-                    >
-                      Due Payments
-                    </h6>
-                    <div className="d-flex align-items-end gap-2">
-                      <h5
-                        className="mb-0 dash-card-title"
-                        style={{ fontSize: "22px", color: "#0E101A" }}
-                      >
-                        {totalInvoiceDue.toLocaleString()}
-                        <span style={{ color: "grey", fontSize: "20px" }}>{String(totalInvoiceDue).length > 7 && ".."}</span>
-                      </h5>
-                      <span
-                        className=""
-                        style={{ fontSize: "14px", color: "#0E101A" }}
-                      >
-                        INR
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  className="d-flex justify-content-center align-items-center rounded-circle"
-                  style={{
-                    width: "50px",
-                    height: "50px",
-                    backgroundColor: "#FFFFFF",
-                    border: "1px solid #E5F0FF",
-                  }}
-                >
-                  <img
-                    src={dashcard_icon4}
-                    alt=""
-                    style={{ objectFit: "contain", width: "100%", height: "40px" }}
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="dashboard-card-2-container d-flex justify-content-between" style={{ gap: "30px", }}>
-              {/* Newly Added */}
-              <div
-                className="dash-card d-flex justify-content-between align-items-center bg-white position-relative"
-                style={{
-
-                  //  width:"100%",
-                  // minWidth: "372.25px",
-                  height: "86px",
-                  paddingRight: "24px",
-                  paddingTop: "16px",
-                  paddingBottom: "16px",
-                  fontFamily: "Inter",
-                  boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
-                  border: "1px solid #E5F0FF",
-                  borderRadius: "8px",
-                }}
-              >
-                <div className="d-flex align-items-center" style={{ gap: "24px" }}>
-                  <span
-                    style={{
-                      borderTopRightRadius: "4px",
-                      borderBottomRightRadius: "4px",
-                      borderLeft: "4px solid #1F7FFF",
-                      width: "3px",
-                      height: "50px",
-                    }}
-                  ></span>
-                  <div className="d-flex flex-column " style={{ gap: "11px" }}>
-                    <h6
-                      className="mb-0 dash-card-title"
-                      style={{ fontSize: "14px", color: "#727681" }}
-                    >
-                      Newly Added
-                    </h6>
-                    <div className="d-flex align-items-end gap-2">
-                      <h5
-                        className="mb-0 dash-card-title"
-                        style={{ fontSize: "22px", color: "#0E101A" }}
-                      >
-                        {newlyAddedProducts.length}
-                        <span style={{ color: "grey", fontSize: "20px" }}>
-                          {String(newlyAddedProducts.length).length > 2 && ".."}
-                        </span>
-
-                      </h5>
-                      <span
-                        className=""
-                        style={{ fontSize: "14px", color: "#0E101A" }}
-                      >
-
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  className="d-flex justify-content-center align-items-center rounded-circle"
-                  style={{
-                    width: "50px",
-                    height: "50px",
-                    backgroundColor: "#FFFFFF",
-                    border: "1px solid #E5F0FF",
-                  }}
-                >
-                  <img
-                    src={dashcard_icon5}
-                    alt=""
-                    style={{ objectFit: "contain", width: "100%", height: "40px" }}
-                  />
-                </div>
-              </div>
-              {/*  Low Stocks */}
-              <div
-                onClick={goToLowStocksPage}
-                className="dash-card d-flex justify-content-between align-items-center bg-white position-relative cursor-pointer"
-                style={{
-
-                  //  width:"100%",
-                  // minWidth: "372.25px",
-                  height: "86px",
-                  paddingRight: "24px",
-                  paddingTop: "16px",
-                  paddingBottom: "16px",
-                  fontFamily: "Inter",
-                  boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
-                  border: "1px solid #E5F0FF",
-                  borderRadius: "8px",
-                  cursor: "pointer"
-                }}
-              >
-                <div className="d-flex align-items-center" style={{ gap: "24px" }}>
-                  <span
-                    style={{
-                      borderTopRightRadius: "4px",
-                      borderBottomRightRadius: "4px",
-                      borderLeft: "4px solid #1F7FFF",
-                      width: "3px",
-                      height: "50px",
-                    }}
-                  ></span>
-                  <div className="d-flex flex-column " style={{ gap: "11px" }}>
-
-
-                    <h6
-                      className="mb-0 dash-card-title"
-                      style={{ fontSize: "14px", color: "#727681" }}
-                    >
-                      Low Stocks
-                    </h6>
-                    <div className="d-flex align-items-end gap-2">
-                      {/* {lowStockProducts.map((prod, idx)=> ( */}
-                      <h5
-
-                        className="mb-0 dash-card-title"
-                        style={{ fontSize: "22px", color: "#0E101A" }}
-                      >
-                        {lowStockProducts.reduce((sum, item) => sum + (item.availableQty || 0), 0)}
-                        <span style={{ color: "grey", fontSize: "20px" }}>
-                          {String(lowStockProducts.reduce((sum, item) => sum + (item.availableQty || 0), 0)).length > 7 && ".."}
-                        </span>
-
-                      </h5>
-                      {/* ))} */}
-
-                      {/* <span
-                  className=""
-                  style={{ fontSize: "14px", color: "#0E101A" }}
-                >
-                  INR
-                </span> */}
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  className="d-flex justify-content-center align-items-center rounded-circle"
-                  style={{
-                    width: "50px",
-                    height: "50px",
-                    backgroundColor: "#FFFFFF",
-                    border: "1px solid #E5F0FF",
-                  }}
-                >
-                  <img
-                    src={dashcard_icon6}
-                    alt=""
-                    style={{ objectFit: "contain", width: "100%", height: "40px" }}
-                  />
-                </div>
-              </div>
-              {/*  Out Of Stocks */}
-              <div
-                className="dash-card d-flex justify-content-between align-items-center bg-white position-relative"
-                style={{
-
-                  //  width:"100%",
-                  // minWidth: "372.25px",
-                  height: "86px",
-                  paddingRight: "24px",
-                  paddingTop: "16px",
-                  paddingBottom: "16px",
-                  fontFamily: "Inter",
-                  boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
-                  border: "1px solid #E5F0FF",
-                  borderRadius: "8px",
-                }}
-              >
-                <div className="d-flex align-items-center" style={{ gap: "24px" }}>
-                  <span
-                    style={{
-                      borderTopRightRadius: "4px",
-                      borderBottomRightRadius: "4px",
-                      borderLeft: "4px solid #1F7FFF",
-                      width: "3px",
-                      height: "50px",
-                    }}
-                  ></span>
-                  <div className="d-flex flex-column " style={{ gap: "11px" }}>
-                    <h6
-                      className="mb-0 dash-card-title"
-                      style={{ fontSize: "14px", color: "#727681" }}
-                    >
-                      Out Of Stocks
-                    </h6>
-                    <div className="d-flex align-items-end gap-2">
-                      <h5
-                        className="mb-0 dash-card-title"
-                        style={{ fontSize: "22px", color: "#0E101A" }}
-                      >
-                        {outOfStockProducts.length}
-                      </h5>
-                      {/* <span
-                  className=""
-                  style={{ fontSize: "14px", color: "#0E101A" }}
-                >
-                  INR
-                </span> */}
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  className="d-flex justify-content-center align-items-center rounded-circle"
-                  style={{
-                    width: "50px",
-                    height: "50px",
-                    backgroundColor: "#FFFFFF",
-                    border: "1px solid #E5F0FF",
-                  }}
-                >
-                  <img
-                    src={dashcard_icon7}
-                    alt=""
-                    style={{ objectFit: "contain", width: "100%", height: "40px" }}
-                  />
-                </div>
-              </div>
-              {/*  Total Order */}
-              <div
-                className="dash-card d-flex justify-content-between align-items-center bg-white position-relative"
-                style={{
-
-                  //  width:"100%",
-                  // minWidth: "372.25px",
-                  //  maxWidth: "372.25px",  
-                  height: "86px",
-                  paddingRight: "24px",
-                  paddingTop: "16px",
-                  paddingBottom: "16px",
-                  fontFamily: "Inter",
-                  boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
-                  border: "1px solid #E5F0FF",
-                  borderRadius: "8px",
-                }}
-              >
-                <div className="d-flex align-items-center" style={{ gap: "24px" }}>
-                  <span
-                    style={{
-                      borderTopRightRadius: "4px",
-                      borderBottomRightRadius: "4px",
-                      borderLeft: "4px solid #1F7FFF",
-                      width: "3px",
-                      height: "50px",
-                    }}
-                  ></span>
-                  <div className="d-flex flex-column " style={{ gap: "11px" }}>
-                    <h6
-                      className="mb-0 dash-card-title"
-                      style={{ fontSize: "14px", color: "#727681" }}
-                    >
-                      Total Order
-                    </h6>
-                    <div className="d-flex align-items-end gap-2">
-                      <h5
-                        className="mb-0 dash-card-title"
-                        style={{ fontSize: "22px", color: "#0E101A" }}
-                      >
-                        {totalOrderCount}
-                        <span style={{ color: "grey", fontSize: "20px" }}>
-                          {String(totalOrderCount).length > 7 && ".."}
-                        </span>
-                      </h5>
-                      {/* <span
-                  className=""
-                  style={{ fontSize: "14px", color: "#0E101A" }}
-                >
-                  INR
-                </span> */}
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  className="d-flex justify-content-center align-items-center rounded-circle"
-                  style={{
-                    width: "50px",
-                    height: "50px",
-                    backgroundColor: "#FFFFFF",
-                    border: "1px solid #E5F0FF",
-                  }}
-                >
-                  <img
-                    src={dashcard_icon8}
-                    alt=""
-                    style={{ objectFit: "contain", width: "100%", height: "40px" }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="graph-main-dashboard" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            {/* Graph Container */}
-            <div className="graph-container">
-              {/* Retail vs Wholesale Sales */}
-              <div className="graph-1-dash" style={styles.Graphcard}>
-
-                <div style={{ objectFit: "content", width: "100$" }}>
-                  <div style={{ borderBottom: "1px solid #C2C9D1" }}>
-                    <div style={styles.Graphheader}>
-                      <span style={styles.Graphtitle}>
-                        Retail vs Wholesale Sales <img src={i_icon} alt="i_icon" />
-                      </span>
-                      <span style={styles.Graphbadge}>+20%</span>
-                    </div>
-                    <p style={styles.Graphsubtext}>Last 7 days</p>
-                  </div>
-
-                  <div style={styles.GraphsalesRow}>
+                  <div className="d-flex flex-column gap-2">
                     <div
-                      className=" w-100"
-                      style={{
-                        padding: "16px 0",
-                        fontFamily: '"Poppins", sans-serif',
-                        fontWeight: "500",
-                        fontSize: "14px",
-                        color: "#727681",
-                        borderBottom: "1px solid #C2C9D1",
-                      }}
+                      className="d-flex align-items-center"
+                      style={{ gap: "57px" }}
                     >
-                      <div className="d-flex flex-column gap-2">
-                        <div
-                          className="d-flex align-items-center"
-                          style={{ gap: "57px" }}
-                        >
-                          <span
-                            className="d-flex align-items-center gap-2"
-                            style={{
-                              fontFamily: "Inter",
-                              fontSize: "14px",
-                              fontWeight: "500",
-                            }}
-                          >
-                            <span
-                              style={{
-                                backgroundColor: "#13AA64",
-                                width: "20px",
-                                height: "4px",
-                              }}
-                            ></span>
-                            Reatailer
-                          </span>
-                          <span
-                            className="d-flex align-items-center gap-2"
-                            style={{
-                              fontFamily: "Inter",
-                              fontSize: "14px",
-                              fontWeight: "500",
-                            }}
-                          >
-                            <span
-                              style={{
-                                backgroundColor: "#B1EE23",
-                                width: "20px",
-                                height: "4px",
-                              }}
-                            ></span>
-                            Wholesaler
-                          </span>
-                        </div>
-                        <div
-                          className="d-flex"
-                          style={{ marginLeft: "25px", gap: "57px" }}
-                        >
-                          <span
-                            style={{
-                              color: "#0E101A",
-                              fontSize: "20px",
-                              fontWeight: "500",
-                              fontFamily: "Inter",
-                            }}
-                          >
-                            78,980
-                          </span>
-                          <span
-                            style={{
-                              color: "#0E101A",
-                              fontSize: "20px",
-                              fontWeight: "500",
-                              fontFamily: "Inter",
-                            }}
-                          >
-                            78,980
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div></div>
-                  </div>
-
-                  <div
-                    className="dashboard-card-graph-scroll"
-                    style={{
-                      width: "100%",
-                      height: "200px",
-                      borderBottom: "1px solid rgb(194, 201, 209)",
-                      paddingBottom: "15px",
-                      paddingTop: "15px",
-                      // overflowY:"auto"
-                    }}
-                  >
-                    <Line
-                      data={data}
-                      options={{ ...options, maintainAspectRatio: false }}
-                    />
-                  </div>
-
-                  <div style={styles.Graphfooter}>
-                    <a href="/" style={styles.Graphlink}>
-                      View All
-                    </a>
-                    <span style={styles.Graphupdate}>
-                      <img src={time} alt="time" />
-                      Updated 30 mins ago
-                    </span>
-                  </div>
-                </div>
-
-              </div>
-              {/* Sales Report */}
-              <div className="graph-2-dash" style={styles.Graphcard}>
-
-                <div style={{ objectFit: "content", width: "100%" }}>
-                  <div style={{ borderBottom: "1px solid #C2C9D1" }}>
-                    <div style={styles.Graphheader}>
-                      <span style={styles.Graphtitle}>
-                        Sales Report <img src={i_icon} alt="i_icon" />
-                      </span>
-                      <span style={styles.Graphbadge}>+20%</span>
-                    </div>
-                    <p style={styles.Graphsubtext}>Last 7 days</p>
-                  </div>
-
-                  <div style={styles.GraphsalesRow}>
-                    <div
-                      className=" w-100"
-                      style={{
-                        padding: "16px 0",
-                        fontFamily: '"Poppins", sans-serif',
-                        fontWeight: "500",
-                        fontSize: "14px",
-                        color: "#727681",
-                        borderBottom: "1px solid #C2C9D1",
-                      }}
-                    >
-                      <div className="d-flex flex-column gap-2">
-                        <div
-                          className="d-flex align-items-center"
-                          style={{ gap: "57px" }}
-                        >
-                          <span
-                            className="d-flex align-items-center gap-2"
-                            style={{
-                              fontFamily: "Inter",
-                              fontSize: "14px",
-                              fontWeight: "500",
-                            }}
-                          >
-                            <span
-                              style={{
-                                backgroundColor: "#FFC9B4",
-                                width: "20px",
-                                height: "4px",
-                              }}
-                            ></span>
-                            Purchase Orders
-                          </span>
-                          <span
-                            className="d-flex align-items-center gap-2"
-                            style={{
-                              fontFamily: "Inter",
-                              fontSize: "14px",
-                              fontWeight: "500",
-                            }}
-                          >
-                            <span
-                              style={{
-                                backgroundColor: "#FF8F1F",
-                                width: "20px",
-                                height: "4px",
-                              }}
-                            ></span>
-                            Sales Orders
-                          </span>
-                        </div>
-                        <div
-                          className="d-flex"
-                          style={{ marginLeft: "25px", gap: "57px" }}
-                        >
-                          <span
-                            style={{
-                              color: "#0E101A",
-                              fontSize: "20px",
-                              fontWeight: "500",
-                              fontFamily: "Inter",
-                            }}
-                          >
-                            78,980
-                          </span>
-                          <span
-                            style={{
-                              color: "#0E101A",
-                              fontSize: "20px",
-                              fontWeight: "500",
-                              fontFamily: "Inter",
-                            }}
-                          >
-                            78,980
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div></div>
-                  </div>
-
-                  <div
-                    className="dashboard-card-graph-scroll"
-                    style={{
-                      width: "100%",
-                      height: "200px",
-                      borderBottom: "1px solid rgb(194, 201, 209)",
-                      paddingBottom: "15px",
-                      // overflowY:"auto"
-                    }}
-                  >
-                    <Bar
-                      data={datasThree}
-                      options={{ ...optionssThree, maintainAspectRatio: false }}
-                    />
-                  </div>
-
-                  <div style={styles.Graphfooter}>
-                    <a href="/" style={styles.Graphlink}>
-                      View All
-                    </a>
-                    <span style={styles.Graphupdate}>
-                      <img src={time} alt="time" />
-                      Updated 30 mins ago
-                    </span>
-                  </div>
-                </div>
-
-              </div>
-
-              {/*ims-advertisment-app-banner*/}
-              <div
-                className="ims-advertisment-app-banner position-relative"
-                style={styles.Graphcard}
-              >
-                <div>
-                  <h1
-                    style={{
-                      fontSize: "40px",
-                      fontFamily: "Poppins",
-                      color: "#1F7FFF",
-                      marginBottom: "0",
-                    }}
-                  >
-                    One app for all <br /> your{" "}
-                    <span style={{ color: "#26005B" }}>
-                      inventory <br />
-                    </span>
-                    needs!
-                  </h1>
-                </div>
-                <div
-                  className="dashboard-card-graph-scroll"
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "end",
-                    position: "absolute",
-                    top: "90px",
-                    height: "300px"
-                    // overflowY:"auto"
-                  }}
-                >
-                  <button
-                    className="button-color"
-                    style={{
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      color: "white",
-                      fontFamily: "Inter",
-                      fontSize: "16px",
-                      width: "140px",
-                      height: "35px",
-                      padding: "8px 16px",
-                    }}
-                  >
-                    Coming Soon
-                  </button>
-                  <img style={{ width: "100%", maxWidth: "311px" }} src={advertisment_ims} alt="advertisment_ims" />
-                </div>
-              </div>
-            </div>
-            {/* Graph container two */}
-            <div className="graph-container-two">
-              {/* Top Selling Products */}
-              <div className="top-selling-dash" style={styles.Graphcard}>
-                <div style={{ objectFit: "content", width: "100%", }}>
-                  <div className="d-flex justify-content-between" >
-                    <div>
-                      <div style={styles.Graphheader}>
-                        <span style={styles.Graphtitle}>
-                          Top Selling Products <img src={i_icon} alt="i_icon" />
-                        </span>
-                        <span style={styles.Graphbadge}>+20%</span>
-                      </div>
-                      <p style={styles.Graphsubtext}>Last 7 days</p>
-                    </div>
-                    {/* Filter Date Button */}
-                    <div className="">
-                      <button
-                        className="dropdown-toggle btn btn-sm btn-white"
-                        data-bs-toggle="dropdown"
-                        aria-expanded="false"
-                      >
-                        <i className="ti ti-calendar me-1" />
-                        {topSellingFilter === "today"
-                          ? [t("Today")]
-                          : topSellingFilter === "weekly"
-                            ? [t("Weekly")]
-                            : [t("Monthly")]}
-                      </button>
-                      <ul className="dropdown-menu p-3">
-                        <li>
-                          <button
-                            className="dropdown-item"
-                            onClick={() => setTopSellingFilter("today")}
-                          >
-                            {t("Today")}
-                          </button>
-                        </li>
-                        <li>
-                          <button
-                            className="dropdown-item"
-                            onClick={() => setTopSellingFilter("weekly")}
-                          >
-                            {t("Weekly")}
-                          </button>
-                        </li>
-                        <li>
-                          <button
-                            className="dropdown-item"
-                            onClick={() => setTopSellingFilter("monthly")}
-                          >
-                            {t("Monthly")}
-                          </button>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-
-                  <div
-                    className="dashboard-card-graph-scroll"
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "12px",
-                      fontFamily: "Inter",
-                      height: "300px",
-                      //  overflowY:"auto"
-
-                    }}
-                  >
-                    {topSellingProducts.map((p) => (
-                      <div
-
-                        key={p.id}
+                      <span
+                        className="d-flex align-items-center gap-2"
                         style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "5px 0px",
-                          // borderRadius: "8px",
                           fontFamily: "Inter",
-                          borderTop: "1px solid rgb(194, 201, 209)",
-
-
+                          fontSize: "14px",
+                          fontWeight: "500",
                         }}
                       >
-
-                        <img
-                          src={p.image}
-                          alt={p.name}
+                        <span
                           style={{
-                            width: "40px",
-                            height: "30px",
-                            objectFit: "cover",
-                            borderRadius: "6px",
-                            marginRight: "12px",
+                            backgroundColor: "#13AA64",
+                            width: "20px",
+                            height: "4px",
                           }}
-                        />
-                        <div style={{ flex: 1 }}>
-                          <div
-                            style={{
-                              fontWeight: 400,
-                              fontSize: "13px",
-                              color: "#0E101A",
-                            }}
-                          >
-                            {p.name}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: "12px",
-                              fontWeight: 400,
-                              color: "#0D6828",
-                              fontFamily: "Inter",
-                            }}
-                          >
-                            {p.sellQuantity}{" "}
-                            <span style={{ color: "#6C748C", fontWeight: 400 }}>
-                              Unit sold
-                            </span>
-                          </div>
-                        </div>
-                        <div style={{ textAlign: "right" }}>
-                          <div
-                            style={{
-                              fontFamily: "Inter",
-                              fontWeight: 400,
-                              fontSize: "13px",
-                            }}
-                          >
-                            ₹ {p.sellingPrice}
-                          </div>
-                          <div
-                            style={{
-                              fontSize: "12px",
-                              color: "#0D6828",
-                              fontWeight: 400,
-                            }}
-                          >
-                            {p.change}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div style={styles.Graphfooter}>
-                    <a href="/" style={styles.Graphlink}>
-                      View All
-                    </a>
-                    <span style={styles.Graphupdate}>
-                      <img src={time} alt="time" />
-                      Updated 30 mins ago
-                    </span>
-                  </div>
-                </div>
-              </div>
-              {/* Daily Earning */}
-              <div className="graph-5-dash" style={styles.Graphcard}>
-                <div style={{ objectFit: "content", width: "100$" }}>
-                  <div style={{ borderBottom: "1px solid #C2C9D1" }}>
-                    <div style={styles.Graphheader}>
-                      <span style={styles.Graphtitle}>
-                        Daily Earning <img src={i_icon} alt="i_icon" />
+                        ></span>
+                        Reatailer
                       </span>
-                      <span style={styles.Graphbadge}>+20%</span>
+                      <span
+                        className="d-flex align-items-center gap-2"
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                        }}
+                      >
+                        <span
+                          style={{
+                            backgroundColor: "#B1EE23",
+                            width: "20px",
+                            height: "4px",
+                          }}
+                        ></span>
+                        Wholesaler
+                      </span>
                     </div>
-                    <p style={styles.Graphsubtext}>Last 7 days</p>
-                  </div>
-
-                  <div style={styles.GraphsalesRow}>
                     <div
-                      className=" w-100"
-                      style={{
-                        padding: "16px 0",
-                        fontFamily: '"Poppins", sans-serif',
-                        fontWeight: "500",
-                        fontSize: "14px",
-                        color: "#727681",
-                        borderBottom: "1px solid #C2C9D1",
-                      }}
+                      className="d-flex"
+                      style={{ marginLeft: "25px", gap: "57px" }}
                     >
-                      <div className="d-flex flex-column gap-2">
-                        <div
-                          className="d-flex align-items-center"
-                          style={{ gap: "57px" }}
-                        >
-                          <span
-                            className="d-flex align-items-center gap-2"
-                            style={{
-                              fontFamily: "Inter",
-                              fontSize: "14px",
-                              fontWeight: "500",
-                            }}
-                          >
-                            <span
-                              style={{
-                                backgroundColor: "#7313AA",
-                                width: "20px",
-                                height: "4px",
-                              }}
-                            ></span>
-                            Total Sales
-                          </span>
-                          <span
-                            className="d-flex align-items-center gap-2"
-                            style={{
-                              fontFamily: "Inter",
-                              fontSize: "14px",
-                              fontWeight: "500",
-                            }}
-                          >
-                            <span
-                              style={{
-                                backgroundColor: "#EE23B1",
-                                width: "20px",
-                                height: "4px",
-                              }}
-                            ></span>
-                            Profit Earned
-                          </span>
-                        </div>
-                        <div
-                          className="d-flex"
-                          style={{ marginLeft: "25px", gap: "57px" }}
-                        >
-                          <span
-                            style={{
-                              color: "#0E101A",
-                              fontSize: "20px",
-                              fontWeight: "500",
-                              fontFamily: "Inter",
-                            }}
-                          >
-                            78,980
-                          </span>
-                          <span
-                            style={{
-                              color: "#0E101A",
-                              fontSize: "20px",
-                              fontWeight: "500",
-                              fontFamily: "Inter",
-                            }}
-                          >
-                            78,980
-                          </span>
-                        </div>
-                      </div>
+                      <span
+                        style={{
+                          color: "#0E101A",
+                          fontSize: "20px",
+                          fontWeight: "500",
+                          fontFamily: "Inter",
+                        }}
+                      >
+                        78,980
+                      </span>
+                      <span
+                        style={{
+                          color: "#0E101A",
+                          fontSize: "20px",
+                          fontWeight: "500",
+                          fontFamily: "Inter",
+                        }}
+                      >
+                        78,980
+                      </span>
                     </div>
-                    <div></div>
-                  </div>
-
-                  <div
-                    className="dashboard-card-graph-scroll"
-                    style={{
-                      width: "100%",
-                      height: "200px",
-                      borderBottom: "1px solid rgb(194, 201, 209)",
-                      paddingBottom: "15px",
-                      paddingTop: "15px",
-
-                    }}
-                  >
-                    <Line
-                      data={datas}
-                      options={{ ...options, maintainAspectRatio: false }}
-                    />
-                  </div>
-
-                  <div style={styles.Graphfooter}>
-                    <a href="/" style={styles.Graphlink}>
-                      View All
-                    </a>
-                    <span style={styles.Graphupdate}>
-                      <img src={time} alt="time" />
-                      Updated 30 mins ago
-                    </span>
                   </div>
                 </div>
+                <div></div>
               </div>
-              {/* Track Purchase Order */}
-              <div className="graph-6-dash" style={styles.Graphcard}>
-                <div style={{ borderBottom: "1px solid #C2C9D1" }}>
-                  <div style={styles.Graphheader}>
-                    <span style={styles.Graphtitle}>
-                      Track Purchase Order <img src={i_icon} alt="i_icon" />
-                    </span>
-                    <span style={styles.Graphbadge}>+20%</span>
-                  </div>
-                  <p style={styles.Graphsubtext}>Last 7 days</p>
-                </div>
-                <div className="dashboard-card-graph-scroll" style={{ borderBottom: "1px solid #C2C9D1", height: "300px" }}>
-                  <table style={{ fontFamily: "Inter", width: "100%" }}>
-                    <thead style={{ backgroundColor: "#F3F8FB" }}>
-                      <tr style={{ color: "#727681", fontSize: "14px" }}>
-                        <th style={{ padding: "10px 16px", fontWeight: "400" }}>
-                          Supplier
-                        </th>
-                        <th style={{ padding: "10px 16px", fontWeight: "400" }}>
-                          Deliver In
-                        </th>
-                        <th style={{ padding: "10px 16px", fontWeight: "400" }}>
-                          Status
-                        </th>
-                        <th style={{ padding: "10px 16px", fontWeight: "400" }}>
-                          Total
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {trackPurchaseOrder.map((item, idx) => (
-                        <tr key={idx} style={{ fontSize: "14px" }}>
-                          <td style={{ padding: "10px 16px", fontWeight: "400" }}>
-                            {item.supplier}
-                          </td>
-                          <td style={{ padding: "10px 16px", fontWeight: "400" }}>
-                            {item.deliverIn}
-                          </td>
-                          <td style={{ padding: "10px 16px", fontWeight: "400" }}>
-                            {/* <span style={{textAlign:"center", padding:"4px 6px", borderRadius:"50px", backgroundColor:"red"}}>{item.status}</span> */}
-                            <span
-                              style={{
-                                // display: "inline-flex",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                gap: "6px",
-                                textAlign: "center",
-                                padding: "1px 6px",
-                                borderRadius: "50px",
-                                backgroundColor:
-                                  item.status === "Processing"
-                                    ? "#F7F7C7"
-                                    : item.status === "Delivered"
-                                      ? "#D4F7C7"
-                                      : item.status === "Cancelled"
-                                        ? "#F7C7C9"
-                                        : "transparent",
 
-                                color:
-                                  item.status === "Processing"
-                                    ? "#7E7000"
-                                    : item.status === "Delivered"
-                                      ? "#01774B"
-                                      : item.status === "Cancelled"
-                                        ? "#A80205"
-                                        : "#000",
-                              }}
-                            >
-                              <span style={{ fontSize: "12px" }}>
-                                {item.status === "Processing"
-                                  ? "•"
-                                  : item.status === "Delivered"
-                                    ? "✓"
-                                    : item.status === "Cancelled"
-                                      ? "✕"
-                                      : ""}
-                              </span>
+              <div
+                className="dashboard-card-graph-scroll"
+                style={{
+                  width: "100%",
+                  height: "200px",
+                  borderBottom: "1px solid rgb(194, 201, 209)",
+                  paddingBottom: "15px",
+                  paddingTop: "15px",
+                  // overflowY:"auto"
+                }}
+              >
+                <Line
+                  data={data}
+                  options={{ ...options, maintainAspectRatio: false }}
+                />
+              </div>
 
-                              {item.status}
-                            </span>
-                          </td>
-                          <td style={{ padding: "10px 16px", fontWeight: "400" }}>
-                            {item.total}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div style={styles.Graphfooter}>
-                  <a href="/" style={styles.Graphlink}>
-                    View All
-                  </a>
-                  <span style={styles.Graphupdate}>
-                    <img src={time} alt="time" />
-                    Updated 30 mins ago
-                  </span>
-                </div>
+              <div style={styles.Graphfooter}>
+                <a href="/" style={styles.Graphlink}>
+                  View All
+                </a>
+                <span style={styles.Graphupdate}>
+                  <img src={time} alt="time" />
+                  Updated 30 mins ago
+                </span>
               </div>
             </div>
-            {/* graph container three */}
-            <div className="graph-container-three">
-              {/* Recent Orders */}
-              <div className="graph-7-dash" style={styles.Graphcardrecentorders}>
-                <div style={{ borderBottom: "1px solid #C2C9D1" }}>
+
+          </div>
+          {/* Sales Report */}
+          <div className="graph-2-dash" style={styles.Graphcard}>
+
+            <div style={{ objectFit: "content", width: "100%" }}>
+              <div style={{ borderBottom: "1px solid #C2C9D1" }}>
+                <div style={styles.Graphheader}>
+                  <span style={styles.Graphtitle}>
+                    Sales Report <img src={i_icon} alt="i_icon" />
+                  </span>
+                  <span style={styles.Graphbadge}>+20%</span>
+                </div>
+                <p style={styles.Graphsubtext}>Last 7 days</p>
+              </div>
+
+              <div style={styles.GraphsalesRow}>
+                <div
+                  className=" w-100"
+                  style={{
+                    padding: "16px 0",
+                    fontFamily: '"Poppins", sans-serif',
+                    fontWeight: "500",
+                    fontSize: "14px",
+                    color: "#727681",
+                    borderBottom: "1px solid #C2C9D1",
+                  }}
+                >
+                  <div className="d-flex flex-column gap-2">
+                    <div
+                      className="d-flex align-items-center"
+                      style={{ gap: "57px" }}
+                    >
+                      <span
+                        className="d-flex align-items-center gap-2"
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                        }}
+                      >
+                        <span
+                          style={{
+                            backgroundColor: "#FFC9B4",
+                            width: "20px",
+                            height: "4px",
+                          }}
+                        ></span>
+                        Purchase Orders
+                      </span>
+                      <span
+                        className="d-flex align-items-center gap-2"
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                        }}
+                      >
+                        <span
+                          style={{
+                            backgroundColor: "#FF8F1F",
+                            width: "20px",
+                            height: "4px",
+                          }}
+                        ></span>
+                        Sales Orders
+                      </span>
+                    </div>
+                    <div
+                      className="d-flex"
+                      style={{ marginLeft: "25px", gap: "57px" }}
+                    >
+                      <span
+                        style={{
+                          color: "#0E101A",
+                          fontSize: "20px",
+                          fontWeight: "500",
+                          fontFamily: "Inter",
+                        }}
+                      >
+                        78,980
+                      </span>
+                      <span
+                        style={{
+                          color: "#0E101A",
+                          fontSize: "20px",
+                          fontWeight: "500",
+                          fontFamily: "Inter",
+                        }}
+                      >
+                        78,980
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div></div>
+              </div>
+
+              <div
+                className="dashboard-card-graph-scroll"
+                style={{
+                  width: "100%",
+                  height: "200px",
+                  borderBottom: "1px solid rgb(194, 201, 209)",
+                  paddingBottom: "15px",
+                  // overflowY:"auto"
+                }}
+              >
+                <Bar
+                  data={datasThree}
+                  options={{ ...optionssThree, maintainAspectRatio: false }}
+                />
+              </div>
+
+              <div style={styles.Graphfooter}>
+                <a href="/" style={styles.Graphlink}>
+                  View All
+                </a>
+                <span style={styles.Graphupdate}>
+                  <img src={time} alt="time" />
+                  Updated 30 mins ago
+                </span>
+              </div>
+            </div>
+
+          </div>
+
+          {/*ims-advertisment-app-banner*/}
+          <div
+            className="ims-advertisment-app-banner position-relative"
+            style={styles.Graphcard}
+          >
+            <div>
+              <h1
+                style={{
+                  fontSize: "40px",
+                  fontFamily: "Poppins",
+                  color: "#1F7FFF",
+                  marginBottom: "0",
+                }}
+              >
+                One app for all <br /> your{" "}
+                <span style={{ color: "#26005B" }}>
+                  inventory <br />
+                </span>
+                needs!
+              </h1>
+            </div>
+            <div
+              className="dashboard-card-graph-scroll"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "end",
+                position: "absolute",
+                top: "90px",
+                height: "300px"
+                // overflowY:"auto"
+              }}
+            >
+              <button
+                className="button-color"
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  color: "white",
+                  fontFamily: "Inter",
+                  fontSize: "16px",
+                  width: "140px",
+                  height: "35px",
+                  padding: "8px 16px",
+                }}
+              >
+                Coming Soon
+              </button>
+              <img style={{ width: "100%", maxWidth: "311px" }} src={advertisment_ims} alt="advertisment_ims" />
+            </div>
+          </div>
+        </div>
+        {/* Graph container two */}
+        <div className="graph-container-two">
+          {/* Top Selling Products */}
+          <div className="top-selling-dash" style={styles.Graphcard}>
+            <div style={{ objectFit: "content", width: "100%", }}>
+              <div className="d-flex justify-content-between" >
+                <div>
                   <div style={styles.Graphheader}>
                     <span style={styles.Graphtitle}>
-                      Recent Orders <img src={i_icon} alt="i_icon" />
+                      Top Selling Products <img src={i_icon} alt="i_icon" />
                     </span>
                     <span style={styles.Graphbadge}>+20%</span>
                   </div>
                   <p style={styles.Graphsubtext}>Last 7 days</p>
                 </div>
-                <div className="dashboard-card-graph-scroll" style={{ borderBottom: "1px solid #C2C9D1", height: "300px", }}>
-                  <table style={{ fontFamily: "Inter", width: "100%", height: "200px" }}>
-                    <thead style={{ backgroundColor: "#F3F8FB" }}>
-                      <tr style={{ color: "#727681", fontSize: "14px" }}>
-                        <th style={{ padding: "10px 16px", fontWeight: "400" }}>
-                          Order ID
-                        </th>
-                        <th style={{ padding: "10px 16px", fontWeight: "400" }}>
-                          Customer
-                        </th>
-                        <th style={{ padding: "10px 16px", fontWeight: "400" }}>
-                          No. Of Items
-                        </th>
-                        <th style={{ padding: "10px 16px", fontWeight: "400" }}>
-                          Status
-                        </th>
-                        <th style={{ padding: "10px 16px", fontWeight: "400" }}>
-                          Payment Method
-                        </th>
-                        <th style={{ padding: "10px 16px", fontWeight: "400" }}>
-                          Total
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentOrder.map((item, idx) => (
-                        <tr key={idx} style={{ fontSize: "14px" }}>
-                          <td style={{ padding: "10px 16px", fontWeight: "400" }}>
-                            {item.orderId}
-                          </td>
-                          <td style={{ padding: "10px 16px", fontWeight: "400" }}>
-                            {item.customer}
-                          </td>
-                          <td style={{ padding: "10px 16px", fontWeight: "400" }}>
-                            {item.noOfItems}
-                          </td>
-
-                          <td style={{ padding: "10px 16px", fontWeight: "400" }}>
-                            <span
-                              style={{
-                                // display: "inline-flex",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                gap: "6px",
-                                textAlign: "center",
-                                padding: "1px 6px",
-                                borderRadius: "50px",
-                                backgroundColor:
-                                  item.status === "Pending"
-                                    ? "#FFF2D5"
-                                    : item.status === "Success"
-                                      ? "#D4F7C7"
-                                      : "",
-
-                                color:
-                                  item.status === "Pending"
-                                    ? "#CF4F00"
-                                    : item.status === "Success"
-                                      ? "#01774B"
-                                      : "",
-                              }}
-                            >
-                              <span style={{ fontSize: "12px" }}>
-                                {item.status === "Pending"
-                                  ? "!"
-                                  : item.status === "Success"
-                                    ? "✓"
-                                    : ""}
-                              </span>
-
-                              {item.status}
-                            </span>
-                          </td>
-                          <td style={{ padding: "10px 16px", fontWeight: "400" }}>
-                            {item.paymentMethod}
-                          </td>
-                          <td style={{ padding: "10px 16px", fontWeight: "400" }}>
-                            {item.total}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <div style={styles.Graphfooter}>
-                  <a href="/" style={styles.Graphlink}>
-                    View All
-                  </a>
-                  <span style={styles.Graphupdate}>
-                    <img src={time} alt="time" />
-                    Updated 30 mins ago
-                  </span>
+                {/* Filter Date Button */}
+                <div className="">
+                  <button
+                    className="dropdown-toggle btn btn-sm btn-white"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    <i className="ti ti-calendar me-1" />
+                    {topSellingFilter === "today"
+                      ? [t("Today")]
+                      : topSellingFilter === "weekly"
+                        ? [t("Weekly")]
+                        : [t("Monthly")]}
+                  </button>
+                  <ul className="dropdown-menu p-3">
+                    <li>
+                      <button
+                        className="dropdown-item"
+                        onClick={() => setTopSellingFilter("today")}
+                      >
+                        {t("Today")}
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        className="dropdown-item"
+                        onClick={() => setTopSellingFilter("weekly")}
+                      >
+                        {t("Weekly")}
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        className="dropdown-item"
+                        onClick={() => setTopSellingFilter("monthly")}
+                      >
+                        {t("Monthly")}
+                      </button>
+                    </li>
+                  </ul>
                 </div>
               </div>
-              {/* New Customer Vs Returning Customer */}
-              <div className="graph-8-dash" style={styles.Graphcard}>
-                <div style={{ objectFit: "content", width: "100%" }}>
-                  <div style={{ borderBottom: "1px solid #C2C9D1" }}>
-                    <div style={styles.Graphheader}>
-                      <span style={styles.Graphtitle}>
-                        New Customer Vs Returning Customer{" "}
-                        <img src={i_icon} alt="i_icon" />
-                      </span>
-                      <span style={styles.Graphbadge}>+20%</span>
-                    </div>
-                    <p style={styles.Graphsubtext}>Last 7 days</p>
-                  </div>
 
-                  <div style={styles.GraphsalesRow}>
-                    <div
-                      className=" w-100"
-                      style={{
-                        padding: "16px 0",
-                        fontFamily: '"Poppins", sans-serif',
-                        fontWeight: "500",
-                        fontSize: "14px",
-                        color: "#727681",
-                        borderBottom: "1px solid #C2C9D1",
-                      }}
-                    >
-                      <div className="d-flex flex-column gap-2">
-                        <div
-                          className="d-flex align-items-center"
-                          style={{ gap: "57px" }}
-                        >
-                          <span
-                            className="d-flex align-items-center gap-2"
-                            style={{
-                              fontFamily: "Inter",
-                              fontSize: "14px",
-                              fontWeight: "500",
-                            }}
-                          >
-                            <span
-                              style={{
-                                backgroundColor: "#C8DFFF",
-                                width: "20px",
-                                height: "4px",
-                              }}
-                            ></span>
-                            New Customers
-                          </span>
-                          <span
-                            className="d-flex align-items-center gap-2"
-                            style={{
-                              fontFamily: "Inter",
-                              fontSize: "14px",
-                              fontWeight: "500",
-                            }}
-                          >
-                            <span
-                              style={{
-                                backgroundColor: "#1F7FFF",
-                                width: "20px",
-                                height: "4px",
-                              }}
-                            ></span>
-                            Returning Customers
-                          </span>
-                        </div>
-                        <div
-                          className="d-flex"
-                          style={{ marginLeft: "25px", gap: "57px" }}
-                        >
-                          <span
-                            style={{
-                              color: "#0E101A",
-                              fontSize: "20px",
-                              fontWeight: "500",
-                              fontFamily: "Inter",
-                            }}
-                          >
-                            78,980
-                          </span>
-                          <span
-                            style={{
-                              color: "#0E101A",
-                              fontSize: "20px",
-                              fontWeight: "500",
-                              fontFamily: "Inter",
-                            }}
-                          >
-                            78,980
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div></div>
-                  </div>
+              <div
+                className="dashboard-card-graph-scroll"
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                  fontFamily: "Inter",
+                  height: "300px",
+                  //  overflowY:"auto"
 
+                }}
+              >
+                {topSellingProducts.map((p) => (
                   <div
-                    className="dashboard-card-graph-scroll"
+
+                    key={p.id}
                     style={{
-                      width: "100%",
-                      height: "200px",
-                      borderBottom: "1px solid rgb(194, 201, 209)",
-                      paddingBottom: "15px",
-                      // overflowY:"auto"
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "5px 0px",
+                      // borderRadius: "8px",
+                      fontFamily: "Inter",
+                      borderTop: "1px solid rgb(194, 201, 209)",
+
+
                     }}
                   >
-                    <Bar
-                      data={datasFour}
-                      options={{ ...optionssThree, maintainAspectRatio: false }}
-                    />
-                  </div>
 
-                  <div style={styles.Graphfooter}>
-                    <a href="/" style={styles.Graphlink}>
-                      View All
-                    </a>
-                    <span style={styles.Graphupdate}>
-                      <img src={time} alt="time" />
-                      Updated 30 mins ago
-                    </span>
+                    <img
+                      src={p.image}
+                      alt={p.name}
+                      style={{
+                        width: "40px",
+                        height: "30px",
+                        objectFit: "cover",
+                        borderRadius: "6px",
+                        marginRight: "12px",
+                      }}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div
+                        style={{
+                          fontWeight: 400,
+                          fontSize: "13px",
+                          color: "#0E101A",
+                        }}
+                      >
+                        {p.name}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "12px",
+                          fontWeight: 400,
+                          color: "#0D6828",
+                          fontFamily: "Inter",
+                        }}
+                      >
+                        {p.sellQuantity}{" "}
+                        <span style={{ color: "#6C748C", fontWeight: 400 }}>
+                          Unit sold
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div
+                        style={{
+                          fontFamily: "Inter",
+                          fontWeight: 400,
+                          fontSize: "13px",
+                        }}
+                      >
+                        ₹ {p.sellingPrice}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "12px",
+                          color: "#0D6828",
+                          fontWeight: 400,
+                        }}
+                      >
+                        {p.change}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={styles.Graphfooter}>
+                <a href="/" style={styles.Graphlink}>
+                  View All
+                </a>
+                <span style={styles.Graphupdate}>
+                  <img src={time} alt="time" />
+                  Updated 30 mins ago
+                </span>
+              </div>
+            </div>
+          </div>
+          {/* Daily Earning */}
+          <div className="graph-5-dash" style={styles.Graphcard}>
+            <div style={{ objectFit: "content", width: "100$" }}>
+              <div style={{ borderBottom: "1px solid #C2C9D1" }}>
+                <div style={styles.Graphheader}>
+                  <span style={styles.Graphtitle}>
+                    Daily Earning <img src={i_icon} alt="i_icon" />
+                  </span>
+                  <span style={styles.Graphbadge}>+20%</span>
+                </div>
+                <p style={styles.Graphsubtext}>Last 7 days</p>
+              </div>
+
+              <div style={styles.GraphsalesRow}>
+                <div
+                  className=" w-100"
+                  style={{
+                    padding: "16px 0",
+                    fontFamily: '"Poppins", sans-serif',
+                    fontWeight: "500",
+                    fontSize: "14px",
+                    color: "#727681",
+                    borderBottom: "1px solid #C2C9D1",
+                  }}
+                >
+                  <div className="d-flex flex-column gap-2">
+                    <div
+                      className="d-flex align-items-center"
+                      style={{ gap: "57px" }}
+                    >
+                      <span
+                        className="d-flex align-items-center gap-2"
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                        }}
+                      >
+                        <span
+                          style={{
+                            backgroundColor: "#7313AA",
+                            width: "20px",
+                            height: "4px",
+                          }}
+                        ></span>
+                        Total Sales
+                      </span>
+                      <span
+                        className="d-flex align-items-center gap-2"
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                        }}
+                      >
+                        <span
+                          style={{
+                            backgroundColor: "#EE23B1",
+                            width: "20px",
+                            height: "4px",
+                          }}
+                        ></span>
+                        Profit Earned
+                      </span>
+                    </div>
+                    <div
+                      className="d-flex"
+                      style={{ marginLeft: "25px", gap: "57px" }}
+                    >
+                      <span
+                        style={{
+                          color: "#0E101A",
+                          fontSize: "20px",
+                          fontWeight: "500",
+                          fontFamily: "Inter",
+                        }}
+                      >
+                        78,980
+                      </span>
+                      <span
+                        style={{
+                          color: "#0E101A",
+                          fontSize: "20px",
+                          fontWeight: "500",
+                          fontFamily: "Inter",
+                        }}
+                      >
+                        78,980
+                      </span>
+                    </div>
                   </div>
                 </div>
+                <div></div>
+              </div>
+
+              <div
+                className="dashboard-card-graph-scroll"
+                style={{
+                  width: "100%",
+                  height: "200px",
+                  borderBottom: "1px solid rgb(194, 201, 209)",
+                  paddingBottom: "15px",
+                  paddingTop: "15px",
+
+                }}
+              >
+                <Line
+                  data={datas}
+                  options={{ ...options, maintainAspectRatio: false }}
+                />
+              </div>
+
+              <div style={styles.Graphfooter}>
+                <a href="/" style={styles.Graphlink}>
+                  View All
+                </a>
+                <span style={styles.Graphupdate}>
+                  <img src={time} alt="time" />
+                  Updated 30 mins ago
+                </span>
+              </div>
+            </div>
+          </div>
+          {/* Track Purchase Order */}
+          <div className="graph-6-dash" style={styles.Graphcard}>
+            <div style={{ borderBottom: "1px solid #C2C9D1" }}>
+              <div style={styles.Graphheader}>
+                <span style={styles.Graphtitle}>
+                  Track Purchase Order <img src={i_icon} alt="i_icon" />
+                </span>
+                <span style={styles.Graphbadge}>+20%</span>
+              </div>
+              <p style={styles.Graphsubtext}>Last 7 days</p>
+            </div>
+            <div className="dashboard-card-graph-scroll" style={{ borderBottom: "1px solid #C2C9D1", height: "300px" }}>
+              <table style={{ fontFamily: "Inter", width: "100%" }}>
+                <thead style={{ backgroundColor: "#F3F8FB" }}>
+                  <tr style={{ color: "#727681", fontSize: "14px" }}>
+                    <th style={{ padding: "10px 16px", fontWeight: "400" }}>
+                      Supplier
+                    </th>
+                    <th style={{ padding: "10px 16px", fontWeight: "400" }}>
+                      Deliver In
+                    </th>
+                    <th style={{ padding: "10px 16px", fontWeight: "400" }}>
+                      Status
+                    </th>
+                    <th style={{ padding: "10px 16px", fontWeight: "400" }}>
+                      Total
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {trackPurchaseOrder.map((item, idx) => (
+                    <tr key={idx} style={{ fontSize: "14px" }}>
+                      <td style={{ padding: "10px 16px", fontWeight: "400" }}>
+                        {item.supplier}
+                      </td>
+                      <td style={{ padding: "10px 16px", fontWeight: "400" }}>
+                        {item.deliverIn}
+                      </td>
+                      <td style={{ padding: "10px 16px", fontWeight: "400" }}>
+                        {/* <span style={{textAlign:"center", padding:"4px 6px", borderRadius:"50px", backgroundColor:"red"}}>{item.status}</span> */}
+                        <span
+                          style={{
+                            // display: "inline-flex",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "6px",
+                            textAlign: "center",
+                            padding: "1px 6px",
+                            borderRadius: "50px",
+                            backgroundColor:
+                              item.status === "Processing"
+                                ? "#F7F7C7"
+                                : item.status === "Delivered"
+                                  ? "#D4F7C7"
+                                  : item.status === "Cancelled"
+                                    ? "#F7C7C9"
+                                    : "transparent",
+
+                            color:
+                              item.status === "Processing"
+                                ? "#7E7000"
+                                : item.status === "Delivered"
+                                  ? "#01774B"
+                                  : item.status === "Cancelled"
+                                    ? "#A80205"
+                                    : "#000",
+                          }}
+                        >
+                          <span style={{ fontSize: "12px" }}>
+                            {item.status === "Processing"
+                              ? "•"
+                              : item.status === "Delivered"
+                                ? "✓"
+                                : item.status === "Cancelled"
+                                  ? "✕"
+                                  : ""}
+                          </span>
+
+                          {item.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: "10px 16px", fontWeight: "400" }}>
+                        {item.total}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={styles.Graphfooter}>
+              <a href="/" style={styles.Graphlink}>
+                View All
+              </a>
+              <span style={styles.Graphupdate}>
+                <img src={time} alt="time" />
+                Updated 30 mins ago
+              </span>
+            </div>
+          </div>
+        </div>
+        {/* graph container three */}
+        <div className="graph-container-three">
+          {/* Recent Orders */}
+          <div className="graph-7-dash" style={styles.Graphcardrecentorders}>
+            <div style={{ borderBottom: "1px solid #C2C9D1" }}>
+              <div style={styles.Graphheader}>
+                <span style={styles.Graphtitle}>
+                  Recent Orders <img src={i_icon} alt="i_icon" />
+                </span>
+                <span style={styles.Graphbadge}>+20%</span>
+              </div>
+              <p style={styles.Graphsubtext}>Last 7 days</p>
+            </div>
+            <div className="dashboard-card-graph-scroll" style={{ borderBottom: "1px solid #C2C9D1", height: "300px", }}>
+              <table style={{ fontFamily: "Inter", width: "100%", height: "200px" }}>
+                <thead style={{ backgroundColor: "#F3F8FB" }}>
+                  <tr style={{ color: "#727681", fontSize: "14px" }}>
+                    <th style={{ padding: "10px 16px", fontWeight: "400" }}>
+                      Order ID
+                    </th>
+                    <th style={{ padding: "10px 16px", fontWeight: "400" }}>
+                      Customer
+                    </th>
+                    <th style={{ padding: "10px 16px", fontWeight: "400" }}>
+                      No. Of Items
+                    </th>
+                    <th style={{ padding: "10px 16px", fontWeight: "400" }}>
+                      Status
+                    </th>
+                    <th style={{ padding: "10px 16px", fontWeight: "400" }}>
+                      Payment Method
+                    </th>
+                    <th style={{ padding: "10px 16px", fontWeight: "400" }}>
+                      Total
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentOrder.map((item, idx) => (
+                    <tr key={idx} style={{ fontSize: "14px" }}>
+                      <td style={{ padding: "10px 16px", fontWeight: "400" }}>
+                        {item.orderId}
+                      </td>
+                      <td style={{ padding: "10px 16px", fontWeight: "400" }}>
+                        {item.customer}
+                      </td>
+                      <td style={{ padding: "10px 16px", fontWeight: "400" }}>
+                        {item.noOfItems}
+                      </td>
+
+                      <td style={{ padding: "10px 16px", fontWeight: "400" }}>
+                        <span
+                          style={{
+                            // display: "inline-flex",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "6px",
+                            textAlign: "center",
+                            padding: "1px 6px",
+                            borderRadius: "50px",
+                            backgroundColor:
+                              item.status === "Pending"
+                                ? "#FFF2D5"
+                                : item.status === "Success"
+                                  ? "#D4F7C7"
+                                  : "",
+
+                            color:
+                              item.status === "Pending"
+                                ? "#CF4F00"
+                                : item.status === "Success"
+                                  ? "#01774B"
+                                  : "",
+                          }}
+                        >
+                          <span style={{ fontSize: "12px" }}>
+                            {item.status === "Pending"
+                              ? "!"
+                              : item.status === "Success"
+                                ? "✓"
+                                : ""}
+                          </span>
+
+                          {item.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: "10px 16px", fontWeight: "400" }}>
+                        {item.paymentMethod}
+                      </td>
+                      <td style={{ padding: "10px 16px", fontWeight: "400" }}>
+                        {item.total}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={styles.Graphfooter}>
+              <a href="/" style={styles.Graphlink}>
+                View All
+              </a>
+              <span style={styles.Graphupdate}>
+                <img src={time} alt="time" />
+                Updated 30 mins ago
+              </span>
+            </div>
+          </div>
+          {/* New Customer Vs Returning Customer */}
+          <div className="graph-8-dash" style={styles.Graphcard}>
+            <div style={{ objectFit: "content", width: "100%" }}>
+              <div style={{ borderBottom: "1px solid #C2C9D1" }}>
+                <div style={styles.Graphheader}>
+                  <span style={styles.Graphtitle}>
+                    New Customer Vs Returning Customer{" "}
+                    <img src={i_icon} alt="i_icon" />
+                  </span>
+                  <span style={styles.Graphbadge}>+20%</span>
+                </div>
+                <p style={styles.Graphsubtext}>Last 7 days</p>
+              </div>
+
+              <div style={styles.GraphsalesRow}>
+                <div
+                  className=" w-100"
+                  style={{
+                    padding: "16px 0",
+                    fontFamily: '"Poppins", sans-serif',
+                    fontWeight: "500",
+                    fontSize: "14px",
+                    color: "#727681",
+                    borderBottom: "1px solid #C2C9D1",
+                  }}
+                >
+                  <div className="d-flex flex-column gap-2">
+                    <div
+                      className="d-flex align-items-center"
+                      style={{ gap: "57px" }}
+                    >
+                      <span
+                        className="d-flex align-items-center gap-2"
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                        }}
+                      >
+                        <span
+                          style={{
+                            backgroundColor: "#C8DFFF",
+                            width: "20px",
+                            height: "4px",
+                          }}
+                        ></span>
+                        New Customers
+                      </span>
+                      <span
+                        className="d-flex align-items-center gap-2"
+                        style={{
+                          fontFamily: "Inter",
+                          fontSize: "14px",
+                          fontWeight: "500",
+                        }}
+                      >
+                        <span
+                          style={{
+                            backgroundColor: "#1F7FFF",
+                            width: "20px",
+                            height: "4px",
+                          }}
+                        ></span>
+                        Returning Customers
+                      </span>
+                    </div>
+                    <div
+                      className="d-flex"
+                      style={{ marginLeft: "25px", gap: "57px" }}
+                    >
+                      <span
+                        style={{
+                          color: "#0E101A",
+                          fontSize: "20px",
+                          fontWeight: "500",
+                          fontFamily: "Inter",
+                        }}
+                      >
+                        78,980
+                      </span>
+                      <span
+                        style={{
+                          color: "#0E101A",
+                          fontSize: "20px",
+                          fontWeight: "500",
+                          fontFamily: "Inter",
+                        }}
+                      >
+                        78,980
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div></div>
+              </div>
+
+              <div
+                className="dashboard-card-graph-scroll"
+                style={{
+                  width: "100%",
+                  height: "200px",
+                  borderBottom: "1px solid rgb(194, 201, 209)",
+                  paddingBottom: "15px",
+                  // overflowY:"auto"
+                }}
+              >
+                <Bar
+                  data={datasFour}
+                  options={{ ...optionssThree, maintainAspectRatio: false }}
+                />
+              </div>
+
+              <div style={styles.Graphfooter}>
+                <a href="/" style={styles.Graphlink}>
+                  View All
+                </a>
+                <span style={styles.Graphupdate}>
+                  <img src={time} alt="time" />
+                  Updated 30 mins ago
+                </span>
               </div>
             </div>
           </div>
         </div>
-    
-    
+      </div>
+    </div>
+
+
   );
 };
 

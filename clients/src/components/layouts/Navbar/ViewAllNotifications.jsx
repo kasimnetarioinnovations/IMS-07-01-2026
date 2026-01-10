@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import BASE_URL from '../../../pages/config/config';
+// import BASE_URL from '../../../pages/config/config';
 import { toast } from 'react-toastify';
 import {
   FaBell,
@@ -15,6 +15,7 @@ import { ObjectId } from 'bson'; // Import bson for ObjectId validation
 import { useSocket } from '../../../Context/SocketContext';
 import api from "../../../pages/config/axiosInstance"
 import { useAuth } from '../../auth/AuthContext';
+import DeleteModal from '../../ConfirmDelete';
 
 const ViewAllNotifications = () => {
   const { user } = useAuth();
@@ -27,6 +28,7 @@ const ViewAllNotifications = () => {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [selectedNotifications, setSelectedNotifications] = useState([]);
   const { connectSocket, getSocket } = useSocket();
+  const [deleteMode, setDeleteMode] = useState(null);
 
   const userId = user?.id || user?._id;
 
@@ -41,9 +43,9 @@ const ViewAllNotifications = () => {
       setError(null);
       const res = await api.get(
         `/api/notifications/paginated/${userId}?page=${page}&limit=100`);
-        setNotifications(res.data.notifications || []);
-        setTotalPages(res.data.totalPages || 1);
-        setCurrentPage(res.data.currentPage || 1);
+      setNotifications(res.data.notifications || []);
+      setTotalPages(res.data.totalPages || 1);
+      setCurrentPage(res.data.currentPage || 1);
     } catch (error) {
       const errorMessage = error.res?.data?.message || error.message || 'Failed to load notifications';
       setError(errorMessage);
@@ -59,9 +61,9 @@ const ViewAllNotifications = () => {
     try {
       const res = await api.get(
         `/api/notifications/unread/${userId}`);
-        setUnreadCount(res.data.count);
+      setUnreadCount(res.data.count);
     } catch (error) {
-      console.error('Error fetching unread count:', error);
+      // console.error('Error fetching unread count:', error);
     }
   };
 
@@ -89,7 +91,7 @@ const ViewAllNotifications = () => {
   const markAllAsRead = async () => {
     try {
       await api.put(
-        `$/api/notifications/read-all/${userId}`);
+        `/api/notifications/read-all/${userId}`);
 
       setNotifications(prev =>
         prev.map(notification => ({ ...notification, read: true }))
@@ -102,43 +104,100 @@ const ViewAllNotifications = () => {
     }
   };
 
-  const deleteNotification = async (notificationId) => {
-    try {
-      await api.delete(
-        `/api/notifications/${notificationId}`);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
 
-      setNotifications(prev =>
-        prev.filter(notification => notification._id !== notificationId)
-      );
-      setDeleteConfirm(null);
-      toast.success('Notification deleted successfully');
+  const handleDelete = (mode, id = null) => {
+    setDeleteMode(mode);
+    setDeleteTargetId(id);
+    setShowDeleteModal(true);
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setDeleteTargetId(null);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      if (deleteMode === 'single') {
+        await api.delete(`/api/notifications/${deleteTargetId}`, {
+          data: { userId }
+        });
+
+        setNotifications(prev =>
+          prev.filter(n => n._id !== deleteTargetId)
+        );
+
+        toast.success('Notification deleted');
+      }
+
+      if (deleteMode === 'all') {
+        await api.delete(`/api/notifications/all/${userId}`, {
+          data: { userId }
+        });
+
+        setNotifications([]);
+        setUnreadCount(0);
+        toast.success('All notifications deleted');
+      }
+
+      if (deleteMode === 'selected') {
+        if (!selectedNotifications.length) {
+          toast.error('No notifications selected');
+          return;
+        }
+
+        await api.delete(`/api/notifications/bulk-delete`, {
+          data: {
+            userId,
+            notificationIds: selectedNotifications
+          }
+        });
+
+        setNotifications(prev =>
+          prev.filter(n => !selectedNotifications.includes(n._id))
+        );
+
+        setSelectedNotifications([]);
+        toast.success('Selected notifications deleted');
+      }
     } catch (error) {
-      const errorMessage = error.res?.data?.message || error.message || 'Failed to delete notification';
-      toast.error(errorMessage);
-      setDeleteConfirm(null);
+      toast.error(
+        error.response?.data?.message ||
+        error.message ||
+        'Delete failed'
+      );
+    } finally {
+      setShowDeleteModal(false);
+      setDeleteTargetId(null);
+      setDeleteMode(null);
     }
   };
 
   const deleteAllNotifications = async () => {
     try {
       await api.delete(
-        `/api/notifications/all/${userId}`);
+        `/api/notifications/all/${userId}`,
+        { data: { userId } });
 
       setNotifications([]);
       setUnreadCount(0);
-      setDeleteConfirm(null);
+      handleDelete();
       toast.success('All notifications deleted successfully');
+      setShowDeleteModal(false);
+      setDeleteTargetId(null);
     } catch (error) {
       const errorMessage = error.res?.data?.message || error.message || 'Failed to delete all notifications';
       toast.error(errorMessage);
-      setDeleteConfirm(null);
+      handleDelete();
     }
   };
 
   const deleteSelectedNotifications = async () => {
     if (!selectedNotifications.length) {
       toast.error('No notifications selected');
-      setDeleteConfirm(null);
+      handleDelete();
       return;
     }
 
@@ -148,42 +207,42 @@ const ViewAllNotifications = () => {
     );
 
     if (validSelectedIds.length !== selectedNotifications.length) {
-      console.warn('Some selected notifications are no longer valid:', {
-        selected: selectedNotifications,
-        valid: validSelectedIds
-      });
+      // console.warn('Some selected notifications are no longer valid:', {selected: selectedNotifications, valid: validSelectedIds});
     }
 
     if (validSelectedIds.length === 0) {
       toast.error('No valid notifications selected');
-      setDeleteConfirm(null);
+      handleDelete();
       return;
     }
 
     try {
-      console.log('Deleting selected notifications:', validSelectedIds);
-      console.log('User ID:', userId);
+      // console.log('Deleting selected notifications:', validSelectedIds);
+      // console.log('User ID:', userId);
       const requestData = { userId, notificationIds: validSelectedIds };
-      console.log('Request data:', requestData);
+      // console.log('Request data:', requestData);
 
       const res = await api.delete(
-        `$/api/notifications/bulk-delete`);
+        `/api/notifications/bulk-delete`,
+        { data: requestData });
 
-      console.log('Response:', res.data);
+      // console.log('Response:', res.data);
 
       setNotifications(prev =>
         prev.filter(notification => !validSelectedIds.includes(notification._id))
       );
       setSelectedNotifications([]);
-      setDeleteConfirm(null);
+      handleDelete();
+      setShowDeleteModal(false);
+      setDeleteTargetId(null);
       toast.success(res.data.message || 'Selected notifications deleted successfully');
     } catch (error) {
-      console.error('Error deleting selected notifications:', error);
-      console.error('Error response:', error.res?.data);
-      console.error('Error status:', error.res?.status);
+      // console.error('Error deleting selected notifications:', error);
+      // console.error('Error response:', error.res?.data);
+      // console.error('Error status:', error.res?.status);
       const errorMessage = error.res?.data?.message || error.message || 'Failed to delete selected notifications';
       toast.error(errorMessage);
-      setDeleteConfirm(null);
+      handleDelete();
     }
   };
 
@@ -213,13 +272,13 @@ const ViewAllNotifications = () => {
       fetchUnreadCount();
 
       // Attach real-time listener for new notifications
-      const socket = connectSocket(BASE_URL);
+      const socket = connectSocket(api.defaults.baseURL);
       if (socket) {
         try {
           // Ensure user is registered (safe to emit again)
           socket.emit('add-user', userId);
         } catch (e) {
-          console.error('Socket user registration failed in ViewAllNotifications:', e);
+          // console.error('Socket user registration failed in ViewAllNotifications:', e);
         }
 
         const handleNewNotification = () => {
@@ -240,10 +299,8 @@ const ViewAllNotifications = () => {
   }, [userId, currentPage]);
 
   return (
-    <div className='page-wrapper'
-    // style={{ padding: '0px 20px', height: '88vh' }}
-    >
-      <div className="content">
+    <div className='p-4'>
+      <div className="">
         <style>
           {`
           @keyframes spin {
@@ -255,8 +312,27 @@ const ViewAllNotifications = () => {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <div>
-            <span style={{ fontSize: '22px', fontWeight: '700' }}>All Notifications</span>
-            <br />
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 11,
+                height: '33px'
+              }}
+            >
+              <h2
+                style={{
+                  margin: 0,
+                  color: "black",
+                  fontSize: 22,
+                  fontFamily: "Inter, sans-serif",
+                  fontWeight: 500,
+                  height: '33px'
+                }}
+              >
+                Notifications
+              </h2>
+            </div>
           </div>
           {notifications.length > 0 && (
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -283,7 +359,7 @@ const ViewAllNotifications = () => {
               )}
               {selectedNotifications.length === 0 && (
                 <button
-                  onClick={() => setDeleteConfirm({ type: 'all' })}
+                  onClick={() => handleDelete('all')}
                   style={{
                     background: 'white',
                     color: '#dc3545',
@@ -304,7 +380,7 @@ const ViewAllNotifications = () => {
               )}
               {selectedNotifications.length > 0 && (
                 <button
-                  onClick={() => setDeleteConfirm({ type: 'selected' })}
+                  onClick={() => handleDelete('selected')}
                   style={{
                     background: 'white',
                     color: '#dc3545',
@@ -327,7 +403,7 @@ const ViewAllNotifications = () => {
           )}
         </div>
 
-        <div style={{ marginTop: '5px', overflowY: 'auto', height: '80vh', borderRadius: '8px', backgroundColor: 'white' }}>
+        <div style={{ marginTop: '5px', overflowY: 'auto', height: '81vh', borderRadius: '8px', backgroundColor: 'white' }}>
           {!user ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px', textAlign: 'center', color: '#6c757d' }}>
               <FaBell style={{ fontSize: '48px', color: '#dee2e6', marginBottom: '16px' }} />
@@ -366,7 +442,7 @@ const ViewAllNotifications = () => {
           ) : notifications.length === 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 20px', textAlign: 'center', color: '#6c757d' }}>
               <FaBell style={{ fontSize: '48px', color: '#dee2e6', marginBottom: '16px' }} />
-              <h3 style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: '600', color: '#495057' }}>No notifications</h3>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: '20px', fontWeight: '600', color: '#495057' }}>No Notifications !!</h3>
               <p style={{ margin: 0, fontSize: '14px', color: '#6c757d' }}>You're all caught up! No new notifications.</p>
             </div>
           ) : (
@@ -412,7 +488,7 @@ const ViewAllNotifications = () => {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div>
                         <span style={{ fontWeight: '600', color: 'black' }}>
-                          {notification.sender?.firstName} {notification.sender?.lastName}
+                          {notification.sender?.firstName || 'User'} {notification.sender?.lastName || 'Not Available'}
                         </span>
                         <br />
                         <span style={{ fontWeight: '400', color: '#6c757d' }}>
@@ -483,7 +559,7 @@ const ViewAllNotifications = () => {
                           transition: 'all 0.3s ease'
                         }}
                         className='notification-action-btn delete'
-                        onClick={() => setDeleteConfirm({ notificationId: notification._id })}
+                        onClick={() => handleDelete('single', notification._id)}
                         title="Delete notification"
                       >
                         <FaTrash />
@@ -544,95 +620,15 @@ const ViewAllNotifications = () => {
             </>
           )}
         </div>
-
-        {deleteConfirm && (
-          <div
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              background: 'rgba(0,0,0,0.5)',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              zIndex: 1000,
-            }}
-          >
-            <div
-              style={{
-                background: 'white',
-                padding: '20px',
-                borderRadius: '8px',
-                boxShadow: '0 4px 15px rgba(0,0,0,0.2)',
-                textAlign: 'center',
-                width: '300px',
-              }}
-            >
-              <FaExclamationTriangle style={{ fontSize: '40px', color: '#dc3545', marginBottom: '10px' }} />
-              <h3 style={{ marginBottom: '10px', color: '#343a40' }}>
-                {deleteConfirm.type === 'all'
-                  ? 'Confirm Delete All'
-                  : deleteConfirm.type === 'selected'
-                    ? 'Confirm Delete Selected'
-                    : 'Confirm Deletion'}
-              </h3>
-              <p style={{ marginBottom: '20px', color: '#6c757d' }}>
-                {deleteConfirm.type === 'all'
-                  ? 'Are you sure you want to delete all notifications? This action cannot be undone.'
-                  : deleteConfirm.type === 'selected'
-                    ? 'Are you sure you want to delete selected notifications? This action cannot be undone.'
-                    : 'Are you sure you want to delete this notification? This action cannot be undone.'}
-              </p>
-              <div style={{ display: 'flex', justifyContent: 'space-around' }}>
-                <button
-                  style={{
-                    background: '#dc3545',
-                    color: 'white',
-                    border: 'none',
-                    padding: '8px 16px',
-                    borderRadius: '6px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => {
-                    if (deleteConfirm.type === 'all') {
-                      deleteAllNotifications();
-                    } else if (deleteConfirm.type === 'selected') {
-                      deleteSelectedNotifications();
-                    } else {
-                      deleteNotification(deleteConfirm.notificationId);
-                    }
-                  }}
-                >
-                  {deleteConfirm.type === 'all'
-                    ? 'Delete All'
-                    : deleteConfirm.type === 'selected'
-                      ? 'Delete Selected'
-                      : 'Delete'}
-                </button>
-                <button
-                  style={{
-                    background: '#6c757d',
-                    color: 'white',
-                    border: 'none',
-                    padding: '8px 16px',
-                    borderRadius: '6px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    cursor: 'pointer',
-                  }}
-                  onClick={() => setDeleteConfirm(null)}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
+
+      <DeleteModal
+        isOpen={showDeleteModal}
+        onCancel={cancelDelete}
+        onConfirm={confirmDelete}
+        itemName="product"
+      />
+
     </div>
   );
 };
