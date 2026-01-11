@@ -353,7 +353,7 @@ export default function Customers() {
 
   return (
 
-    <div className="p-4" style={{ fontFamily: '"Inter", sans-serif' }}>
+    <div className="p-4" style={{ fontFamily: '"Inter", sans-serif'}}>
       {/* Header */}
       <div
         className="d-flex justify-content-between align-items-center"
@@ -506,7 +506,7 @@ export default function Customers() {
         </div>
 
         {/* Table */}
-        <div className="table-responsive" style={{ maxHeight: "550px", overflowY: 'auto' }}>
+        <div className="table-responsive" style={{ overflow:"auto", height:"calc(100vh - 40vh)"}}>
           <table
             style={{
               width: "100%",

@@ -188,13 +188,16 @@ const AddCustomerModal = ({ onClose }) => {
           width: "800px",
           padding: "30px 40px",
           borderRadius: "8px",
+          overflow:"auto",
+           
+         
         }}
     >
       <div>
         <div className="modal-content">
           <div
             className="modal-header"
-            style={{ borderBottom: "none", display: "flex", alignItems: "center", justifyContent: "end", borderRadius: "50%", padding: "5px 5px" }}
+            style={{ borderBottom: "none", display: "flex", alignItems: "center", justifyContent: "end", borderRadius: "50%", padding: "5px 5px"}}
           >
             <button
               style={{
