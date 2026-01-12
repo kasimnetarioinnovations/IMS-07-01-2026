@@ -6,7 +6,7 @@ import { IoPrintOutline } from "react-icons/io5";
 import Supplierrr from "../../assets/images/suppimg.png";
 import { TbInvoice } from "react-icons/tb";
 import { GoDownload } from "react-icons/go";
-import DatePicker from "../../components/DatePicker";
+import DatePicker from "../../components/DateFilterDropdown";
 import RecentViewInvoiceModal from "../../pages/Modal/RecentViewInvoiceModal";
 import { Link } from "react-router-dom";
 import total_orders_icon from "../../assets/images/totalorders-icon.png";
@@ -30,7 +30,7 @@ const RecentViewInvoice = ({ type = "purchase" }) => {
   const [invoiceData, setInvoiceData] = useState(null);
   const [supplierData, setSupplierData] = useState(null);
   const [loading, setLoading] = useState(true);
-    const [customerData, setCustomerData] = useState(null);
+  const [customerData, setCustomerData] = useState(null);
 
   // Fetch invoice data
   useEffect(() => {

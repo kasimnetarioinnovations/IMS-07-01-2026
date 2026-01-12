@@ -17,7 +17,7 @@ const uploadMiddleware = multer({
     const allowedTypes = /jpeg|jpg|png|pdf/;
     const extname = allowedTypes.test(file.originalname.toLowerCase());
     const mimetype = allowedTypes.test(file.mimetype);
-    
+
     if (mimetype && extname) {
       return cb(null, true);
     } else {
@@ -46,16 +46,30 @@ router.put(
 router.delete("/:id", authMiddleware, invoiceController.deleteInvoice);
 router.post("/:id/payment", authMiddleware, invoiceController.addPayment);
 
-
 // In routes/CustomerInvoiceRoutes.js, add these routes:
 
 // Get invoices by customer ID
-router.get("/customer/:customerId", authMiddleware, invoiceController.getInvoicesByCustomer);
+router.get(
+  "/customer/:customerId",
+  authMiddleware,
+  invoiceController.getInvoicesByCustomer
+);
 
 // Get overdue invoices by customer ID
-router.get("/customer/:customerId/overdue", authMiddleware, invoiceController.getOverdueInvoicesByCustomer);
+router.get(
+  "/customer/:customerId/overdue",
+  authMiddleware,
+  invoiceController.getOverdueInvoicesByCustomer
+);
 
 // Get unpaid invoices by customer ID
-router.get("/customer/:customerId/unpaid", authMiddleware, invoiceController.getUnpaidInvoicesByCustomer);
+router.get(
+  "/customer/:customerId/unpaid",
+  authMiddleware,
+  invoiceController.getUnpaidInvoicesByCustomer
+);
+
+// Sales list route
+router.get("/sales/list", authMiddleware, invoiceController.getSalesList);
 
 module.exports = router;
