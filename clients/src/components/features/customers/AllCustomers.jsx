@@ -506,7 +506,7 @@ export default function Customers() {
         </div>
 
         {/* Table */}
-        <div className="table-responsive" style={{ overflow:"auto", height:"calc(100vh - 40vh)"}}>
+        <div className="table-responsive" style={{ overflow:"auto", height:"calc(100vh - 330px)"}}>
           <table
             style={{
               width: "100%",
