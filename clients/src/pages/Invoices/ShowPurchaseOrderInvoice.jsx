@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { IoIosArrowBack } from "react-icons/io";
 import { RiFileDownloadLine, RiMessage2Fill, RiWhatsappFill } from "react-icons/ri";
@@ -17,6 +17,10 @@ function ShowPurchaseOrderInvoice() {
     const navigate = useNavigate();
     const [invoiceData, setInvoiceData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [companyData, setCompanyData] = useState(null);
+    const [terms, setTerms] = useState(null);
+    const [template, setTemplate] = useState(null);
+    const invoiceRef = useRef(null);
 
     useEffect(() => {
         const fetchInvoice = async () => {
@@ -35,6 +39,43 @@ function ShowPurchaseOrderInvoice() {
         fetchInvoice();
     }, [invoiceId, navigate]);
 
+    const fetchCompanyData = async () => {
+        try {
+            const res = await api.get(`/api/companyprofile/get`);
+            console.log("Companyss data:", res.data);
+            setCompanyData(res.data.data);
+        } catch (error) {
+            console.error("Error fetching company profile:", error);
+        }
+    };
+
+    const fetchSettings = async () => {
+        try {
+            const res = await api.get('/api/notes-terms-settings');
+            setTerms(res.data.data)
+            console.log('reddd', res.data)
+        } catch (error) {
+            console.error('Error fetching notes & terms settings:', error);
+        }
+    };
+
+    const fetchSignature = async () => {
+        try {
+            const res = await api.get('/api/print-templates/all');
+            setTemplate(res.data.data)
+            console.log('ddrrr', res.data)
+        } catch (error) {
+            console.error('Error fetching tempate settings:', error);
+        }
+    }
+
+
+    useEffect(() => {
+        fetchCompanyData();
+        fetchSettings();
+        fetchSignature();
+    }, []);
+
     if (loading) return <div>Loading supplier invoice...</div>;
     if (!invoiceData) return <div>Supplier invoice not found</div>;
 
@@ -49,8 +90,8 @@ function ShowPurchaseOrderInvoice() {
             : "";
 
     return (
-        <div className="page-wrapper">
-            <div className="page-content">
+        <div className="px-4 py-4">
+            <div className="">
                 <div
                     style={{
                         height: "calc(100vh - 70px)",
@@ -167,7 +208,7 @@ function ShowPurchaseOrderInvoice() {
                                             >
                                                 <div style={{ width: "100px" }}>
                                                     <img
-                                                        src={CompanyLogo}
+                                                        src={companyData?.CompanyLogo || CompanyLogo}
                                                         alt="company logo"
                                                         style={{ width: "100%", objectFit: "contain" }}
                                                     />
@@ -295,13 +336,13 @@ function ShowPurchaseOrderInvoice() {
                                                     <div>
                                                         Name :{" "}
                                                         <span style={{ color: "black", fontWeight: "600" }}>
-                                                            Kasper Infotech Pvt. Ltd.
+                                                            {companyData?.companyName || "N/A"}
                                                         </span>
                                                     </div>
-                                                    <div><b>Address:</b> Noida, UP</div>
-                                                    <div><b>Phone:</b> +91 9876543210</div>
-                                                    <div><b>Email:</b> info@kasperinfotech.com</div>
-                                                    <div><b>GSTIN:</b> 07AABC9600R1Z5</div>
+                                                    <div><b>Address:</b> {companyData?.companyaddress || "N/A"}</div>
+                                                    <div><b>Phone:</b> {companyData?.companyphone || "N/A"}</div>
+                                                    <div><b>Email:</b> {companyData?.companyemail || "N/A"}</div>
+                                                    <div><b>GSTIN:</b> {companyData?.gstin || "N/A"}</div>
                                                 </div>
                                             </div>
                                             <div className="table-responsive mt-3">
