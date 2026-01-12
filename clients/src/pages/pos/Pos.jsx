@@ -89,6 +89,8 @@ const Pos = () => {
 
   const [companyImages, setCompanyImages] = useState(null)
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [applycoinpopup, setApplycoinpopup] = useState(false);
+  const [pointsToApply, setPointsToApply] = useState(0);
 
   useEffect(() => {
     const fetchCompanyDetails = async () => {
@@ -1380,6 +1382,8 @@ const Pos = () => {
 
   const changeToReturn = Math.max((Number(amountReceived) || 0) - roundedAmount, 0);
   const dueAmount = Math.max(roundedAmount - (Number(amountReceived) || 0), 0);
+
+  const amountToCoin = (roundedAmount / 10).toFixed(0) / 5;
 
   //bill details up down arrow-----------------------------------------------------------------------------------------------------
   const [updown, setUpdown] = useState(false);
@@ -2680,12 +2684,12 @@ const Pos = () => {
                     display: 'flex',
                     cursor: "pointer",
                   }}
-                onClick={handleLowHighSortToggle}
+                  onClick={handleLowHighSortToggle}
                 >
-                  <CgSortAz style={{ 
+                  <CgSortAz style={{
                     fontSize: '30px',
                     color: lowHighSortActive === true ? "#0084FF" : "#515457",
-                     }} />
+                  }} />
                   <div
                     style={{
                       color: '#515457',
@@ -3030,7 +3034,7 @@ const Pos = () => {
                               {selectedCustomer.phone || 'No Phone'}
                             </div>
                           </div>
-                          <div
+                          {selectedCustomer.totalDueAmount === 0 && <div
                             style={{
                               color: 'var(--Danger, green)',
                               fontSize: 14,
@@ -3039,9 +3043,9 @@ const Pos = () => {
                               wordWrap: 'break-word',
                             }}
                           >
-                            To Collect - ₹5/-
-                          </div>
-                          {/* <div
+                            To Collect: ₹{selectedCustomer.balance.toFixed(2)}/-
+                          </div>}
+                          {selectedCustomer.totalDueAmount > 0 && <div
                             style={{
                               color: 'var(--Danger, #D00003)',
                               fontSize: 14,
@@ -3050,8 +3054,8 @@ const Pos = () => {
                               wordWrap: 'break-word',
                             }}
                           >
-                            Due - ₹ 2,500/-
-                          </div> */}
+                            Due: ₹{selectedCustomer.totalDueAmount.toFixed(2)}/-
+                          </div>}
                         </div>
                       </>
                     ) : (
@@ -3244,9 +3248,9 @@ const Pos = () => {
                               wordWrap: 'break-word',
                             }}
                           >
-                            {selectedCustomer.availablePoints}
+                            {selectedCustomer.availablePoints} points
                           </div>
-                          <div
+                          {/* <div
                             style={{
                               color: 'var(--Danger, #D00003)',
                               fontSize: 11,
@@ -3256,21 +3260,117 @@ const Pos = () => {
                             }}
                           >
                             (23 days to expire)
-                          </div>
+                          </div> */}
                         </div>
-                        <div style={{
-                          padding: "2px 6px",
-                          background: '#1F7FFF',
-                          border: '1px solid #1F7FFF',
-                          color: 'white',
-                          borderRadius: 4,
-                          textDecoration: 'none',
-                          fontSize: '14px',
-                          display: 'flex',
-                          gap: '8px',
-                          alignItems: 'center',
-                          cursor: "pointer",
-                        }}>Apply</div>
+                        {selectedItems.length === 0 ? (
+                          <button
+                            title='Select any 1 item to apply points'
+                            style={{
+                              padding: "2px 6px",
+                              background: '#1f80ff7e',
+                              border: '1px solid #1f80ff48',
+                              color: 'white',
+                              borderRadius: 4,
+                              textDecoration: 'none',
+                              fontSize: '14px',
+                              display: 'flex',
+                              gap: '8px',
+                              alignItems: 'center',
+                              cursor: "not-allowed",
+                            }}>
+                            Apply
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setApplycoinpopup(true)}
+                            style={{
+                              padding: "2px 6px",
+                              background: '#1F7FFF',
+                              border: '1px solid #1F7FFF',
+                              color: 'white',
+                              borderRadius: 4,
+                              textDecoration: 'none',
+                              fontSize: '14px',
+                              display: 'flex',
+                              gap: '8px',
+                              alignItems: 'center',
+                              cursor: "pointer",
+                            }}>
+                            Apply
+                          </button>)}
+                        {applycoinpopup && (
+                          <div
+                            onClick={() => setApplycoinpopup(false)}
+                            style={{
+                              position: "fixed",
+                              top: 0,
+                              left: 0,
+                              width: "100vw",
+                              height: "100vh",
+                              backgroundColor: "rgba(0,0,0,0.27)",
+                              backdropFilter: "blur(1px)",
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                              zIndex: 99999999,
+                            }}>
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              style={{
+                                backgroundColor: "white",
+                                width: "auto",
+                                padding: "20px",
+                                borderRadius: "8px",
+                                overflow: "auto",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "10px",
+                              }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                <span style={{ fontSize: "14px", fontWeight: "500", color: '#0E101A' }}>Shopping Points</span>
+                                <span style={{ fontSize: "13px", fontWeight: "500", }}>Available to redeem - 🪙
+                                  <span style={{ color: '#1F7FFF' }}>{(selectedCustomer.availablePoints) < amountToCoin ? '0' : amountToCoin.toFixed(0)} points</span>
+                                </span>
+                              </div>
+
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', justifyContent: 'start', marginTop: '6px' }}>
+                                <span style={{ fontSize: "14px", fontWeight: "500", color: '#0E101A' }}>Apply Points</span>
+                                <div style={{ display: 'flex', flexDirection: 'row', gap: '4px' }}>
+                                  <input type="radio" id='applypointsfull' />
+                                  <label for='applypointsfull' style={{ fontSize: '13px', fontWeight: '500' }}>Full</label>
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', flexDirection: 'row', gap: '8px', alignItems: 'center' }}>
+                                <span style={{ fontSize: "14px", fontWeight: "500", color: '#0E101A' }}>Enter Points:</span>
+                                <div className='' style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '4px', width: '100px', border: '1px solid #565657ff', padding: '6px 4px', borderRadius: 4 }}>
+                                  <input type="number" id='enterpoints' placeholder='0' max={amountToCoin} value={pointsToApply} onChange={(e) => setPointsToApply(e.target.value)} style={{ width: '100%', border: 'none', outline: 'none' }} />
+                                  <span>🪙</span>
+                                </div>
+                                <span>=</span>
+                                <div className='' style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '4px', width: '100px', border: '1px solid #565657ff', padding: '6px 6px', borderRadius: 4 }}>
+                                  <span style={{ width: '100%', border: 'none', outline: 'none', fontSize: '14px', fontWeight: '600', color: '#0E101A' }}>{pointsToApply * 5}</span>
+                                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#1F7FFF' }}>₹</span>
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', justifyContent: 'end', }}>
+                                <div
+                                  style={{
+                                    padding: '6px 15px',
+                                    backgroundColor: '#1368EC',
+                                    borderRadius: '8px',
+                                    color: 'white',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  <span>Apply</span>
+                                </div>
+                              </div>
+
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </>
                   )}
@@ -3475,7 +3575,7 @@ const Pos = () => {
                                   style={{
                                     width: "100%",
                                     alignSelf: "stretch",
-                                    display:'flex',
+                                    display: 'flex',
                                     justifyContent: "space-between",
                                     alignItems: "center",
                                   }}
@@ -3496,12 +3596,12 @@ const Pos = () => {
                                         justifyContent: "center",
                                         alignItems: "center",
                                         display: "flex",
-                                        gap:'5px'
+                                        gap: '5px'
                                       }}
                                     >
                                       <div
                                         style={{
-                                          display:'flex',
+                                          display: 'flex',
                                           justifyContent: "center",
                                           alignItems: "center",
                                           gap: 4,
@@ -3531,7 +3631,7 @@ const Pos = () => {
                                         }}
                                       >
                                         {/* {item.name.length > 19 ? item.name.substring(0, 19) + '...' : item.name} */}
-                                        {item.productName.length > 15 ? item.productName.slice(0,15) + '...' : item.productName}
+                                        {item.productName.length > 15 ? item.productName.slice(0, 15) + '...' : item.productName}
                                       </div>
                                     </div>
                                   </div>
@@ -3745,7 +3845,7 @@ const Pos = () => {
                               wordWrap: 'break-word',
                             }}
                           >
-                            +₹{totalTax}
+                            +₹{totalTax.toFixed(2)}
                           </div>
                         </div>
                         <div
@@ -3914,16 +4014,13 @@ const Pos = () => {
                 </>
               )}
 
-
-
             </div>
 
           </div>
 
         </div>
 
-
-  {/* ALL POPUPS */}
+        {/* ALL POPUPS */}
 
         {/* customers popup */}
         {popup && (
