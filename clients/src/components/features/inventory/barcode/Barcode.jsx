@@ -729,7 +729,7 @@ function Barcode() {
           </div>
         </div>
 
-        <div >
+        <div  style={{overflow:"auto", height:"calc(100vh - 200px)"}}>
           <div className='card p-4'>
             <div className="mb-3 search-form seacrh-barcode-item" >
               <div className="search-form">

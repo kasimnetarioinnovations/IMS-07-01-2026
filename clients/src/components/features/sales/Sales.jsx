@@ -451,8 +451,8 @@ const Sales = () => {
   }, [salesModalKey]);
 
   return (
-    <div className="page-wrapper">
-      <div className="content">
+
+      <div className="p-4">
 
         <div className="page-header">
           <div className="add-item d-flex">
@@ -949,7 +949,7 @@ const Sales = () => {
           </div>
         </div>
         {/* <SalesDashboard /> */}
-      </div>
+     
       {showModal && editSale && (
         <EditSalesModal
           editData={editSale}
