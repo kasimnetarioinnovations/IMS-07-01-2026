@@ -10,7 +10,7 @@ import * as XLSX from "xlsx";
 // Full Redesign--------------------------------------------------------------------------------------------
 import "./product.css";
 import Pagination from "../../../Pagination";
-import DatePicker from "../../../DatePicker";
+import DatePicker from "../../../DateFilterDropdown";
 import DeleteModal from "../../../ConfirmDelete";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -58,17 +58,17 @@ const Product = () => {
   const [listTab, setListTab] = useState("All Products");
   const [barcodeModal, setBarcodeModal] = useState(null);
 
-    const [activeRow, setActiveRow] = useState(null);
+  const [activeRow, setActiveRow] = useState(null);
 
-    const toggleRow = (index) => {
-        const newOpen = openRow === index ? null : index;
-        setOpenRow(newOpen);
-        if (newOpen === null && activeRow === index) {
-            setActiveRow(null);
-        } else if (newOpen !== null) {
-            setActiveRow(index);
-        }
-    };
+  const toggleRow = (index) => {
+    const newOpen = openRow === index ? null : index;
+    setOpenRow(newOpen);
+    if (newOpen === null && activeRow === index) {
+      setActiveRow(null);
+    } else if (newOpen !== null) {
+      setActiveRow(index);
+    }
+  };
 
   const handleClick = () => {
     navigate("/add-product")

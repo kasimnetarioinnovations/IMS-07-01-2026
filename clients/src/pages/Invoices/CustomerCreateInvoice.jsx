@@ -43,6 +43,28 @@ function CustomerCreateInvoice() {
   const [selectedChargeType, setSelectedChargeType] = useState("");
   const [chargeAmount, setChargeAmount] = useState("");
 
+  // Stock check function
+  const checkStockAvailability = async (productId, requiredQty) => {
+    if (!productId) return true;
+
+    try {
+      const response = await api.get(`/api/products/${productId}`);
+      const product = response.data;
+
+      // Use openingQuantity as stock
+      const availableStock = product.openingQuantity || 0;
+
+      if (availableStock < requiredQty) {
+        toast.error(`Insufficient stock for ${product.productName}! Available: ${availableStock}`);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Error checking stock:', error);
+      return true; // Continue if check fails
+    }
+  };
+
   const handleViewManage = () => setViewManageOptions(true);
   const handleViewInvoice = (open) => setViewInvoiceOptions(open);
   const handleViewChargeOptions = () => setViewChargeOptions((prev) => !prev);
@@ -645,6 +667,25 @@ function CustomerCreateInvoice() {
       toast.error(errors[firstErrorKey]);
       return;
     }
+    // Check stock availability for all products before submitting
+    for (const product of products) {
+      if (product.productId) {
+        try {
+          const response = await api.get(`/api/products/${product.productId}`);
+          const prodData = response.data;
+
+          const availableStock = prodData.openingQuantity || 0;
+
+          if (availableStock < (product.qty || 1)) {
+            toast.error(`Insufficient stock for ${prodData.productName}! Available: ${availableStock}, Requested: ${product.qty}`);
+            return; // Stop submission
+          }
+        } catch (error) {
+          console.error(`Error checking stock for product ${product.productId}:`, error);
+          // Continue anyway if check fails
+        }
+      }
+    }
 
     setIsSubmitting(true);
 
@@ -808,7 +849,7 @@ function CustomerCreateInvoice() {
   if (loading) return <div>Loading...</div>;
 
   return (
-    <div className="px-4 py-4" style={{height:"100vh"}}>
+    <div className="px-4 py-4" style={{ height: "100vh" }}>
       <div className="">
         <div className="">
           {/* Header */}
@@ -912,7 +953,7 @@ function CustomerCreateInvoice() {
               display: "flex",
               overflowX: "auto",
               height: "calc(100vh - 180px)",
-              
+
             }}
           >
             {/* Customer Details */}

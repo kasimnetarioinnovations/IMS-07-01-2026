@@ -54,6 +54,9 @@ exports.getUnreadCount = async (req, res) => {
   try {
     const { userId } = req.params;
     
+      if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(200).json({ count: 0 });
+    }
     const count = await Notification.countDocuments({ 
       recipient: userId, 
       read: false 

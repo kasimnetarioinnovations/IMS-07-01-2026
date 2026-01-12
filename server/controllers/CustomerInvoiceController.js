@@ -264,6 +264,24 @@ exports.createInvoice = async (req, res) => {
           "No default company bank account found. Please set a default bank.",
       });
     }
+
+    // Add stock validation before creating invoice
+    for (const item of validatedItems) {
+      if (item.productId) {
+        const product = await Product.findById(item.productId);
+        if (product) {
+          const currentStock = product.openingQuantity || 0;
+          if (currentStock < item.qty) {
+            return res.status(400).json({
+              success: false,
+              error: `Insufficient stock for ${product.productName}. Available: ${currentStock}, Requested: ${item.qty}`,
+            });
+          }
+          product.openingQuantity = Math.max(0, currentStock - item.qty);
+          await product.save();
+        }
+      }
+    }
     // Create invoice - USING VALUES FROM FRONTEND
     const invoice = new Invoice({
       customerId,
@@ -361,9 +379,13 @@ exports.createInvoice = async (req, res) => {
     // Update product stock quantities
     for (const item of validatedItems) {
       if (item.productId) {
-        await Product.findByIdAndUpdate(item.productId, {
-          $inc: { stockQuantity: -item.qty },
-        });
+        await Product.findByIdAndUpdate(
+          item.productId,
+          {
+            $inc: { stockQuantity: -item.qty },
+          },
+          { new: true }
+        );
       }
     }
 
@@ -556,7 +578,7 @@ exports.getInvoiceById = async (req, res) => {
         .populate("createdBy", "firstName lastName email")
         .populate(
           "items.productId",
-          "productName hsnCode sku barcode unit sellingPrice tax"
+          "productName hsnCode hsn barcode unit sellingPrice tax"
         );
     } else {
       invoice = await Invoice.findOne({ invoiceNo: identifier })
@@ -567,7 +589,7 @@ exports.getInvoiceById = async (req, res) => {
         .populate("createdBy", "firstName lastName email")
         .populate(
           "items.productId",
-          "productName hsnCode sku barcode unit sellingPrice tax"
+          "productName hsnCode hsn barcode unit sellingPrice tax"
         );
     }
 
@@ -902,7 +924,7 @@ exports.deleteInvoice = async (req, res) => {
           product.stockQuantity !== undefined &&
           product.stockQuantity !== null
         ) {
-          product.stockQuantity += item.qty || 0;
+          product.openingQuantity  += item.qty || 0;
           await product.save(); // NO SESSION
         }
       }
@@ -1548,6 +1570,145 @@ exports.getUnpaidInvoicesByCustomer = async (req, res) => {
     res.status(500).json({
       success: false,
       error: "Failed to fetch unpaid invoices",
+    });
+  }
+};
+
+// Get sales list with product details
+exports.getSalesList = async (req, res) => {
+  try {
+    const {
+      startDate,
+      endDate,
+      customerId,
+      status,
+      search,
+      page = 1,
+      limit = 10,
+    } = req.query;
+
+    // Build filter
+    const filter = {};
+
+    // Date filter
+    if (startDate || endDate) {
+      filter.invoiceDate = {};
+      if (startDate) filter.invoiceDate.$gte = new Date(startDate);
+      if (endDate) filter.invoiceDate.$lte = new Date(endDate);
+    }
+
+    // Customer filter
+    if (customerId && mongoose.Types.ObjectId.isValid(customerId)) {
+      filter.customerId = customerId;
+    }
+
+    // Status filter - FIXED FOR "due" TAB
+    if (status && status !== "all") {
+      if (status === "due") {
+        // For "due" tab, filter by dueAmount > 0
+        filter.dueAmount = { $gt: 0 };
+      } else if (status === "recent") {
+        // For "recent" tab, get invoices from last 7 days
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        filter.invoiceDate = { $gte: sevenDaysAgo };
+      } else {
+        // For other statuses like "paid", "draft", etc.
+        filter.status = status;
+      }
+    }
+
+    // Search filter
+    if (search) {
+      filter.$or = [
+        { invoiceNo: { $regex: search, $options: "i" } },
+        { "customerId.name": { $regex: search, $options: "i" } },
+      ];
+    }
+
+    // Pagination
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
+    const skip = (pageNum - 1) * limitNum;
+
+    // Get invoices with populated data
+    const invoices = await Invoice.find(filter)
+      .populate("customerId", "name phone email")
+      .populate("items.productId", "productName hsn category sellingPrice")
+      .sort({ invoiceDate: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .lean();
+
+    // Count total
+    const total = await Invoice.countDocuments(filter);
+
+    // Calculate summary statistics
+    const stats = await Invoice.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$grandTotal" },
+          totalOrders: { $sum: 1 },
+          totalPaid: { $sum: "$paidAmount" },
+          totalDue: { $sum: "$dueAmount" },
+          avgOrderValue: { $avg: "$grandTotal" },
+        },
+      },
+    ]);
+
+    // Format response
+    const salesList = invoices.map((invoice) => {
+      // Calculate sold items count
+      const soldItems = invoice.items.reduce((sum, item) => sum + item.qty, 0);
+
+      return {
+        _id: invoice._id,
+        invoiceNo: invoice.invoiceNo,
+        customer: invoice.customerId?.name || "N/A",
+        soldItems,
+        totalAmount: invoice.grandTotal,
+        status: invoice.status,
+        dueAmount: invoice.dueAmount,
+        invoiceDate: invoice.invoiceDate,
+        paymentMethod: invoice.paymentMethod,
+        // Include all items for expanded view
+        items: invoice.items.map((item) => ({
+          productName: item.productId?.productName || item.itemName,
+          hsn: item.productId?.hsn || "N/A",
+          qty: item.qty,
+          category: item.productId?.category || "N/A",
+          unitPrice: item.unitPrice,
+          total: item.amount,
+        })),
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        sales: salesList,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum),
+        },
+        stats: stats[0] || {
+          totalRevenue: 0,
+          totalOrders: 0,
+          totalPaid: 0,
+          totalDue: 0,
+          avgOrderValue: 0,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Get sales list error:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch sales list",
     });
   }
 };
