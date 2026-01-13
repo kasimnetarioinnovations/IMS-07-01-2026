@@ -709,7 +709,7 @@ const Product = () => {
 
   return (
     <>
-      <div className="p-4">
+      <div className="p-4" style={{overflowY:"auto", height:"100vh"}}>
         {/* back, header, view style */}
         <div
           style={{
@@ -718,6 +718,7 @@ const Product = () => {
             justifyContent: "space-between",
             alignItems: "center",
             padding: "0px 0px 16px 0px", // Optional: padding for container
+             flexWrap:"wrap"
           }}
         >
           {/* Left: Title + Icon */}
@@ -727,6 +728,7 @@ const Product = () => {
               alignItems: "center",
               gap: 11,
               height: "33px",
+             
             }}
           >
             {/* <div style={{
@@ -865,9 +867,11 @@ const Product = () => {
             {/* verticle section */}
             <div
               style={{
-                width: "100%",
-                minHeight: "auto",
-                maxHeight: "calc(100vh - 160px)",
+                // width: "100%",
+                // minHeight: "auto",
+                // maxHeight: "calc(100vh - 410px)",
+                 overflowX:"auto",
+                 width:"100%",
                 padding: 16,
                 background: "white",
                 borderRadius: 16,
@@ -882,6 +886,7 @@ const Product = () => {
                   display: "flex",
                   justifyContent: "space-between",
                   width: "100%",
+                  overflowX:"auto"
                 }}
               >
                 {/* Tabs */}
@@ -892,9 +897,10 @@ const Product = () => {
                     padding: 2,
                     background: "#F3F8FB",
                     borderRadius: 8,
-                    flexWrap: "wrap",
-                    height: "38px",
-                    width: "auto",
+                    // flexWrap: "wrap",
+                    // height: "38px",
+                    // width: "auto"
+                   
                   }}
                 >
                   {[
@@ -1010,10 +1016,10 @@ const Product = () => {
 
               {/* Table */}
               <div
-                className="table-responsive"
+                className=""
                 style={{
                   overflowY: "auto",
-                  maxHeight: "510px",
+                  maxHeight: "calc(100vh - 410px)",
                 }}
               >
                 <table

@@ -545,7 +545,7 @@ export default function Purchase() {
   }, [selectedRowIds, purchaseOrders]);
 
   return (
-    <div className="px-4 py-4">
+    <div className="px-4 py-4" style={{overflowY:"auto", height:"100vh"}}>
       {/* Header: back + title + right-side controls */}
       <div className="d-flex justify-content-between align-items-center mb-3">
         <div className="d-flex align-items-center justify-content-center gap-3">
@@ -712,6 +712,7 @@ export default function Purchase() {
           backgroundColor: "white",
           borderRadius: "16px",
           padding: "20px",
+          overflowX:"auto"
         }}
       >
         <div
@@ -842,7 +843,7 @@ export default function Purchase() {
             className="table-responsive"
             style={{
               cursor: "pointer",
-              height: "600px",
+              maxHeight:"calc(100vh - 410px)",
               overflowY: "scroll",
               scrollbarWidth: "none",
               msOverflowStyle: "none",

@@ -796,7 +796,7 @@ const ProductForm = () => {
    
           <>
 
-        <div className="py-4 px-4">
+        <div className="py-4 px-4" >
           {/* back, header, view style */}
           <div
             style={{
@@ -805,6 +805,7 @@ const ProductForm = () => {
               justifyContent: "space-between",
               alignItems: "center",
               padding: "0px 0px 16px 0px",
+              flexWrap:"wrap"
             }}
           >
             {/* Title + Icon */}
@@ -813,6 +814,7 @@ const ProductForm = () => {
                 display: "flex",
                 alignItems: "center",
                 gap: 11,
+               
               }}
             >
               {/* Icon Container */}
@@ -899,7 +901,7 @@ const ProductForm = () => {
                   display: "flex",
                   overflowX: 'auto',
                   overflowY: "auto",
-                  height: "75vh",
+                   maxHeight: "75vh"
                 }}
               >
                 {/* General Details */}
