@@ -345,9 +345,9 @@ endDate: dateRange.end ? format(dateRange.end, 'yyyy-MM-dd') + 'T23:59:59.999Z' 
   }, []);
 
   return (
-    <div className="container-fluid p-3">
+    <div className="container-fluid p-3" style={{overflow:"auto", height:"100vh"}}>
       {/* Header */}
-      <div className="d-flex justify-content-between align-items-center mb-3">
+      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
         <div className="d-flex align-items-center justify-content-center gap-3">
           <h3 style={{
             fontSize: "22px",
@@ -442,6 +442,7 @@ endDate: dateRange.end ? format(dateRange.end, 'yyyy-MM-dd') + 'T23:59:59.999Z' 
         backgroundColor: "white",
         borderRadius: "16px",
         padding: "20px",
+        overflow:"auto"
       }}>
         {/* Tabs and Search */}
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-3 gap-3">
@@ -537,10 +538,14 @@ endDate: dateRange.end ? format(dateRange.end, 'yyyy-MM-dd') + 'T23:59:59.999Z' 
 
         {/* Table */}
         <div style={{ borderRadius: 12, padding: 16, background: "white" }}>
-          <div className="table-responsive" style={{
-            height: "calc(100vh - 330px)",
-            overflowY: "auto",
+          <div className="" style={{
+            // height: "calc(100vh - 330px)",
+            maxHeight:"calc(100vh - 440px)",
+            overflow:"auto",
+            width:"100%",
+            // overflowY: "auto",
             scrollbarWidth: "none",
+            flexWrap:"wrap"
           }}>
             {loading ? (
               <div className="text-center py-5">

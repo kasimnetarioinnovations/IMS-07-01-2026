@@ -483,6 +483,7 @@ export default function DebitNoteList() {
           backgroundColor: "white",
           borderRadius: "16px",
           padding: "20px",
+          overflowX:"auto"
         }}
       >
         <div className="d-flex">
@@ -586,7 +587,7 @@ export default function DebitNoteList() {
 
         {/* Table card */}
         <div style={{ ...cardStyle }}>
-          <div className="table-responsive">
+          <div className="" style={{overflow:"auto", maxHeight:"calc(100vh - 410px)"}}>
             <table
               className="table align-middle"
               style={{ fontSize: 14, marginBottom: 0 }}

@@ -189,6 +189,8 @@ const AddCustomerModal = ({ onClose }) => {
           padding: "30px 40px",
           borderRadius: "8px",
           overflow:"auto",
+          maxHeight:"100vh",
+        
            
          
         }}

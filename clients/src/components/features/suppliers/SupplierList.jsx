@@ -275,7 +275,7 @@ const SupplierList = () => {
   }, [selectedRowIds, paginatedSuppliers]);
 
   return (
-    <div className="px-4 py-4" style={{ fontFamily: '"Inter", sans-serif' }}>
+    <div className="px-4 py-4" style={{ fontFamily: '"Inter", sans-serif' , height:"100vh", overflowY:"auto"}}>
 
       <div style={{ fontFamily: '"Inter", sans-serif' }}>
         {/* Header Section */}
@@ -320,7 +320,7 @@ const SupplierList = () => {
         </div>
 
         {/* Table Section */}
-        <div style={{ marginTop: "20px" }}>
+        <div style={{ marginTop: "20px" , overflowX:"auto"}}>
           <div
             className="card shadow-sm border-0"
             style={{ borderRadius: "10px", padding: "20px" }}
@@ -448,7 +448,7 @@ const SupplierList = () => {
             </div>
 
             {/* Table */}
-            <div className="table-responsive" style={{ maxHeight: "550px", overflowY: 'auto' }}
+            <div className="" style={{ maxHeight: "calc(100vh - 410px)", overflowY: 'auto' }}
             >
               {/* Wrapper div for padding around the table – this creates the fixed space at top/bottom */}
               <table

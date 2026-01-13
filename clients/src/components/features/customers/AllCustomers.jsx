@@ -356,7 +356,7 @@ export default function Customers() {
     <div className="p-4" style={{ fontFamily: '"Inter", sans-serif'}}>
       {/* Header */}
       <div
-        className="d-flex justify-content-between align-items-center"
+        className="d-flex justify-content-between align-items-center flex-wrap"
         style={{ marginBottom: "20px" }}
       >
         <h3 style={{ fontSize: 22, color: "#0E101A", fontWeight: 500 }}>
@@ -384,7 +384,7 @@ export default function Customers() {
       </div>
 
       {/* Main Card */}
-      <div style={{ background: "white", borderRadius: 16, padding: 20 }}>
+      <div style={{ background: "white", borderRadius: 16, padding: 20 , overflowX:"auto"}}>
         {/* Tabs + Search + Export */}
         <div className="d-flex flex-wrap gap-3 align-items-center justify-content-between mb-4">
           <div className="d-flex align-items-center gap-3 flex-wrap">
@@ -506,7 +506,7 @@ export default function Customers() {
         </div>
 
         {/* Table */}
-        <div className="table-responsive" style={{ overflow:"auto", height:"calc(100vh - 330px)"}}>
+        <div className="" style={{ overflow:"auto", maxHeight:"calc(100vh - 410px)"}}>
           <table
             style={{
               width: "100%",
