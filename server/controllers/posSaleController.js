@@ -85,7 +85,7 @@ const createPosSale = async (req, res) => {
           $inc: { quantity: -item.quantity }
         });
       } catch (error) {
-        console.error('Error updating product quantity:', error);
+        // console.error('Error updating product quantity:', error);
         return res.status(500).json({ message: 'Error updating product quantity' });
       }
 
@@ -116,6 +116,11 @@ const createPosSale = async (req, res) => {
       return res.status(400).json({ message: 'Invalid total amount value' });
     }
 
+    const pointsUsed = Number(req.body.pointsUsed || 0);
+    if (isNaN(pointsUsed) || pointsUsed < 0) {
+      return res.status(400).json({ message: 'Invalid pointsUsed value' });
+    }
+
     // Ensure all numeric values are numbers
     const numericFields = {
       subtotal: Number(subtotal),
@@ -132,7 +137,7 @@ const createPosSale = async (req, res) => {
       }
     }
 
-    console.log('Numeric fields validation passed:', numericFields);
+    // console.log('Numeric fields validation passed:', numericFields);
 
     // Calculate due amount
     const dueAmount = Math.max(0, numericFields.totalAmount - (amountReceived || 0));
@@ -161,13 +166,14 @@ const createPosSale = async (req, res) => {
         bagCharge: numericFields.bagCharge,
         totalAmount: numericFields.totalAmount
       },
+      pointsUsed,
       saleDate: new Date(),
       status: saleStatus,
       createdBy: req.user && req.user._id ? req.user._id : null
     };
 
-    console.log('Creating POS sale with data:', JSON.stringify(saleData, null, 2));
-    console.log('User info:', req.user ? { _id: req.user._id, name: req.user.name } : 'No user');
+    // console.log('Creating POS sale with data:', JSON.stringify(saleData, null, 2));
+    // console.log('User info:', req.user ? { _id: req.user._id, name: req.user.name } : 'No user');
 
     // Remove any undefined values that might cause save issues
     Object.keys(saleData).forEach(key => {
@@ -180,7 +186,7 @@ const createPosSale = async (req, res) => {
     const requiredFields = ['customer', 'items', 'paymentDetails', 'totals'];
     for (const field of requiredFields) {
       if (!saleData[field]) {
-        console.error(`Missing required field: ${field}`);
+        // console.error(`Missing required field: ${field}`);
         return res.status(400).json({
           message: `Missing required field: ${field}`,
           details: `Field ${field} is required but not provided`
@@ -188,35 +194,35 @@ const createPosSale = async (req, res) => {
       }
     }
 
-    console.log('Final sale data after validation:', JSON.stringify(saleData, null, 2));
+    // console.log('Final sale data after validation:', JSON.stringify(saleData, null, 2));
 
     // Generate invoice number directly in controller
     try {
       const count = await PosSale.countDocuments();
       const invoiceNumber = `INV${Date.now()}${count + 1}`;
-      console.log('Generated invoice number in controller:', invoiceNumber);
+      // console.log('Generated invoice number in controller:', invoiceNumber);
 
       // Add invoice number to sale data
       saleData.invoiceNumber = invoiceNumber;
     } catch (error) {
-      console.error('Error generating invoice number in controller:', error);
+      // console.error('Error generating invoice number in controller:', error);
       // Fallback invoice number
       saleData.invoiceNumber = `INV${Date.now()}`;
     }
 
     let posSale;
     try {
-      console.log('Creating PosSale with data:', JSON.stringify(saleData, null, 2));
+      // console.log('Creating PosSale with data:', JSON.stringify(saleData, null, 2));
       posSale = new PosSale(saleData);
-      console.log('PosSale model created successfully');
-      console.log('PosSale model after creation:', {
-        _id: posSale._id,
-        isNew: posSale.isNew,
-        invoiceNumber: posSale.invoiceNumber,
-        invoiceNumberType: typeof posSale.invoiceNumber
-      });
+      // console.log('PosSale model created successfully');
+      // console.log('PosSale model after creation:', {
+      //   _id: posSale._id,
+      //   isNew: posSale.isNew,
+      //   invoiceNumber: posSale.invoiceNumber,
+      //   invoiceNumberType: typeof posSale.invoiceNumber
+      // });
     } catch (modelError) {
-      console.error('Error creating PosSale model:', modelError);
+      // console.error('Error creating PosSale model:', modelError);
       return res.status(500).json({
         message: 'Error creating sale model',
         error: modelError.message,
@@ -226,7 +232,7 @@ const createPosSale = async (req, res) => {
 
     // Check database connection
     if (mongoose.connection.readyState !== 1) {
-      console.error('Database not connected. Ready state:', mongoose.connection.readyState);
+      // console.error('Database not connected. Ready state:', mongoose.connection.readyState);
       return res.status(500).json({
         message: 'Database connection error',
         details: 'Database is not ready'
@@ -234,18 +240,18 @@ const createPosSale = async (req, res) => {
     }
 
     try {
-      console.log('Attempting to save POS sale with data:', JSON.stringify(posSale, null, 2));
-      console.log('POS sale object keys:', Object.keys(posSale));
-      console.log('POS sale document:', posSale.toObject ? posSale.toObject() : posSale);
-      console.log('Database ready state:', mongoose.connection.readyState);
-      console.log('Document isNew before save:', posSale.isNew);
-      console.log('Document _id before save:', posSale._id);
+      // console.log('Attempting to save POS sale with data:', JSON.stringify(posSale, null, 2));
+      // console.log('POS sale object keys:', Object.keys(posSale));
+      // console.log('POS sale document:', posSale.toObject ? posSale.toObject() : posSale);
+      // console.log('Database ready state:', mongoose.connection.readyState);
+      // console.log('Document isNew before save:', posSale.isNew);
+      // console.log('Document _id before save:', posSale._id);
 
       // Check if the document is valid before saving
       const validationError = posSale.validateSync();
       if (validationError) {
-        console.error('Validation error before save:', validationError);
-        console.error('Validation error details:', validationError.errors);
+        // console.error('Validation error before save:', validationError);
+        // console.error('Validation error details:', validationError.errors);
         return res.status(400).json({
           message: 'Validation error',
           error: validationError.message,
@@ -253,9 +259,9 @@ const createPosSale = async (req, res) => {
         });
       }
 
-      console.log('Document validation passed, proceeding with save...');
+      // console.log('Document validation passed, proceeding with save...');
       const savedSale = await posSale.save();
-      console.log('Sale saved successfully with ID:', savedSale._id);
+      // console.log('Sale saved successfully with ID:', savedSale._id);
 
       res.status(201).json({
         success: true,
@@ -263,14 +269,14 @@ const createPosSale = async (req, res) => {
         data: savedSale
       });
     } catch (saveError) {
-      console.error('Error saving POS sale:', saveError);
-      console.error('Save error details:', {
-        name: saveError.name,
-        message: saveError.message,
-        code: saveError.code,
-        errors: saveError.errors,
-        stack: saveError.stack
-      });
+      // console.error('Error saving POS sale:', saveError);
+      // console.error('Save error details:', {
+      //   name: saveError.name,
+      //   message: saveError.message,
+      //   code: saveError.code,
+      //   errors: saveError.errors,
+      //   stack: saveError.stack
+      // });
 
       // If save fails, try to restore product quantities
       try {
@@ -280,7 +286,7 @@ const createPosSale = async (req, res) => {
           });
         }
       } catch (restoreError) {
-        console.error('Error restoring product quantities:', restoreError);
+        // console.error('Error restoring product quantities:', restoreError);
       }
 
       return res.status(500).json({
@@ -311,7 +317,7 @@ const getPosSales = async (req, res) => {
         { status: 'Paid' }
       );
     } catch (migrationError) {
-      console.log('Migration completed or no records to update');
+      // console.log('Migration completed or no records to update');
     }
 
     const page = parseInt(req.query.page) || 1;
@@ -368,7 +374,7 @@ const getPosSales = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error fetching POS sales:', error);
+    // console.error('Error fetching POS sales:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
@@ -390,7 +396,7 @@ const getPosSaleById = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error fetching POS sale:', error);
+    // console.error('Error fetching POS sale:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
@@ -423,7 +429,7 @@ const getSalesSummary = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error fetching sales summary:', error);
+    // console.error('Error fetching sales summary:', error);
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };

@@ -90,7 +90,9 @@ const Pos = () => {
   const [companyImages, setCompanyImages] = useState(null)
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [applycoinpopup, setApplycoinpopup] = useState(false);
-  const [pointsToApply, setPointsToApply] = useState(0);
+  const [pointsToApply, setPointsToApply] = useState('');
+  const [applyFull, setApplyFull] = useState(false);
+  const [appliedPoints, setAppliedPoints] = useState(0);
 
   useEffect(() => {
     const fetchCompanyDetails = async () => {
@@ -101,7 +103,7 @@ const Pos = () => {
           setCompanyImages(res.data.data)
         }
       } catch (error) {
-        console.error("API fetch error:", error.response ? error.response.data : error.message);
+        // console.error("API fetch error:", error.response ? error.response.data : error.message);
         toast.error("Unable to find company details", {
           position: 'top-center'
         })
@@ -746,7 +748,7 @@ const Pos = () => {
           }, 1200);
         }
       } catch (err) {
-        console.error('scanner onKeyDown error', err);
+        // console.error('scanner onKeyDown error', err);
       }
     };
 
@@ -820,7 +822,7 @@ const Pos = () => {
         return true;
       }
     } catch (err) {
-      console.error('Barcode lookup failed', err);
+      // console.error('Barcode lookup failed', err);
       toast.error('Product not found for scanned barcode');
       barcodeInputRef.current?.focus();
       return false;
@@ -874,7 +876,7 @@ const Pos = () => {
       URL.revokeObjectURL(objectUrl);
       e.target.value = '';
     } catch (err) {
-      console.error('handleFileInput error', err);
+      // console.error('handleFileInput error', err);
       toast.error('Error processing image');
       if (e && e.target) e.target.value = '';
     }
@@ -907,7 +909,7 @@ const Pos = () => {
               // give haptic feedback on supported devices
               if (ok && typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(100);
             } catch (err) {
-              console.error('Error handling detected code', err);
+              // console.error('Error handling detected code', err);
             } finally {
               // stop scanner and close camera overlay after handling
               stopScanner();
@@ -916,15 +918,15 @@ const Pos = () => {
           { formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'upc_a', 'upc_e', 'qr_code'], intervalMs: 300 }
         );
       } catch (err) {
-        console.warn('video detector failed', err);
+        // console.warn('video detector failed', err);
         toast.error('Barcode scanning is not supported in this browser.');
         stopScanner();
         return;
       }
     } catch (err) {
-      console.error('startScanner error', err);
+      // console.error('startScanner error', err);
       // If camera access fails (permissions / unsupported), fall back to image picker on mobile
-      console.warn('getUserMedia failed, falling back to image picker', err);
+      // console.warn('getUserMedia failed, falling back to image picker', err);
       toast.info('Unable to access camera — please capture or select a photo to scan');
       setScanning(false);
       // open file picker to allow user to capture a photo
@@ -952,12 +954,12 @@ const Pos = () => {
             detectorRef.current.zxingReader.reset();
           }
         } catch (e) {
-          console.warn('Error stopping detector', e);
+          // console.warn('Error stopping detector', e);
         }
       }
       detectorRef.current = null;
     } catch (err) {
-      console.error('stopScanner error', err);
+      // console.error('stopScanner error', err);
     }
   };
 
@@ -973,7 +975,7 @@ const Pos = () => {
       barcodeInputRef.current?.focus();
       return ok;
     } catch (err) {
-      console.error('Barcode submit failed', err);
+      // console.error('Barcode submit failed', err);
       setBarcodeInput('');
       barcodeInputRef.current?.focus();
     }
@@ -1123,7 +1125,7 @@ const Pos = () => {
         }, {});
         setActiveTabs(initialTabs);
       } catch (err) {
-        console.error("Failed to fetch products", err);
+        // console.error("Failed to fetch products", err);
       }
     };
     fetchProducts();
@@ -1138,7 +1140,7 @@ const Pos = () => {
       const activeCategories = res.data.filter(cat => !cat.isDelete);
       setCategories(activeCategories);
     } catch (error) {
-      console.error("Error fetching categories:", error);
+      // console.error("Error fetching categories:", error);
     }
   };
   useEffect(() => {
@@ -1367,23 +1369,23 @@ const Pos = () => {
     setTotalQuantity(quantity);
 
     const calculatedTotal = (subtotal - discount) + tax + bagCharge;
-    setTotalAmount(calculatedTotal);
-
-    // Calculate rounded amount based on decimal part
-    const decimalPart = calculatedTotal - Math.floor(calculatedTotal);
+    const pointsDeduction = Math.min(Number(appliedPoints) * 5, calculatedTotal);
+    const adjustedTotal = calculatedTotal - pointsDeduction;
+    setTotalAmount(adjustedTotal);
+    const decimalPart = adjustedTotal - Math.floor(adjustedTotal);
     if (decimalPart <= 0.49) {
-      setRoundedAmount(Math.floor(calculatedTotal));
+      setRoundedAmount(Math.floor(adjustedTotal));
     } else {
-      setRoundedAmount(Math.ceil(calculatedTotal));
+      setRoundedAmount(Math.ceil(adjustedTotal));
     }
-  }, [selectedItems, bagCharge]);
+  }, [selectedItems, bagCharge, appliedPoints]);
 
   const [amountReceived, setAmountReceived] = useState("");
 
   const changeToReturn = Math.max((Number(amountReceived) || 0) - roundedAmount, 0);
   const dueAmount = Math.max(roundedAmount - (Number(amountReceived) || 0), 0);
 
-  const amountToCoin = (roundedAmount / 10).toFixed(0) / 5;
+  const amountToCoin = Math.floor((roundedAmount / 10) / 5);
 
   //bill details up down arrow-----------------------------------------------------------------------------------------------------
   const [updown, setUpdown] = useState(false);
@@ -1526,7 +1528,7 @@ const Pos = () => {
       setTotalSales(response.data.pagination.totalSales);
       setCurrentPage(page);
     } catch (error) {
-      console.error('Error fetching POS sales:', error);
+      // console.error('Error fetching POS sales:', error);
     } finally {
       setLoading(false);
     }
@@ -1567,7 +1569,8 @@ const Pos = () => {
         subtotal: Number(subTotal || 0),
         discount: Number(discount || 0),
         tax: Number(totalTax || 0),
-        totalAmount: Number(roundedAmount || 0)
+        totalAmount: Number(roundedAmount || 0),
+        pointsUsed: Number(appliedPoints || 0)
       };
 
       // console.log('Frontend sending sale data:', saleData);
@@ -1594,7 +1597,7 @@ const Pos = () => {
         fetchPosSales(1, transactionSearchQuery);
       }
     } catch (error) {
-      console.error('Error creating POS sale:', error);
+      // console.error('Error creating POS sale:', error);
 
       // Show detailed validation errors if available
       if (error.response?.data?.details) {
@@ -1713,7 +1716,7 @@ const Pos = () => {
       // You can then display this qrCodeString (Data URL) in an <img> tag or save it as an image.
       // console.log(qrCodeString);
     } catch (err) {
-      console.error(err);
+      // console.error(err);
     }
   }
 
@@ -1730,7 +1733,7 @@ const Pos = () => {
           setQrCodeUrl(url);
         })
         .catch((err) => {
-          console.error("Error generating QR code:", err);
+          // console.error("Error generating QR code:", err);
         });
     }
   }, [roundedAmount, companyData]);
@@ -1783,7 +1786,7 @@ const Pos = () => {
     // Wait for the DOM to update (small delay to ensure rendering)
     setTimeout(async () => {
       if (!InvoiceRef.current) {
-        console.error('InvoiceRef is null or undefined');
+        // console.error('InvoiceRef is null or undefined');
         toast.error('Cannot generate PDF: Invoice content is not available');
         setIsGenerating(false);
         return;
@@ -1822,7 +1825,7 @@ const Pos = () => {
 
         doc.save('invoice.pdf');
       } catch (error) {
-        console.error('Error generating PDF:', error);
+        // console.error('Error generating PDF:', error);
         toast.error('Failed to generate PDF: ' + error.message);
       } finally {
         setIsGenerating(false);
@@ -1842,7 +1845,7 @@ const Pos = () => {
     // Wait for the DOM to update
     setTimeout(async () => {
       if (!InvoiceRef.current) {
-        console.error('InvoiceRef is null or undefined');
+        // console.error('InvoiceRef is null or undefined');
         toast.error('Cannot print: Invoice content is not available');
         setIsGenerating(false);
         return;
@@ -1936,7 +1939,7 @@ const Pos = () => {
       `);
         printWindow.document.close();
       } catch (error) {
-        console.error('Error generating print preview:', error);
+        // console.error('Error generating print preview:', error);
         toast.error('Failed to generate print preview: ' + error.message);
       } finally {
         setIsGenerating(false);
@@ -1983,7 +1986,7 @@ const Pos = () => {
       setAddCustomerPopup(false);
       fetchCustomers();
     } catch (err) {
-      console.error(err);
+      // console.error(err);
       alert("Something went wrong");
     } finally {
       setLoading(false);
@@ -2944,6 +2947,7 @@ const Pos = () => {
                       alignItems: 'flex-start',
                       gap: 4,
                       display: 'flex',
+                      position:'relative'
                     }}
                   >
                     <div style={{ alignSelf: 'stretch', display: 'flex', justifyContent: 'space-between', }}>
@@ -3151,8 +3155,8 @@ const Pos = () => {
                         </div>
                         {showDropdown && searchResults.length > 0 && (
                           <div style={{
-                            position: 'relative',
-                            top: '0px',
+                            position: 'absolute',
+                            top: '80px',
                             left: 0,
                             right: 0,
                             backgroundColor: 'white',
@@ -3160,7 +3164,7 @@ const Pos = () => {
                             borderRadius: '8px',
                             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                             maxHeight: '300px',
-                            width: '235px',
+                            width: '100%',
                             overflowY: 'auto',
                             zIndex: 1000
                           }}>
@@ -3191,8 +3195,8 @@ const Pos = () => {
                         {/* No Results Message */}
                         {searchResults.length === 0 && searchQuery.length > 0 && (
                           <div style={{
-                            position: 'relative',
-                            top: '0px',
+                            position: 'absolute',
+                            top: '80px',
                             left: 0,
                             right: 0,
                             backgroundColor: 'white',
@@ -3200,7 +3204,7 @@ const Pos = () => {
                             borderRadius: '8px',
                             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                             maxHeight: '300px',
-                            width: '235px',
+                            width: '100%',
                             overflowY: 'auto',
                             padding: '12px 16px',
                             borderBottom: '1px solid #f0f0f0',
@@ -3329,14 +3333,23 @@ const Pos = () => {
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                                 <span style={{ fontSize: "14px", fontWeight: "500", color: '#0E101A' }}>Shopping Points</span>
                                 <span style={{ fontSize: "13px", fontWeight: "500", }}>Available to redeem - 🪙
-                                  <span style={{ color: '#1F7FFF' }}>{(selectedCustomer.availablePoints) < amountToCoin ? '0' : amountToCoin.toFixed(0)} points</span>
+                                  <span style={{ color: '#1F7FFF' }}>{(selectedCustomer.availablePoints) < amountToCoin ? '0' : amountToCoin} points</span>
                                 </span>
                               </div>
 
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', justifyContent: 'start', marginTop: '6px' }}>
                                 <span style={{ fontSize: "14px", fontWeight: "500", color: '#0E101A' }}>Apply Points</span>
                                 <div style={{ display: 'flex', flexDirection: 'row', gap: '4px' }}>
-                                  <input type="radio" id='applypointsfull' />
+                                  <input
+                                    type="radio"
+                                    id='applypointsfull'
+                                    checked={applyFull}
+                                    onChange={() => {
+                                      setApplyFull(true);
+                                      const fullPoints = Math.floor(Number(amountToCoin) || 0);
+                                      setPointsToApply(fullPoints);
+                                    }}
+                                  />
                                   <label for='applypointsfull' style={{ fontSize: '13px', fontWeight: '500' }}>Full</label>
                                 </div>
                               </div>
@@ -3344,7 +3357,21 @@ const Pos = () => {
                               <div style={{ display: 'flex', flexDirection: 'row', gap: '8px', alignItems: 'center' }}>
                                 <span style={{ fontSize: "14px", fontWeight: "500", color: '#0E101A' }}>Enter Points:</span>
                                 <div className='' style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '4px', width: '100px', border: '1px solid #565657ff', padding: '6px 4px', borderRadius: 4 }}>
-                                  <input type="number" id='enterpoints' placeholder='0' max={amountToCoin} value={pointsToApply} onChange={(e) => setPointsToApply(e.target.value)} style={{ width: '100%', border: 'none', outline: 'none' }} />
+                                  <input
+                                    type="number"
+                                    id='enterpoints'
+                                    placeholder='0'
+                                    max={Math.floor(Number(amountToCoin) || 0)}
+                                    value={pointsToApply}
+                                    onChange={(e) => {
+                                      setApplyFull(false);
+                                      const fullPoints = Math.floor(Number(amountToCoin) || 0);
+                                      const raw = Math.floor(Math.max(0, Number(e.target.value) || 0));
+                                      const clamped = Math.min(raw, fullPoints);
+                                      setPointsToApply(clamped);
+                                    }}
+                                    style={{ width: '100%', border: 'none', outline: 'none' }}
+                                  />
                                   <span>🪙</span>
                                 </div>
                                 <span>=</span>
@@ -3355,7 +3382,14 @@ const Pos = () => {
                               </div>
 
                               <div style={{ display: 'flex', justifyContent: 'end', }}>
-                                <div
+                                <div  
+                                onClick={() => {
+                                  const maxPoints = Math.floor(Number(amountToCoin) || 0);
+                                  const requested = applyFull ? maxPoints : Math.floor(Number(pointsToApply) || 0);
+                                  const clamped = Math.max(0, Math.min(requested, maxPoints));
+                                  setAppliedPoints(clamped);
+                                  setApplycoinpopup(false);
+                                }}
                                   style={{
                                     padding: '6px 15px',
                                     backgroundColor: '#1368EC',
@@ -3420,7 +3454,7 @@ const Pos = () => {
                 </div>
               ) : (
                 <>
-                  <div
+                <div
                     style={{
                       width: "100%",
                       maxHeight: '60vh',
@@ -3447,7 +3481,7 @@ const Pos = () => {
                         alignItems: 'flex-start',
                         display: 'flex',
                         overflowY: 'auto',
-                        maxHeight: '30vh',
+                        maxHeight: '15vh',
                         backgroundColor: 'red',
                       }}
                     >
@@ -3457,7 +3491,7 @@ const Pos = () => {
                             key={item._id}
                             style={{
                               alignSelf: "stretch",
-                              padding: 8,
+                              padding: 6,
                               background: "#FAFAFA",
                               borderBottom: "1px #F2F2F2 solid",
                               justifyContent: "center",
@@ -3845,7 +3879,7 @@ const Pos = () => {
                               wordWrap: 'break-word',
                             }}
                           >
-                            +₹{totalTax.toFixed(2)}
+                            + ₹{(totalTax).toFixed(2)}
                           </div>
                         </div>
                         <div
@@ -3910,6 +3944,38 @@ const Pos = () => {
                             ₹{((roundedAmount) - ((subTotal - discount) + totalTax + bagCharge)).toFixed(2)}
                           </div>
                         </div>
+                        {appliedPoints > 0 && (
+                        <div
+                          style={{
+                            alignSelf: 'stretch',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            display: 'inline-flex',
+                          }}
+                        >
+                          <div
+                            style={{
+                              color: '#656B71',
+                              fontSize: 14,
+                              fontFamily: 'Inter',
+                              fontWeight: '400',
+                              wordWrap: 'break-word',
+                            }}
+                          >
+                            Applied Points
+                          </div>
+                          <div
+                            style={{
+                              color: '#101010',
+                              fontSize: 14,
+                              fontFamily: 'Inter',
+                              fontWeight: '400',
+                              wordWrap: 'break-word',
+                            }}
+                          >
+                            🪙{(pointsToApply)} / ₹{(pointsToApply)*5}
+                          </div>
+                        </div>)}
                       </div>
                       <div style={{ alignSelf: 'stretch', height: 1, background: '#D9D9D9' }} />
                       <div
@@ -3945,18 +4011,18 @@ const Pos = () => {
                       </div>
                     </div>
 
-                  </div>
+                </div>
 
                   {/* Payment Methods button */}
                   <div
                     style={{
                       display: 'flex',
                       justifyContent: 'space-between',
-                      padding: '10px 15px',
+                      padding: '10px 16px',
                       backgroundColor: selectedPaymentMethod === 'cash' ? '#1368EC' : 'white',
                       borderRadius: '8px',
                       color: selectedPaymentMethod === 'cash' ? 'white' : '#1368EC',
-                      marginTop: '5px',
+                      marginTop: '16px',
                       cursor: 'pointer',
                       border: '1px solid #E6E6E6',
                     }}
@@ -3969,7 +4035,7 @@ const Pos = () => {
                     <span>[F1]</span>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0px', width: '100%', gap: '15px', }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0px', width: '100%', gap: '5px', }}>
                     <div
                       style={{
                         display: 'flex',
@@ -4020,7 +4086,7 @@ const Pos = () => {
 
         </div>
 
-        {/* ALL POPUPS */}
+{/* ALL POPUPS */}
 
         {/* customers popup */}
         {popup && (
@@ -4719,10 +4785,11 @@ const Pos = () => {
                         <th>Customer</th>
                         <th>Sold Items</th>
                         <th>Date & Time</th>
-                        <th>Status</th>
                         <th>Total Amount</th>
+                        <th>Points Used</th>
                         <th>Due Amount</th>
-                        <th style={{ borderTopRightRadius: '8px' }}>Payment Method</th>
+                        <th>Payment Method</th>
+                        <th style={{ borderTopRightRadius: '8px' }}>Status</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -4740,8 +4807,8 @@ const Pos = () => {
                         </tr>
                       ) : (
                         posSales.map((sale) => (
-                          <tr key={sale._id} style={{ borderTop: '1px solid #E6E6E6' }}>
-                            <td style={{ padding: '8px', position: 'relative', }}>
+                          <tr key={sale._id} style={{ borderBottom: '1px solid #E6E6E6' }}>
+                            <td style={{ padding: '8px', position: 'relative', width: '140px' }}>
                               <div style={{ fontSize: '12px', fontWeight: '600', color: '#1368EC', top: '7px', position: 'absolute', }}>
                                 {sale.invoiceNumber || 'N/A'}
                               </div>
@@ -4789,23 +4856,13 @@ const Pos = () => {
                               </div>
                             </td>
                             <td style={{ position: 'relative', }}>
-                              <div style={{ top: '7px', position: 'absolute', }}>
-                                <span style={{
-                                  padding: '4px 8px',
-                                  borderRadius: '4px',
-                                  backgroundColor: sale.status === 'Paid' ? '#d4edda' :
-                                    sale.status === 'Due' ? '#fff3cd' : '#f8d7da',
-                                  color: sale.status === 'Paid' ? '#155724' :
-                                    sale.status === 'Due' ? '#856404' : '#721c24',
-                                  fontSize: '12px'
-                                }}>
-                                  {sale.status}
-                                </span>
+                              <div style={{ top: '5px', position: 'absolute', }}>
+                                ₹{sale.totals?.totalAmount?.toFixed(2) || '0.00'}
                               </div>
                             </td>
                             <td style={{ position: 'relative', }}>
                               <div style={{ top: '5px', position: 'absolute', }}>
-                                ₹{sale.totals?.totalAmount?.toFixed(2) || '0.00'}
+                                🪙 {sale.pointsUsed || '0'} = ₹{sale.pointsUsed * 5 || '0.00'}
                               </div>
                             </td>
                             <td style={{ position: 'relative', }}>
@@ -4822,6 +4879,21 @@ const Pos = () => {
                             <td style={{ position: 'relative', }}>
                               <div style={{ top: '5px', position: 'absolute', }}>
                                 {sale.paymentDetails?.paymentMethod || 'N/A'}
+                              </div>
+                            </td>
+                            <td style={{ position: 'relative', }}>
+                              <div style={{ top: '7px', position: 'absolute', }}>
+                                <span style={{
+                                  padding: '4px 8px',
+                                  borderRadius: '4px',
+                                  backgroundColor: sale.status === 'Paid' ? '#d4edda' :
+                                    sale.status === 'Due' ? '#fff3cd' : '#f8d7da',
+                                  color: sale.status === 'Paid' ? '#155724' :
+                                    sale.status === 'Due' ? '#856404' : '#721c24',
+                                  fontSize: '12px'
+                                }}>
+                                  {sale.status}
+                                </span>
                               </div>
                             </td>
                           </tr>

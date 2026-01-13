@@ -49,6 +49,10 @@ const posSaleSchema = new mongoose.Schema({
       default: 0
     }
   },
+  pointsUsed: {
+    type: Number,
+    default: 0
+  },
   totals: {
     subtotal: Number,
     discount: Number,
