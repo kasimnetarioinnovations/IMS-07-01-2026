@@ -16,6 +16,7 @@ router.get("/:id/statistics", authMiddleware, customerController.getCustomerStat
 // Add these new loyalty-related routes
 router.get("/:id/points", authMiddleware, customerController.getCustomerPoints);
 router.post("/:id/add-points", authMiddleware, customerController.addManualPoints);
+router.post("/:id/redeem-points", authMiddleware, customerController.redeemPoints);
 router.get("/:id/points-history", authMiddleware, customerController.getPointsHistory);
 router.post("/:id/recalculate-due", authMiddleware, customerController.recalculateCustomerDue);
 

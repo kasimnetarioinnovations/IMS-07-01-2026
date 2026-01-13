@@ -852,6 +852,47 @@ exports.getUpcomingExpiryProducts = async (req, res) => {
   }
 };
 
+exports.updateOpeningQuantityBulk = async (req, res) => {
+  try {
+    const { items } = req.body || {};
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ message: "Items array is required" });
+    }
+    const results = [];
+    for (const it of items) {
+      const productId = it && it.productId;
+      const qty = Number(it && it.quantity);
+      if (!productId || !Number.isFinite(qty) || qty <= 0) {
+        results.push({ productId, status: "skipped", reason: "Invalid productId or quantity" });
+        continue;
+      }
+      const product = await Product.findById(productId);
+      if (!product) {
+        results.push({ productId, status: "skipped", reason: "Product not found" });
+        continue;
+      }
+      const currentOpening = Number(product.openingQuantity || 0);
+      const newOpening = Math.max(0, currentOpening - qty);
+      await Product.findByIdAndUpdate(productId, { $set: { openingQuantity: newOpening } });
+      results.push({
+        productId,
+        status: "updated",
+        previousOpeningQuantity: currentOpening,
+        quantityDeducted: qty,
+        newOpeningQuantity: newOpening
+      });
+    }
+    res.status(200).json({
+      success: true,
+      message: "Opening quantities updated",
+      updatedCount: results.filter(r => r.status === "updated").length,
+      results
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // optional
 // const Product = require("../models/productModels");
 
