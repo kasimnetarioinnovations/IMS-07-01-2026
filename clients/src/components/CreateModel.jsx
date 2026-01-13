@@ -27,40 +27,40 @@ const CreateModel = () => {
         justifyContent: "center"
       }}
     >
-      
+
       <ul style={{ listStyle: "none", paddingLeft: "0", marginBottom: "0" }}>
         <li >
-          <Link className='button-action' style={{padding: "8px 12px",borderRadius:"8px", textDecoration: "none", display: "flex", alignItems: "center", gap: "8px", color: "#0E101A", fontFamily: "Inter", fontSize: "16px" }}>
+          <Link to="/createinvoice" className='button-action' style={{ padding: "8px 12px", borderRadius: "8px", textDecoration: "none", display: "flex", alignItems: "center", gap: "8px", color: "#0E101A", fontFamily: "Inter", fontSize: "16px" }}>
             <img src={createinvoice} alt="" />
             Create Invoice
           </Link>
         </li>
         <li >
-          <Link className='button-action' style={{padding: "8px 12px",borderRadius:"8px", textDecoration: "none", display: "flex", alignItems: "center", gap: "8px", color: "#0E101A", fontFamily: "Inter", fontSize: "16px" }}>
+          <Link to="/create-quotition" className='button-action' style={{ padding: "8px 12px", borderRadius: "8px", textDecoration: "none", display: "flex", alignItems: "center", gap: "8px", color: "#0E101A", fontFamily: "Inter", fontSize: "16px" }}>
+            <img src={generateqto} alt="" />
+            Generate Quotation
+          </Link>
+        </li>
+        {/* <li >
+          <Link className='button-action' style={{ padding: "8px 12px", borderRadius: "8px", textDecoration: "none", display: "flex", alignItems: "center", gap: "8px", color: "#0E101A", fontFamily: "Inter", fontSize: "16px" }}>
             <img src={createsale} alt="" />
             Create Sales
           </Link>
-        </li>
+        </li> */}
         <li >
-          <Link className='button-action' style={{ padding: "8px 12px",borderRadius:"8px", textDecoration: "none", display: "flex", alignItems: "center", gap: "8px", color: "#0E101A", fontFamily: "Inter", fontSize: "16px" }}>
+          <Link to="/create-purchase-orders" className='button-action' style={{ padding: "8px 12px", borderRadius: "8px", textDecoration: "none", display: "flex", alignItems: "center", gap: "8px", color: "#0E101A", fontFamily: "Inter", fontSize: "16px" }}>
             <img src={createpurchase} alt="" />
             Create Purchase
           </Link>
         </li>
         <li >
-          <Link className='button-action' style={{ padding: "8px 12px",borderRadius:"8px", textDecoration: "none", display: "flex", alignItems: "center", gap: "8px", color: "#0E101A", fontFamily: "Inter", fontSize: "16px" }}>
-            <img src={generateqto} alt="" />
-            Generate Quotation
-          </Link>
-        </li>
-        <li >
-          <Link className='button-action' style={{ padding: "8px 12px",borderRadius:"8px", textDecoration: "none", display: "flex", alignItems: "center", gap: "8px", color: "#0E101A", fontFamily: "Inter", fontSize: "16px" }}>
+          <Link className='button-action' style={{ padding: "8px 12px", borderRadius: "8px", textDecoration: "none", display: "flex", alignItems: "center", gap: "8px", color: "#0E101A", fontFamily: "Inter", fontSize: "16px" }}>
             <img src={createdebitnote} alt="" />
             Create Debit Note
           </Link>
         </li>
         <li >
-          <Link className='button-action' style={{ padding: "8px 12px",borderRadius:"8px", textDecoration: "none", display: "flex", alignItems: "center", gap: "8px", color: "#0E101A", fontFamily: "Inter", fontSize: "16px" }}>
+          <Link className='button-action' style={{ padding: "8px 12px", borderRadius: "8px", textDecoration: "none", display: "flex", alignItems: "center", gap: "8px", color: "#0E101A", fontFamily: "Inter", fontSize: "16px" }}>
             <img src={createcreditnote} alt="" />
             Create Credit Note
           </Link>

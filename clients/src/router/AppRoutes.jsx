@@ -342,6 +342,7 @@ const AppRoutes = () => {
         <Route path="/sales-log" element={<SaleHistory />} />
         <Route path="/sales-payment" element={<PaymentHistory />} />
         <Route path="/create-quotition/:customerId" element={<CustomerCreateQuotation />} />
+        <Route path="/create-quotition" element={<CustomerCreateQuotation />} />
         <Route path="/sales-dashboard" element={<SalesDashboard />} />
         <Route path="/sales-invoice/:id" element={<RecentViewInvoice type="sales" />} />
         <Route path="/purchase-orders/:id" element={<RecentViewInvoice type="purchase" />} />
@@ -378,6 +379,7 @@ const AppRoutes = () => {
         <Route path="/customerdueadvance" element={<CustomerDuesAdvanceList />} />
         {/* credit Note, invoice, generate quotition */}
         <Route path="/createinvoice/:customerId" element={<CustomerCreateInvoice />} />
+         <Route path="/createinvoice/" element={<CustomerCreateInvoice />} />
         <Route path="/showinvoice/:invoiceId" element={<ShowCustomerInvoice />} />
         <Route path="/showquotation/:quotationId" element={<ShowCustomerInvoiceQuotation />} />
         <Route path="skeleton" element={<Skeleton />} />
@@ -388,6 +390,7 @@ const AppRoutes = () => {
         <Route path="/supplier-details" element={<SupplierDetails />} />
         {/* invoice, quotation, credit note */}
         <Route path="/create-purchase-orders/:supplierId" element={<CreatePurchaseOrder />} />
+         <Route path="/create-purchase-orders" element={<CreatePurchaseOrder />} />
         <Route path="/show-purchase-orders/:invoiceId" element={<ShowPurchaseOrderInvoice />} />
         <Route path="/create-supplier-debitnote/:supplierId" element={<SupplierDebitNote />} />
         <Route path="/empty-debitnote" element={<EmptyDebitNote />} />

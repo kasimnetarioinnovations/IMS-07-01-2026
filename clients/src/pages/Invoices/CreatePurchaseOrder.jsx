@@ -17,11 +17,20 @@ import { toast } from "react-toastify";
 import { toWords } from "number-to-words";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import AddSuppliers from "../Modal/suppliers/AddSupplierModals";
+import { FiSearch } from "react-icons/fi";
 
 function CreatePurchaseOrder() {
     const hasAddedInitialProduct = useRef(false);
     const { supplierId } = useParams();
     const navigate = useNavigate();
+    // State for supplier selection/selection
+    const [supplierSearch, setSupplierSearch] = useState("");
+    const [allSupplier, setAllSupplier] = useState([]);
+    const [filteredSupplier, setFilteredSupplier] = useState([]);
+    const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
+    // modal state
+    const [openAddModal, setOpenAddModal] = useState(false);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState({});
     const [allProducts, setAllProducts] = useState([]);
@@ -63,11 +72,15 @@ function CreatePurchaseOrder() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    // check if we're in "create from navbar" mode (no supplierId)
+    const isFromNavbar = !supplierId;
+
     // Form state
     const [supplier, setSupplier] = useState({
         name: "",
         phone: "",
         address: "",
+        supplierId: "",
     });
 
     const [invoiceDate, setInvoiceDate] = useState(new Date());
@@ -86,6 +99,47 @@ function CreatePurchaseOrder() {
         };
         setInvoiceNo(generateInvoiceNumber());
     }, []);
+
+    // Fetch supplier for search (when in navbar mode)
+    useEffect(() => {
+        if (isFromNavbar) {
+            fetchSupplierForSearch();
+        }
+    }, [isFromNavbar]);
+
+    const fetchSupplierForSearch = async () => {
+        try {
+            const response = await api.get('/api/suppliers');
+            console.log("Supplier API response:", response.data);
+
+            // The response has {total: X, suppliers: [...]}
+            if (response.data && Array.isArray(response.data.suppliers)) {
+                setAllSupplier(response.data.suppliers);
+                setFilteredSupplier(response.data.suppliers);
+            } else {
+                console.error('Unexpected supplier data format:', response.data);
+                setAllSupplier([]);
+                setFilteredSupplier([]);
+                toast.error('Invalid supplier data format');
+            }
+        } catch (error) {
+            console.error('Error fetching supplier:', error);
+            toast.error('Failed to load suppliers');
+            setAllSupplier([]);
+            setFilteredSupplier([]);
+        }
+    }
+
+    // Handle supplier search
+    useEffect(() => {
+        if (!supplierSearch.trim()) {
+            setFilteredSupplier(allSupplier);
+            return;
+        }
+        const searchTerm = supplierSearch.toLowerCase();
+        const filtered = allSupplier.filter((sup) => sup.name?.toLowerCase().includes(searchTerm) || sup.phone?.includes(supplierSearch) || sup.email?.toLowerCase().includes(searchTerm));
+        setFilteredSupplier(filtered);
+    }, [supplierSearch, allSupplier]);
 
     const [products, setProducts] = useState([]);
     const [productOptions, setProductOptions] = useState([]);
@@ -118,7 +172,7 @@ function CreatePurchaseOrder() {
                     const supplierRes = await api.get(`/api/suppliers/${supplierId}`);
                     const s = supplierRes.data;
                     setSupplier({
-                        name: s.supplierName || "",
+                        name: s.name || "",
                         phone: s.phone || "",
                         address: [s.address.addressLine, s.address.state, s.address.pincode]
                             .filter(Boolean)
@@ -166,6 +220,44 @@ function CreatePurchaseOrder() {
         };
         loadData();
     }, [supplierId]);
+    // Add these functions to your CreatePurchaseOrder component:
+
+    // handle supplier selection from dropdown
+    const handleSupplierSelect = (selectedSupplier) => {
+        setSupplier({
+            name: selectedSupplier.name || "",
+            phone: selectedSupplier.phone || "",
+            address: [selectedSupplier.address?.addressLine, selectedSupplier.address?.city, selectedSupplier.address?.state, selectedSupplier.address?.pincode]
+                .filter(Boolean)
+                .join(", "),
+            email: selectedSupplier.email || "",
+            gstin: selectedSupplier.gstin || "",
+            supplierId: selectedSupplier._id, // Store the ID
+        });
+        setSupplierSearch(selectedSupplier.name);
+        setShowSupplierDropdown(false);
+    }
+
+    // handle new supplier creation success
+    const handleNewSupplierCreated = (newSupplier) => {
+        fetchSupplierForSearch();
+        // Auto select the newly created supplier
+        handleSupplierSelect(newSupplier);
+        toast.success('Supplier created successfully!');
+    }
+
+    // clear selected supplier
+    const handleClearSupplier = () => {
+        setSupplier({
+            name: "",
+            phone: "",
+            address: "",
+            email: "",
+            gstin: "",
+            supplierId: "",
+        })
+        setSupplierSearch("");
+    }
 
     useEffect(() => {
         if (products.length > 0 && allProducts.length > 0) {
@@ -572,8 +664,16 @@ function CreatePurchaseOrder() {
     const validateForm = () => {
         const newErrors = {};
 
-        if (!supplier.name.trim()) {
-            newErrors.supplierName = "Supplier name is required";
+        // When from navbar, check if supplier is selected
+        if (isFromNavbar) {
+            if (!supplier.supplierId) {
+                newErrors.supplierName = "Please select a supplier";
+            }
+        } else {
+            // When from supplier page, check name directly
+            if (!supplier.name.trim()) {
+                newErrors.supplierName = "Supplier name is required";
+            }
         }
 
         if (!supplier.phone.trim()) {
@@ -600,6 +700,10 @@ function CreatePurchaseOrder() {
 
     // Handle form submission for supplier invoice
     const handleSubmit = async (shouldPrint = false) => {
+        if (!supplier.supplierId) {
+            toast.error("Please select a supplier first");
+            return;
+        }
         if (isSubmitting) {
             return;
         }
@@ -618,7 +722,8 @@ function CreatePurchaseOrder() {
             const formData = new FormData();
 
             // Add all invoice data as separate fields - FOR SUPPLIER
-            formData.append("supplierId", supplierId);
+            // formData.append("supplierId", supplierId);
+            formData.append("supplierId", supplier.supplierId)
             formData.append("invoiceDate", invoiceDate.toISOString());
             formData.append("dueDate", new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()); // 30 days for supplier
             formData.append("billingAddress", supplier.address);
@@ -755,8 +860,8 @@ function CreatePurchaseOrder() {
     if (loading) return <div>Loading...</div>;
 
     return (
-        <div className="px-4 py-4" style={{height:"100vh"}}>
-            <div className="" style={{overflow:"hidden", height:"calc(100vh - 100px)"}}>
+        <div className="px-4 py-4" style={{ height: "100vh" }}>
+            <div className="" style={{ overflow: "hidden", height: "calc(100vh - 100px)" }}>
                 <div className="">
                     {/* Header */}
                     <div
@@ -913,28 +1018,239 @@ function CreatePurchaseOrder() {
                                                         display: "flex",
                                                         gap: "4px",
                                                         marginTop: "4px",
+                                                        alignItems: "center",
+                                                        position: "relative",
                                                     }}
                                                 >
-                                                    <div>
+                                                    {/* Input field */}
+                                                    <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "8px" }}>
+                                                        <FiSearch
+                                                            style={{
+                                                                color: "#666",
+                                                                cursor: isFromNavbar ? "pointer" : "default",
+                                                                fontSize: "16px"
+                                                            }}
+                                                            onClick={() => isFromNavbar && setShowSupplierDropdown(true)}
+                                                        />
                                                         <input
                                                             type="text"
-                                                            placeholder="Enter Supplier Name"
+                                                            placeholder={isFromNavbar ? "Search or select supplier..." : "Enter Supplier Name"}
                                                             style={{
-                                                                width: "240px",
+                                                                width: "100%",
                                                                 border: "none",
                                                                 outline: "none",
                                                                 fontSize: "14px",
+                                                                cursor: isFromNavbar ? "pointer" : "text",
                                                             }}
                                                             value={supplier.name}
-                                                            onChange={(e) =>
-                                                                setSupplier({
-                                                                    ...supplier,
-                                                                    name: e.target.value,
-                                                                })
-                                                            }
+                                                            onChange={(e) => {
+                                                                if (isFromNavbar) {
+                                                                    // In navbar mode, show dropdown and search
+                                                                    setSupplierSearch(e.target.value);
+                                                                    setShowSupplierDropdown(true);
+                                                                    // Don't update supplier name directly - wait for selection
+                                                                } else {
+                                                                    // In supplier page mode, update directly
+                                                                    setSupplier({
+                                                                        ...supplier,
+                                                                        name: e.target.value,
+                                                                    });
+                                                                }
+                                                            }}
+                                                            onFocus={() => isFromNavbar && setShowSupplierDropdown(true)}
+                                                            readOnly={isFromNavbar && supplier.supplierId} // Read-only when supplier is selected
                                                         />
                                                     </div>
+
+                                                    {/* Action buttons */}
+                                                    {isFromNavbar && (
+                                                        <div style={{ display: "flex", gap: "4px" }}>
+                                                            {supplier.supplierId ? (
+                                                                // When supplier is selected - show clear button
+                                                                <button
+                                                                    onClick={handleClearSupplier}
+                                                                    style={{
+                                                                        background: "transparent",
+                                                                        border: "none",
+                                                                        color: "#dc3545",
+                                                                        cursor: "pointer",
+                                                                        fontSize: "12px",
+                                                                        padding: "2px 6px",
+                                                                        whiteSpace: "nowrap",
+                                                                    }}
+                                                                >
+                                                                    Change
+                                                                </button>
+                                                            ) : (
+                                                                // When no supplier - show add button
+                                                                <button
+                                                                    onClick={() => setOpenAddModal(true)}
+                                                                    style={{
+                                                                        background: "#1F7FFF",
+                                                                        color: "white",
+                                                                        border: "none",
+                                                                        borderRadius: "4px",
+                                                                        cursor: "pointer",
+                                                                        fontSize: "12px",
+                                                                        padding: "4px 8px",
+                                                                        whiteSpace: "nowrap",
+                                                                        display: "flex",
+                                                                        alignItems: "center",
+                                                                        gap: "4px",
+                                                                    }}
+                                                                >
+                                                                    + Add
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Supplier Dropdown */}
+                                                    {/* Supplier Dropdown */}
+                                                    {isFromNavbar && showSupplierDropdown && (
+                                                        <div style={{
+                                                            position: "absolute",
+                                                            top: "100%",
+                                                            left: 0,
+                                                            right: 0,
+                                                            backgroundColor: "white",
+                                                            border: "1px solid #EAEAEA",
+                                                            borderRadius: "8px",
+                                                            maxHeight: "300px",
+                                                            overflowY: "auto",
+                                                            zIndex: 1000,
+                                                            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                                            marginTop: "4px",
+                                                        }}>
+                                                            {/* Check if filteredSupplier is an array */}
+                                                            {!Array.isArray(filteredSupplier) || filteredSupplier.length === 0 ? (
+                                                                <div style={{ padding: "12px", color: "#666", textAlign: "center" }}>
+                                                                    {!Array.isArray(filteredSupplier) ? "Error loading suppliers" : "No suppliers found"}
+                                                                    <div style={{ marginTop: "8px" }}>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setOpenAddModal(true);
+                                                                                setShowSupplierDropdown(false);
+                                                                            }}
+                                                                            style={{
+                                                                                padding: "6px 12px",
+                                                                                backgroundColor: "#1F7FFF",
+                                                                                color: "white",
+                                                                                border: "none",
+                                                                                borderRadius: "4px",
+                                                                                cursor: "pointer",
+                                                                                fontSize: "12px",
+                                                                            }}
+                                                                        >
+                                                                            + Add New Supplier
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    <div style={{
+                                                                        padding: "8px 12px",
+                                                                        borderBottom: "1px solid #f0f0f0",
+                                                                        backgroundColor: "#f8f9fa",
+                                                                        fontSize: "12px",
+                                                                        color: "#666",
+                                                                    }}>
+                                                                        Select supplier or <button
+                                                                            onClick={() => {
+                                                                                setOpenAddModal(true);
+                                                                                setShowSupplierDropdown(false);
+                                                                            }}
+                                                                            style={{
+                                                                                background: "transparent",
+                                                                                border: "none",
+                                                                                color: "#1F7FFF",
+                                                                                cursor: "pointer",
+                                                                                fontWeight: "500",
+                                                                            }}
+                                                                        >
+                                                                            add new
+                                                                        </button>
+                                                                    </div>
+                                                                    {/* Safe mapping */}
+                                                                    {filteredSupplier.map((sup) => {
+                                                                        if (!sup || typeof sup !== 'object') return null;
+
+                                                                        const supplierName = sup.name || "";
+                                                                        const phone = sup.phone || "";
+                                                                        const email = sup.email || "";
+                                                                        const id = sup._id || "";
+
+                                                                        return (
+                                                                            <div
+                                                                                key={id}
+                                                                                onClick={() => handleSupplierSelect(sup)}
+                                                                                style={{
+                                                                                    padding: "12px 16px",
+                                                                                    borderBottom: "1px solid #f0f0f0",
+                                                                                    cursor: "pointer",
+                                                                                    display: "flex",
+                                                                                    alignItems: "center",
+                                                                                    gap: "12px",
+                                                                                    transition: "background-color 0.2s",
+                                                                                }}
+                                                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
+                                                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
+                                                                            >
+                                                                                <div style={{
+                                                                                    width: "32px",
+                                                                                    height: "32px",
+                                                                                    borderRadius: "50%",
+                                                                                    backgroundColor: "#e0f0ff",
+                                                                                    display: "flex",
+                                                                                    alignItems: "center",
+                                                                                    justifyContent: "center",
+                                                                                    fontWeight: "bold",
+                                                                                    color: "#1F7FFF",
+                                                                                    fontSize: "14px",
+                                                                                }}>
+                                                                                    {supplierName.charAt(0).toUpperCase() || "S"}
+                                                                                </div>
+                                                                                <div style={{ flex: 1 }}>
+                                                                                    <div style={{ fontWeight: "500" }}>{supplierName}</div>
+                                                                                    <div style={{ fontSize: "12px", color: "#666" }}>
+                                                                                        {phone} {email && `• ${email}`}
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
+
+                                                {/* Supplier details when selected */}
+                                                {isFromNavbar && supplier.supplierId && (
+                                                    <div style={{
+                                                        marginTop: "8px",
+                                                        padding: "8px 12px",
+                                                        backgroundColor: "#f0f8ff",
+                                                        borderRadius: "6px",
+                                                        border: "1px solid #d1e7ff",
+                                                        fontSize: "12px",
+                                                    }}>
+                                                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                                            <div>
+                                                                <span style={{ fontWeight: "500", color: "#1F7FFF" }}>
+                                                                    📱 {supplier.phone}
+                                                                </span>
+                                                                {supplier.email && (
+                                                                    <span style={{ marginLeft: "8px" }}>✉️ {supplier.email}</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <div style={{ marginTop: "4px", color: "#666" }}>
+                                                            {supplier.address}
+                                                        </div>
+                                                    </div>
+                                                )}
+
                                                 {errors.supplierName && (
                                                     <div
                                                         style={{
@@ -3143,6 +3459,30 @@ function CreatePurchaseOrder() {
                     </div>
                 </div>
             </div>
+
+            {/* Add Supplier Modal */}
+            {openAddModal && (
+                <div style={{
+                    position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", backgroundColor: "rgba(0,0,0,0.27)", backdropFilter: "blur(1px)",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    zIndex: 99999999,
+                }}
+                    onClick={() => setOpenAddModal(false)}
+                >
+                    <div onClick={(e) => e.stopPropagation()} className="">
+                        <AddSuppliers
+                            onClose={() => {
+                                setOpenAddModal(false);
+                                fetchSupplierForSearch();
+                            }}
+                            onSuccess={handleNewSupplierCreated} //Auto selected new supplier
+                        />
+                    </div>
+
+                </div>
+            )}
 
             {/* Preview Modal */}
             {viewInvoiceOptions && (
