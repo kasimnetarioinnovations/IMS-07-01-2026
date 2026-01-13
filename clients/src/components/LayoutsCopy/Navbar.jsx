@@ -16,8 +16,11 @@ import { TbMaximize, TbZoomScan } from "react-icons/tb";
 import { useSocket } from "../../Context/SocketContext";
 import api from "../../pages/config/axiosInstance";
 import Activities from '../layouts/Navbar/activities'
+import { GoPlus } from "react-icons/go";
+import CreateModel from "../CreateModel";
 
 const Navbar = () => {
+   const [ShowCreateModel, setShowCreateModel] = useState(false);
   const [sidebarActive, setSidebarActive] = useState(false);
   const serchingRef = useRef(null);
   const serchingBtnRef = useRef(null);
@@ -127,6 +130,11 @@ const Navbar = () => {
     setSearchText("");
     setShowRecentSearch(false);
   };
+      const modelRef = useRef(null); 
+    const buttonRef = useRef(null);
+  const handleCreateClick = () => {
+  setShowCreateModel(prev => !prev); // toggles open/close
+}; 
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -135,8 +143,17 @@ const Navbar = () => {
         !serchingRef.current.contains(event.target) &&
         serchingBtnRef.current &&
         !serchingBtnRef.current.contains(event.target)
-      ) {
+      )
+      if (
+        modelRef.current &&
+        !modelRef.current.contains(event.target) &&
+        !buttonRef.current.contains(event.target)
+      )
+      {
         setShowRecentSearch(false);
+      }
+      {
+        setShowCreateModel(false);
       }
     };
 
@@ -145,7 +162,7 @@ const Navbar = () => {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
+  }, [ShowCreateModel]);
 
   const handleFullscreen = async () => {
     try {
@@ -348,9 +365,44 @@ const Navbar = () => {
               </Link>
             </button>
           )}
+
+            {/* Create Model */}
+          <button
+          ref={buttonRef}
+            onClick={handleCreateClick}
+             className="create-btn button-hover button-color"
+            style={{
+              // backgroundColor: "#1F7FFF",
+              color: "white",
+              border: "none",
+              fontFamily: 'Inter',
+              fontSize: "14px",
+              
+              padding: "8px",
+              borderRadius: "8px",
+              width:"89px",
+              height:"36px",
+              display:"flex",
+              justifyContent:"center",
+              alignItems:"center",
+              gap:"4px"
+              
+            }}
+          >
+            <GoPlus size={20} />
+            Create
+          </button>
         </div>
+        
       </nav>
 
+       {ShowCreateModel && (
+        <div ref={modelRef}>
+          <CreateModel />
+        </div>
+      )}
+
+        
       {showRecentSearch && (
         <div ref={serchingRef}>
           <SearchningFor results={filteredRoutes} onSelect={handleNavigate} />
