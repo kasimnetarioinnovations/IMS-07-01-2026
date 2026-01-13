@@ -53,18 +53,18 @@ const CreateModel = () => {
             Create Purchase
           </Link>
         </li>
-        <li >
+        {/* <li >
           <Link className='button-action' style={{ padding: "8px 12px", borderRadius: "8px", textDecoration: "none", display: "flex", alignItems: "center", gap: "8px", color: "#0E101A", fontFamily: "Inter", fontSize: "16px" }}>
             <img src={createdebitnote} alt="" />
             Create Debit Note
           </Link>
-        </li>
-        <li >
+        </li> */}
+        {/* <li >
           <Link className='button-action' style={{ padding: "8px 12px", borderRadius: "8px", textDecoration: "none", display: "flex", alignItems: "center", gap: "8px", color: "#0E101A", fontFamily: "Inter", fontSize: "16px" }}>
             <img src={createcreditnote} alt="" />
             Create Credit Note
           </Link>
-        </li>
+        </li> */}
       </ul>
     </div>
   );
