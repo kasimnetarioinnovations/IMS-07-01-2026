@@ -1093,42 +1093,28 @@ const Pos = () => {
     }
   };
 
+  const refreshProducts = async () => {
+    try {
+      const res = await api.get('/api/products?limit=0');
+      const productsData = res.data.products || res.data || [];
+      const activeProducts = productsData
+        .filter(product => !isProductExpired(product) && !product.isDelete)
+        .map(product => ({
+          ...product,
+          quantity: product.quantity !== undefined ? product.quantity : (product.openingQuantity || 0)
+        }));
+      setProducts(activeProducts);
+      setAllProducts(activeProducts);
+      const initialTabs = activeProducts.reduce((acc, product) => {
+        acc[product._id] = "general";
+        return acc;
+      }, {});
+      setActiveTabs(initialTabs);
+    } catch (err) {}
+  };
+
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const res = await api.get('/api/products?limit=0');
-
-        // Access the products array from the response object
-        const productsData = res.data.products || res.data || [];
-
-        // Filter out expired products and deleted products
-        const activeProducts = productsData
-          .filter(product => !isProductExpired(product) && !product.isDelete)
-          .map(product => ({
-            ...product,
-            // Map openingQuantity to quantity if quantity is missing
-            quantity: product.quantity !== undefined ? product.quantity : (product.openingQuantity || 0)
-          }));
-
-        setProducts(activeProducts);
-        setAllProducts(activeProducts); // Store all non-expired products
-        // console.log("Products right:", productsData);
-        // Log first product to see image structure
-        if (productsData.length > 0) {
-          // console.log("First product structure:", productsData[0]);
-          // console.log("First product images:", productsData[0].images);
-        }
-        // Initialize all to "general"
-        const initialTabs = activeProducts.reduce((acc, product) => {
-          acc[product._id] = "general";
-          return acc;
-        }, {});
-        setActiveTabs(initialTabs);
-      } catch (err) {
-        // console.error("Failed to fetch products", err);
-      }
-    };
-    fetchProducts();
+    refreshProducts();
   }, []);
 
 
@@ -1544,16 +1530,23 @@ const Pos = () => {
 
   // Create POS sale---------------------------------------------------------------------------------------------------------------------
   const createPosSale = async (paymentMethod, amountReceived = 0, changeReturned = 0) => {
+    let saleData;
     try {
       if (!selectedCustomer || selectedItems.length === 0) {
         toast.error('Please select a customer and items before proceeding');
         return;
       }
 
+      const productItems = selectedItems.filter(i => !i.isBag);
+      if (productItems.length === 0) {
+        toast.error('Add at least one product item before checkout');
+        return;
+      }
+
       // Ensure numeric values are numbers and map to correct property names
-      const saleData = {
+      saleData = {
         customerId: selectedCustomer._id,
-        items: selectedItems.map(item => ({
+        items: productItems.map(item => ({
           productId: item._id,
           quantity: Number(item.quantity),
           sellingPrice: Number(item.sellingPrice),
@@ -1595,23 +1588,39 @@ const Pos = () => {
         handlePaymentPopupChange();
         // Refresh transactions
         fetchPosSales(1, transactionSearchQuery);
+        await refreshProducts();
       }
     } catch (error) {
-      // console.error('Error creating POS sale:', error);
-
-      // Show detailed validation errors if available
-      if (error.response?.data?.details) {
-        const errorDetails = error.response.data.details;
-        if (typeof errorDetails === 'object') {
-          const errorMessages = Object.entries(errorDetails)
-            .map(([field, message]) => `${field}: ${message}`)
-            .join('\n');
-          alert('Validation Error:\n' + errorMessages);
-        } else {
-          alert('Error creating sale: ' + errorDetails);
-        }
+      console.error('createPosSale error', {
+        message: error.message,
+        stack: error.stack,
+        status: error.response?.status,
+        url: error.config?.url,
+        method: error.config?.method,
+        requestData: error.config?.data,
+        responseData: error.response?.data,
+        saleData,
+        customerId: selectedCustomer?._id,
+        itemsCount: selectedItems?.length,
+        paymentMethod,
+        amountReceived,
+        changeReturned,
+        subtotal: subTotal,
+        discount,
+        tax: totalTax,
+        totalAmount: roundedAmount,
+        bagCharge,
+        appliedPoints
+      });
+      const msg = error.response?.data?.message || error.message || 'Error creating sale';
+      const details = error.response?.data?.details;
+      if (details && typeof details === 'object') {
+        const errorMessages = Object.entries(details)
+          .map(([field, message]) => `${field}: ${message}`)
+          .join('\n');
+        toast.error(`${msg}\n${errorMessages}`);
       } else {
-        alert('Error creating sale: ' + (error.response?.data?.message || error.message));
+        toast.error(msg);
       }
     }
   };
@@ -2695,7 +2704,6 @@ const Pos = () => {
                   }} />
                   <div
                     style={{
-                      color: '#515457',
                       fontSize: 14,
                       fontFamily: 'Inter',
                       fontWeight: '500',
@@ -3639,7 +3647,6 @@ const Pos = () => {
                                           justifyContent: "center",
                                           alignItems: "center",
                                           gap: 4,
-                                          display: "flex",
                                         }}
                                       >
                                         <div
@@ -5575,7 +5582,6 @@ const Pos = () => {
                     onClick={() => {
                       setPaymentPopup(false);
                       setSelectedSale(null);
-                      // Reset all form data
                       setSelectedItems([]);
                       setSelectedCustomer(null);
                       setBagCharge(0);
@@ -5583,7 +5589,6 @@ const Pos = () => {
                       setSearchQuery('');
                       setSearchResults([]);
                       setShowDropdown(false);
-                      // Reset totals
                       setSubTotal(0);
                       setTotalAmount(0);
                       setRoundedAmount(0);
@@ -5591,27 +5596,19 @@ const Pos = () => {
                       setTotalItems(0);
                       setTotalQuantity(0);
                       setDiscount(0);
-                      // Close all popups
                       setCashPopup(false);
                       setCardPopup(false);
                       setUpiPopup(false);
-                      // Refresh transactions
                       fetchPosSales();
-                      // Reset category filter
                       setSelectedCategory(null);
                       setProducts(allProducts);
-                      // Reset updown state
                       setUpdown(false);
-                      // Reset search drop state
                       setSearchDrop(false);
-                      // Reset filter values
                       setCategoryValue('');
                       setSocketValue('');
                       setWarehouseValue('');
                       setExprationValue('');
-                      // Reset OTP state
                       setOtp(['', '', '', '']);
-                      // Reset address fields
                       setCountry('');
                       setState('');
                       setCity('');
@@ -5619,66 +5616,43 @@ const Pos = () => {
                       setSelectedCountry('');
                       setSelectedState('');
                       setSelectedCity('');
-                      // Reset form data
                       if (formRef.current) {
                         formRef.current.reset();
                       }
-                      // Reset active tabs
                       const initialTabs = allProducts.reduce((acc, product) => {
                         acc[product._id] = "general";
                         return acc;
                       }, {});
                       setActiveTabs(initialTabs);
-                      // Reset search query
                       setSearchQuery('');
-                      // Reset search results
                       setSearchResults([]);
                       setShowDropdown(false);
-                      // Reset popup states
                       setPopup(false);
                       setAddCustomerPopup(false);
                       setDiscountPopup(false);
-                      // Reset transaction popup
                       setTransactionPopup(false);
-                      // Reset selected sale
                       setSelectedSale(null);
-                      // Reset current page
                       setCurrentPage(1);
-                      // Reset total pages
                       setTotalPages(1);
-                      // Reset total sales
                       setTotalSales(0);
-                      // Reset loading state
                       setLoading(false);
-                      // Reset pos sales
                       setPosSales([]);
-                      // Reset amount received
                       setAmountReceived('');
-                      // Reset search query
                       setSearchQuery('');
-                      // Reset search results
                       setSearchResults([]);
                       setShowDropdown(false);
-                      // Reset popup states
                       setPopup(false);
                       setAddCustomerPopup(false);
                       setDiscountPopup(false);
-                      // Reset transaction popup
                       setTransactionPopup(false);
-                      // Reset selected sale
                       setSelectedSale(null);
-                      // Reset current page
                       setCurrentPage(1);
-                      // Reset total pages
                       setTotalPages(1);
-                      // Reset total sales
                       setTotalSales(0);
-                      // Reset loading state
                       setLoading(false);
-                      // Reset pos sales
                       setPosSales([]);
-                      // Reset amount received
                       setAmountReceived('');
+                      window.location.reload();
                     }}
                   >
                     <span><IoMdAdd /></span>

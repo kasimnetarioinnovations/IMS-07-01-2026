@@ -716,6 +716,37 @@ exports.getPointsHistory = async (req, res) => {
   }
 };
 
+exports.redeemPoints = async (req, res) => {
+  try {
+    const { points } = req.body;
+    const customer = await Customer.findById(req.params.id);
+    if (!customer) {
+      return res.status(404).json({ error: "Customer not found" });
+    }
+    const pts = Number(points || 0);
+    if (isNaN(pts) || pts <= 0) {
+      return res.status(400).json({ error: "Valid points required" });
+    }
+    if (pts > (customer.availablePoints || 0)) {
+      return res.status(400).json({ error: "Insufficient points" });
+    }
+    await customer.redeemPoints(pts);
+    res.json({
+      success: true,
+      message: `${pts} points redeemed for ${customer.name}`,
+      customer: {
+        _id: customer._id,
+        name: customer.name,
+        availablePoints: customer.availablePoints,
+        totalPointsRedeemed: customer.totalPointsRedeemed,
+        lastPointsRedeemedDate: customer.lastPointsRedeemedDate
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 // Add this helper function to customerController.js
 
 // Update customer's total due amount (call this when invoices change)

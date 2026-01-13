@@ -31,6 +31,11 @@ const createPosSale = async (req, res) => {
       totalAmount
     } = req.body;
 
+    const pointsUsed = Number(req.body.pointsUsed || 0);
+    if (isNaN(pointsUsed) || pointsUsed < 0) {
+      return res.status(400).json({ message: 'Invalid pointsUsed value' });
+    }
+
     // Validate required fields
     if (!customerId || !items || items.length === 0 || !paymentMethod) {
       return res.status(400).json({
@@ -52,6 +57,11 @@ const createPosSale = async (req, res) => {
     const customer = await Customer.findById(customerId);
     if (!customer) {
       return res.status(404).json({ message: 'Customer not found' });
+    }
+    
+    // Validate points usage against customer's available points
+    if (pointsUsed > 0 && pointsUsed > (customer.availablePoints || 0)) {
+      return res.status(400).json({ message: 'Insufficient points available to redeem' });
     }
 
     // Validate items structure
@@ -99,7 +109,11 @@ const createPosSale = async (req, res) => {
         discountType: item.discountType || 'Fixed',
         tax: item.tax || 0,
         unit: product.unit || 'pcs',
-        images: product.images && Array.isArray(product.images) ? product.images.map(img => typeof img === 'string' ? img : (img.url || '')) : []
+        images: (Array.isArray(product.images) 
+          ? product.images
+              .map(img => (typeof img === 'string' ? img : img?.url))
+              .filter(Boolean)
+          : [])
       });
     }
 
@@ -114,11 +128,6 @@ const createPosSale = async (req, res) => {
     }
     if (typeof totalAmount !== 'number' || totalAmount < 0) {
       return res.status(400).json({ message: 'Invalid total amount value' });
-    }
-
-    const pointsUsed = Number(req.body.pointsUsed || 0);
-    if (isNaN(pointsUsed) || pointsUsed < 0) {
-      return res.status(400).json({ message: 'Invalid pointsUsed value' });
     }
 
     // Ensure all numeric values are numbers
@@ -240,18 +249,8 @@ const createPosSale = async (req, res) => {
     }
 
     try {
-      // console.log('Attempting to save POS sale with data:', JSON.stringify(posSale, null, 2));
-      // console.log('POS sale object keys:', Object.keys(posSale));
-      // console.log('POS sale document:', posSale.toObject ? posSale.toObject() : posSale);
-      // console.log('Database ready state:', mongoose.connection.readyState);
-      // console.log('Document isNew before save:', posSale.isNew);
-      // console.log('Document _id before save:', posSale._id);
-
-      // Check if the document is valid before saving
       const validationError = posSale.validateSync();
       if (validationError) {
-        // console.error('Validation error before save:', validationError);
-        // console.error('Validation error details:', validationError.errors);
         return res.status(400).json({
           message: 'Validation error',
           error: validationError.message,
@@ -259,9 +258,35 @@ const createPosSale = async (req, res) => {
         });
       }
 
-      // console.log('Document validation passed, proceeding with save...');
-      const savedSale = await posSale.save();
-      // console.log('Sale saved successfully with ID:', savedSale._id);
+      let savedSale;
+      try {
+        savedSale = await posSale.save();
+      } catch (err) {
+        if (err && err.code === 11000 && err.keyPattern && err.keyPattern.invoiceNumber) {
+          posSale.invoiceNumber = `INV${Date.now()}${Math.floor(Math.random() * 10000)}`;
+          savedSale = await posSale.save();
+        } else {
+          throw err;
+        }
+      }
+      
+      if (pointsUsed > 0) {
+        try {
+          await customer.redeemPoints(pointsUsed);
+        } catch (pointsError) {}
+      }
+      
+      try {
+        for (const item of items) {
+          const product = await Product.findById(item.productId).select('openingQuantity');
+          if (product) {
+            const currentOpening = Number(product.openingQuantity || 0);
+            const qty = Number(item.quantity || 0);
+            const newOpening = Math.max(0, currentOpening - qty);
+            await Product.findByIdAndUpdate(item.productId, { $set: { openingQuantity: newOpening } });
+          }
+        }
+      } catch (openingErr) {}
 
       res.status(201).json({
         success: true,
@@ -290,7 +315,7 @@ const createPosSale = async (req, res) => {
       }
 
       return res.status(500).json({
-        message: 'Error saving sale record',
+        message: saveError && saveError.code === 11000 ? 'Duplicate invoice number' : 'Error saving sale record',
         error: saveError.message,
         details: saveError.errors || saveError.message
       });
