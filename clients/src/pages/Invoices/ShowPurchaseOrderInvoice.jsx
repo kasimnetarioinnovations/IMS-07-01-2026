@@ -616,15 +616,15 @@ function ShowPurchaseOrderInvoice() {
                                                             marginTop: "10px",
                                                         }}
                                                     />
-                                                    <div
+                                                    {/* <div
                                                         style={{
                                                             marginTop: "2px",
                                                             textDecoration: "underline",
                                                         }}
                                                     >
                                                         Payment Details
-                                                    </div>
-                                                    <div
+                                                    </div> */}
+                                                    {/* <div
                                                         style={{
                                                             width: "100%",
                                                             display: "flex",
@@ -691,7 +691,7 @@ function ShowPurchaseOrderInvoice() {
                                                             </div>
                                                             <div>Supplier UPI ID</div>
                                                         </div>
-                                                    </div>
+                                                    </div> */}
                                                 </div>
 
                                                 <div

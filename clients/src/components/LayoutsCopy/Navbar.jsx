@@ -20,7 +20,7 @@ import { GoPlus } from "react-icons/go";
 import CreateModel from "../CreateModel";
 
 const Navbar = () => {
-   const [ShowCreateModel, setShowCreateModel] = useState(false);
+  const [ShowCreateModel, setShowCreateModel] = useState(false);
   const [sidebarActive, setSidebarActive] = useState(false);
   const serchingRef = useRef(null);
   const serchingBtnRef = useRef(null);
@@ -130,39 +130,39 @@ const Navbar = () => {
     setSearchText("");
     setShowRecentSearch(false);
   };
-      const modelRef = useRef(null); 
-    const buttonRef = useRef(null);
+  const modelRef = useRef(null);
+  const buttonRef = useRef(null);
   const handleCreateClick = () => {
-  setShowCreateModel(prev => !prev); // toggles open/close
-}; 
+    setShowCreateModel(prev => !prev); // toggles open/close
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
+      // Close search dropdown
       if (
         serchingRef.current &&
         !serchingRef.current.contains(event.target) &&
         serchingBtnRef.current &&
         !serchingBtnRef.current.contains(event.target)
-      )
+      ) {
+        setShowRecentSearch(false);
+      }
+
+      // Close create modal
       if (
         modelRef.current &&
         !modelRef.current.contains(event.target) &&
+        buttonRef.current &&
         !buttonRef.current.contains(event.target)
-      )
-      {
-        setShowRecentSearch(false);
-      }
-      {
+      ) {
         setShowCreateModel(false);
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [ShowCreateModel]);
 
   const handleFullscreen = async () => {
     try {
@@ -366,43 +366,43 @@ const Navbar = () => {
             </button>
           )}
 
-            {/* Create Model */}
+          {/* Create Model */}
           <button
-          ref={buttonRef}
+            ref={buttonRef}
             onClick={handleCreateClick}
-             className="create-btn button-hover button-color"
+            className="create-btn button-hover button-color"
             style={{
               // backgroundColor: "#1F7FFF",
               color: "white",
               border: "none",
               fontFamily: 'Inter',
               fontSize: "14px",
-              
+
               padding: "8px",
               borderRadius: "8px",
-              width:"89px",
-              height:"36px",
-              display:"flex",
-              justifyContent:"center",
-              alignItems:"center",
-              gap:"4px"
-              
+              width: "89px",
+              height: "36px",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: "4px"
+
             }}
           >
             <GoPlus size={20} />
             Create
           </button>
         </div>
-        
+
       </nav>
 
-       {ShowCreateModel && (
+      {ShowCreateModel && (
         <div ref={modelRef}>
           <CreateModel />
         </div>
       )}
 
-        
+
       {showRecentSearch && (
         <div ref={serchingRef}>
           <SearchningFor results={filteredRoutes} onSelect={handleNavigate} />

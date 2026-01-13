@@ -17,11 +17,21 @@ import { toast } from "react-toastify";
 import { toWords } from "number-to-words";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import AddCustomers from "../Modal/customerModals/AddCustomerModal";
+import { FiSearch } from "react-icons/fi";
 
 function CustomerCreateInvoice() {
   const hasAddedInitialProduct = useRef(false);
   const { customerId } = useParams();
   const navigate = useNavigate();
+  // State for customer selection/selection
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [allCustomers, setAllCustomers] = useState([]);
+  const [filteredCustomers, setFilteredCustomers] = useState([]);
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  // modal state
+  const [openAddModal, setOpenAddModal] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState({});
   const [allProducts, setAllProducts] = useState([]);
@@ -86,11 +96,17 @@ function CustomerCreateInvoice() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // check if we're in "create from navbar" mode (no customerId)
+  const isFromNavbar = !customerId;
+
   // Form state
   const [customer, setCustomer] = useState({
     name: "",
     phone: "",
     address: "",
+    email: "",
+    gstin: "",
+    customerId: "",  //store actual custoemr id
   });
 
   const [customerPoints, setCustomerPoints] = useState(0);
@@ -110,6 +126,35 @@ function CustomerCreateInvoice() {
     };
     setInvoiceNo(generateInvoiceNumber());
   }, []);
+
+  // Fetch customers for search (when in navbar mode)
+  useEffect(() => {
+    if (isFromNavbar) {
+      fetchCustomersForSearch();
+    }
+  }, [isFromNavbar]);
+
+  const fetchCustomersForSearch = async () => {
+    try {
+      const response = await api.get('/api/customers');
+      setAllCustomers(response.data);
+      setFilteredCustomers(response.data);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+      toast.error('Failed to load customers');
+    }
+  }
+
+  // Handle customer search
+  useEffect(() => {
+    if (!customerSearch.trim()) {
+      setFilteredCustomers(allCustomers);
+      return;
+    }
+    const searchTerm = customerSearch.toLowerCase();
+    const filtered = allCustomers.filter((cust) => cust.name?.toLowerCase().includes(searchTerm) || cust.phone?.includes(customerSearch) || cust.email?.toLowerCase().includes(searchTerm));
+    setFilteredCustomers(filtered);
+  }, [customerSearch, allCustomers]);
 
   const [products, setProducts] = useState([]);
   const [productOptions, setProductOptions] = useState([]);
@@ -151,6 +196,7 @@ function CustomerCreateInvoice() {
               .join(", "),
             email: c.email || "",
             gstin: c.gstin || "",
+            customerId: c._id, // store the ID
           });
 
           // Fetch customer points
@@ -202,6 +248,49 @@ function CustomerCreateInvoice() {
     };
     loadData();
   }, [customerId]);
+
+  // handle customer selection from dropdown
+  const handleCustomerSelect = (selectedCustomer) => {
+    setCustomer({
+      name: selectedCustomer.name || "",
+      phone: selectedCustomer.phone || "",
+      address: [selectedCustomer.country, selectedCustomer.city, selectedCustomer.state, selectedCustomer.pincode]
+        .filter(Boolean)
+        .join(", "),
+      email: selectedCustomer.email || "",
+      gstin: selectedCustomer.gstin || "",
+      customerId: selectedCustomer._id, // Store the ID
+    });
+    //  Fetch customer points
+    api.get(`/api/customers/${selectedCustomer._id}/points`).then((res) => {
+      setCustomerPoints(res.data.customer?.availablePoints || 0);
+    }).catch(() => setCustomerPoints(0));
+    setCustomerSearch(selectedCustomer.name);
+    setShowCustomerDropdown(false);
+  }
+
+  // handle new customer creation success
+  const handleNewCustomerCreated = (newCustomer) => {
+    fetchCustomersForSearch();
+    // Auto select the newly created customer
+    handleCustomerSelect(newCustomer);
+    toast.success('Customer created successfully!')
+  }
+
+  // clear selected customer
+  const handleClearCustomer = () => {
+    setCustomer({
+      name: "",
+      phone: "",
+      address: "",
+      email: "",
+      gstin: "",
+      customerId: "",
+    })
+    setCustomerSearch("");
+    setCustomerPoints(0);
+  }
+
 
   useEffect(() => {
     if (products.length > 0 && allProducts.length > 0) {
@@ -621,10 +710,17 @@ function CustomerCreateInvoice() {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!customer.name.trim()) {
-      newErrors.customerName = "Customer name is required";
+    // When from navbar, check if customer is selected
+    if (isFromNavbar) {
+      if (!customer.customerId) {
+        newErrors.customerName = "Please select a customer";
+      }
+    } else {
+      // When from customer page, check name directly
+      if (!customer.name.trim()) {
+        newErrors.customerName = "Customer name is required";
+      }
     }
-
     if (!customer.phone.trim()) {
       newErrors.phone = "Phone number is required";
     } else if (!/^\d{10}$/.test(customer.phone)) {
@@ -652,6 +748,12 @@ function CustomerCreateInvoice() {
   const handleSubmit = async (shouldPrint = false) => {
     console.log("handleSubmit called with shouldPrint:", shouldPrint);
     console.log("Button clicked, isSubmitting:", isSubmitting);
+    // check if we have a customer selected
+    if (!customer.customerId) {
+      toast.error("Please select a customer first")
+      return;
+    }
+
 
     if (isSubmitting) {
       console.log("Already submitting, returning...");
@@ -694,7 +796,9 @@ function CustomerCreateInvoice() {
       const formData = new FormData();
 
       // Add all invoice data as separate fields - MATCHING YOUR BACKEND SCHEMA
-      formData.append("customerId", customerId);
+      // formData.append("customerId", customerId);
+       // use customer.customerId in the form data
+      formData.append("customerId", customer.customerId);
       formData.append("invoiceDate", invoiceDate.toISOString());
       formData.append("dueDate", new Date().toISOString());
       formData.append("billingAddress", customer.address);
@@ -995,6 +1099,7 @@ function CustomerCreateInvoice() {
                         gap: "40px",
                       }}
                     >
+                      {/* from nav start */}
                       <div style={{ display: "flex", flexDirection: "column" }}>
                         <label>
                           Customer Name<span style={{ color: "red" }}>*</span>
@@ -1008,28 +1113,232 @@ function CustomerCreateInvoice() {
                             display: "flex",
                             gap: "4px",
                             marginTop: "4px",
+                            alignItems: "center",
+                            position: "relative",
                           }}
                         >
-                          <div>
+                          {/* Input field */}
+                          <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "8px" }}>
+                            <FiSearch
+                              style={{
+                                color: "#666",
+                                cursor: isFromNavbar ? "pointer" : "default",
+                                fontSize: "16px"
+                              }}
+                              onClick={() => isFromNavbar && setShowCustomerDropdown(true)}
+                            />
                             <input
                               type="text"
-                              placeholder="Enter Name"
+                              placeholder={isFromNavbar ? "Search or select customer..." : "Enter Name"}
                               style={{
-                                width: "240px",
+                                width: "100%",
                                 border: "none",
                                 outline: "none",
                                 fontSize: "14px",
+                                cursor: isFromNavbar ? "pointer" : "text",
                               }}
                               value={customer.name}
-                              onChange={(e) =>
-                                setCustomer({
-                                  ...customer,
-                                  name: e.target.value,
-                                })
-                              }
+                              onChange={(e) => {
+                                if (isFromNavbar) {
+                                  // In navbar mode, show dropdown and search
+                                  setCustomerSearch(e.target.value);
+                                  setShowCustomerDropdown(true);
+                                  // Don't update customer name directly - wait for selection
+                                } else {
+                                  // In customer page mode, update directly
+                                  setCustomer({
+                                    ...customer,
+                                    name: e.target.value,
+                                  });
+                                }
+                              }}
+                              onFocus={() => isFromNavbar && setShowCustomerDropdown(true)}
+                              readOnly={isFromNavbar && customer.customerId} // Read-only when customer is selected
                             />
                           </div>
+
+                          {/* Action buttons */}
+                          {isFromNavbar && (
+                            <div style={{ display: "flex", gap: "4px" }}>
+                              {customer.customerId ? (
+                                // When customer is selected - show clear button
+                                <button
+                                  onClick={handleClearCustomer}
+                                  style={{
+                                    background: "transparent",
+                                    border: "none",
+                                    color: "#dc3545",
+                                    cursor: "pointer",
+                                    fontSize: "12px",
+                                    padding: "2px 6px",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  Change
+                                </button>
+                              ) : (
+                                // When no customer - show add button
+                                <button
+                                  onClick={() => setOpenAddModal(true)}
+                                  style={{
+                                    background: "#1F7FFF",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "4px",
+                                    cursor: "pointer",
+                                    fontSize: "12px",
+                                    padding: "4px 8px",
+                                    whiteSpace: "nowrap",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                  }}
+                                >
+                                  + Add
+                                </button>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Customer Dropdown */}
+                          {isFromNavbar && showCustomerDropdown && (
+                            <div style={{
+                              position: "absolute",
+                              top: "100%",
+                              left: 0,
+                              right: 0,
+                              backgroundColor: "white",
+                              border: "1px solid #EAEAEA",
+                              borderRadius: "8px",
+                              maxHeight: "300px",
+                              overflowY: "auto",
+                              zIndex: 1000,
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                              marginTop: "4px",
+                            }}>
+                              {filteredCustomers.length === 0 ? (
+                                <div style={{ padding: "12px", color: "#666", textAlign: "center" }}>
+                                  No customers found
+                                  <div style={{ marginTop: "8px" }}>
+                                    <button
+                                      onClick={() => {
+                                        setOpenAddModal(true);
+                                        setShowCustomerDropdown(false);
+                                      }}
+                                      style={{
+                                        padding: "6px 12px",
+                                        backgroundColor: "#1F7FFF",
+                                        color: "white",
+                                        border: "none",
+                                        borderRadius: "4px",
+                                        cursor: "pointer",
+                                        fontSize: "12px",
+                                      }}
+                                    >
+                                      + Add New Customer
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <div style={{
+                                    padding: "8px 12px",
+                                    borderBottom: "1px solid #f0f0f0",
+                                    backgroundColor: "#f8f9fa",
+                                    fontSize: "12px",
+                                    color: "#666",
+                                  }}>
+                                    Select customer or <button
+                                      onClick={() => {
+                                        setOpenAddModal(true);
+                                        setShowCustomerDropdown(false);
+                                      }}
+                                      style={{
+                                        background: "transparent",
+                                        border: "none",
+                                        color: "#1F7FFF",
+                                        cursor: "pointer",
+                                        fontWeight: "500",
+                                      }}
+                                    >
+                                      add new
+                                    </button>
+                                  </div>
+                                  {filteredCustomers.map((cust) => (
+                                    <div
+                                      key={cust._id}
+                                      onClick={() => handleCustomerSelect(cust)}
+                                      style={{
+                                        padding: "12px 16px",
+                                        borderBottom: "1px solid #f0f0f0",
+                                        cursor: "pointer",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "12px",
+                                        transition: "background-color 0.2s",
+                                      }}
+                                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
+                                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
+                                    >
+                                      <div style={{
+                                        width: "32px",
+                                        height: "32px",
+                                        borderRadius: "50%",
+                                        backgroundColor: "#e0f0ff",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontWeight: "bold",
+                                        color: "#1F7FFF",
+                                        fontSize: "14px",
+                                      }}>
+                                        {cust.name?.charAt(0).toUpperCase() || "C"}
+                                      </div>
+                                      <div style={{ flex: 1 }}>
+                                        <div style={{ fontWeight: "500" }}>{cust.name}</div>
+                                        <div style={{ fontSize: "12px", color: "#666" }}>
+                                          {cust.phone} {cust.email && `• ${cust.email}`}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </>
+                              )}
+                            </div>
+                          )}
                         </div>
+
+                        {/* Customer details when selected */}
+                        {isFromNavbar && customer.customerId && (
+                          <div style={{
+                            marginTop: "8px",
+                            padding: "8px 12px",
+                            backgroundColor: "#f0f8ff",
+                            borderRadius: "6px",
+                            border: "1px solid #d1e7ff",
+                            fontSize: "12px",
+                          }}>
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <div>
+                                <span style={{ fontWeight: "500", color: "#1F7FFF" }}>
+                                  📱 {customer.phone}
+                                </span>
+                                {customer.email && (
+                                  <span style={{ marginLeft: "8px" }}>✉️ {customer.email}</span>
+                                )}
+                              </div>
+                              <div>
+                                <span style={{ color: "#666" }}>
+                                  Points: 🪙 {customerPoints}
+                                </span>
+                              </div>
+                            </div>
+                            <div style={{ marginTop: "4px", color: "#666" }}>
+                              {customer.address}
+                            </div>
+                          </div>
+                        )}
+
                         {errors.customerName && (
                           <div
                             style={{
@@ -1042,6 +1351,7 @@ function CustomerCreateInvoice() {
                           </div>
                         )}
                       </div>
+                      {/* from nav end */}
                       <div style={{ display: "flex", flexDirection: "column" }}>
                         <label>
                           Phone No.<span style={{ color: "red" }}>*</span>
@@ -3415,6 +3725,29 @@ function CustomerCreateInvoice() {
           </div>
         </div>
       </div>
+      {/* Add Customer Modal */}
+      {openAddModal && (
+        <div style={{
+          position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", backgroundColor: "rgba(0,0,0,0.27)", backdropFilter: "blur(1px)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 99999999,
+        }}
+          onClick={() => setOpenAddModal(false)}
+        >
+          <div onClick={(e) => e.stopPropagation()} className="">
+            <AddCustomers
+              onClose={() => {
+                setOpenAddModal(false);
+                fetchCustomersForSearch();
+              }}
+              onSuccess={handleNewCustomerCreated} //Auto selected new customer
+            />
+          </div>
+
+        </div>
+      )}
 
       {/* Preview Modal */}
       {viewInvoiceOptions && (
