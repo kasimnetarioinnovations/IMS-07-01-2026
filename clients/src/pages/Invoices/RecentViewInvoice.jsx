@@ -197,13 +197,13 @@ const RecentViewInvoice = ({ type = "purchase" }) => {
 
 
   return (
-    <div className="page-wrapper">
-      <div className="content">
+  
+      <div className="p-4" style={{overflow:"auto", height:"100vh"}}>
         <div
           style={{
             fontFamily: "Inter, sans-serif",
             background: "#F9F9F9",
-            minHeight: "100vh",
+          
           }}
         >
           {/* Main Container */}
@@ -405,8 +405,8 @@ const RecentViewInvoice = ({ type = "purchase" }) => {
               {/* LEFT — Original Invoice */}
               <div
                 style={{
-                  width: "600px",
-                  maxHeight: "600px",
+                  // width: "600px",
+                  // maxHeight: "600px",
                   // overflowY: "scroll",
                   // scrollbarWidth: "none",
                   border: "1px solid #EAEAEA",
@@ -438,8 +438,8 @@ const RecentViewInvoice = ({ type = "purchase" }) => {
               {/* RIGHT — Zoomed Preview */}
               <div
                 style={{
-                  width: "485px",
-                  height: "600px",
+                  // width: "485px",
+                  // height: "600px",
                   border: "1px solid #EAEAEA",
                   background: "#fff",
                   position: "relative",
@@ -485,7 +485,7 @@ const RecentViewInvoice = ({ type = "purchase" }) => {
           </div>
         </div>
       </div>
-    </div>
+   
   );
 };
 

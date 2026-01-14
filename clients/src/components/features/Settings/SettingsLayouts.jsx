@@ -162,7 +162,7 @@ const SettingsLayouts = () => {
                   Taxes & GST
                 </NavLink>
               </li>
-              <li className="settings-siber-menu-link">
+              {/* <li className="settings-siber-menu-link">
                 <NavLink
                   to="pricing&planing"
                   className={({ isActive }) => (isActive ? "active-link" : "")}
@@ -175,8 +175,8 @@ const SettingsLayouts = () => {
                 >
                   Pricing & Plans
                 </NavLink>
-              </li>
-              <li className="settings-siber-menu-link">
+              </li> */}
+              {/* <li className="settings-siber-menu-link">
                 <NavLink
                   to="supports"
                   className={({ isActive }) => (isActive ? "active-link" : "")}
@@ -190,7 +190,7 @@ const SettingsLayouts = () => {
                   Supports
                 </NavLink>
 
-              </li>
+              </li> */}
             </ul>
           </div>
           {/* Settings-right-content */}
