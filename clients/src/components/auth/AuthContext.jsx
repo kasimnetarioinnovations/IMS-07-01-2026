@@ -8,20 +8,33 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [authReady, setAuthReady] = useState(false);
 
+  useEffect(() => {
+    try {
+      const cached = localStorage.getItem("user");
+      if (cached && !user) {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed._id) {
+          setUser(parsed);
+          try {
+            window.__authGraceUntil = Date.now() + 3000;
+          } catch (e) { void e; }
+        }
+      }
+    } catch (e) { void e; }
+  }, []);
   const logout = async () => {
     setUser(null);
     try {
       await api.post("/api/auth/logout");
-    } catch { }
+    } catch (e) { void e; }
   };
 
   const fetchUser = async () => {
     try {
       const res = await api.get("/api/auth/me");
       setUser(res.data.user);
-    } catch (err) {
-      // 🔕 DO NOT clear user here
-      // token may not be ready yet (OTP race)
+    } catch (e) {
+      void e;
     } finally {
       setLoading(false);
     }
@@ -55,6 +68,14 @@ export const AuthProvider = ({ children }) => {
     fetchUser().finally(() => {
       setAuthReady(true);
     });
+  }, [user]);
+  
+  useEffect(() => {
+    if (user) {
+      try {
+        window.__authGraceUntil = Date.now() + 3000;
+      } catch (e) { void e; }
+    }
   }, [user]);
 
   return (

@@ -13,6 +13,12 @@ api.interceptors.response.use(
      if (error.config?.skipAuthInterceptor) {
       return Promise.reject(error);
     }
+    try {
+      const grace = window.__authGraceUntil || 0;
+      if (Date.now() < grace) {
+        return Promise.reject(error);
+      }
+    } catch (e) { void e; }
     if (error.response?.status === 401) {
       const data = error.response.data;
       const message = data?.message?.toLowerCase() || "";
@@ -21,18 +27,32 @@ api.interceptors.response.use(
         message.includes("inactive") ||
         message.includes("deactivated") ||
         data?.logout === true;
-      
-      if (error.response?.data?.logout === true) {
-  window.location.href = "/login";
-}
+      // Respect grace window even for forced logout flags
+      try {
+        const grace = window.__authGraceUntil || 0;
+        if (Date.now() < grace) {
+          return Promise.reject(error);
+        }
+      } catch (e) { void e; }
 
-     // ✅ ONLY SHOW MESSAGE (NO REDIRECT)
-      // Check if we are already on the login page to avoid "Session expired" loop/spam
-      const isLoginPage = window.location.pathname === "/login" || window.location.pathname === "/";
+      const pathname = window.location.pathname || "";
+      const isAuthPage =
+        pathname === "/login" ||
+        pathname === "/" ||
+        pathname === "/otp" ||
+        pathname === "/forgot-password" ||
+        pathname.startsWith("/reset-password");
 
+      // Only hard-redirect when backend explicitly requests logout and not on auth pages
+      if (data?.logout === true && !isAuthPage) {
+        window.location.href = "/login";
+        return Promise.reject(error);
+      }
+
+      // Otherwise, show appropriate message (avoid spam on auth pages)
       if (isInactive) {
         toast.error("You are currently set Inactive by admin. Please contact admin.");
-      } else if (!isLoginPage) {
+      } else if (!isAuthPage) {
         toast.error("Your session has expired. Please log in again.");
       }
     }

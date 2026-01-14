@@ -15,9 +15,9 @@ const token = localStorage.getItem("token");
       setLoading(true);
       setError(null);
       try {
-        // Adjust the endpoint if your backend route is different!
-        const res = await api.get('/api/sales/returns');
-        setReturns(res.data.returns || []);
+        const res = await api.get('/api/credit-notes/all');
+        const notes = Array.isArray(res.data?.data) ? res.data.data : [];
+        setReturns(notes);
       } catch (err) {
         setError('Failed to fetch sale returns');
       }
@@ -109,20 +109,20 @@ const token = localStorage.getItem("token");
                             <span className="checkmarks" />
                           </label>
                         </td>
-                        <td>
-                          <div className="d-flex align-items-center">
-                            <a href="" className="avatar avatar-md me-2">
-                              <img
-                                src={ret.products?.[0]?.productImage || "assets/img/products/pos-product-07.svg"}
+                      <td>
+                        <div className="d-flex align-items-center">
+                          <a href="" className="avatar avatar-md me-2">
+                            <img
+                                src={ret.products?.[0]?.productId?.images?.[0] || "assets/img/products/pos-product-07.svg"}
                                 alt="product"
                               />
-                            </a>
-                            <a href="">
-                              {ret.products?.map(p => p.productName).join(', ') || 'N/A'}
+                          </a>
+                          <a href="">
+                              {ret.products?.map(p => p.productId?.productName).join(', ') || 'N/A'}
                             </a>
                           </div>
                         </td>
-                        <td>{ret.returnDate ? new Date(ret.returnDate).toLocaleDateString() : ''}</td>
+                        <td>{ret.creditNoteDate ? new Date(ret.creditNoteDate).toLocaleDateString() : ''}</td>
                         <td>
                           <div className="d-flex align-items-center">
                             <a href="" className="avatar avatar-md me-2">
@@ -139,7 +139,7 @@ const token = localStorage.getItem("token");
                             {ret.status || 'Received'}
                           </span>
                         </td>
-                        <td>{ret.totalAmount ? `₹${ret.totalAmount}` : '₹0'}</td>
+                        <td>{(ret.total ?? ret.amount ?? ret.grandTotal) ? `₹${ret.total ?? ret.amount ?? ret.grandTotal}` : '₹0'}</td>
                         <td>{ret.paidAmount ? `₹${ret.paidAmount}` : '₹0'}</td>
                         <td>{ret.dueAmount ? `₹${ret.dueAmount}` : '₹0'}</td>
                         <td>
