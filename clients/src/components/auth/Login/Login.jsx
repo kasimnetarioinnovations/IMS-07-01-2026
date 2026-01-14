@@ -138,12 +138,32 @@ const Login = () => {
       // const userId = res.data?.user?._id || res.data?.user?.id;
       // localStorage.setItem("userId", normalizedUser._id)
 
+      try {
+        const me = await api.get("/api/auth/me", { withCredentials: true, skipAuthInterceptor: true });
+        const hydrated = me?.data?.user || normalizedUser;
+        if (hydrated) {
+          setUser(hydrated);
+          try {
+            localStorage.setItem("user", JSON.stringify(hydrated));
+            Cookies.set("userId", hydrated._id || hydrated.id, { expires: 7, path: "/" });
+            if (hydrated.email) {
+              Cookies.set("userEmail", hydrated.email, { expires: 7, path: "/" });
+            }
+            if (hydrated.name) {
+              Cookies.set("userName", hydrated.name, { expires: 7, path: "/" });
+            }
+          } catch (e) { void e; }
+          try {
+            window.__authGraceUntil = Date.now() + 3000;
+          } catch (e) { void e; }
+        }
+      } catch (e) { void e; }
+
       setTimeout(() => {
-  logDeviceSession(normalizedUser._id);
-}, 500);
+        logDeviceSession(normalizedUser._id);
+      }, 500);
 
       toast.success("Login Successful!");
-      setUser(normalizedUser);
       navigate("/dashboard");
     } catch (error) {
       console.error("Login Error:", error);

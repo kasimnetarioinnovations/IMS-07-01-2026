@@ -6,7 +6,7 @@ import api from "../../../../pages/config/axiosInstance";
 import { useAuth } from "../../../auth/AuthContext";
 
 const EmailVerification = ({ isOpen, onClose }) => {
-  const {users} = useAuth();
+  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
@@ -46,7 +46,7 @@ const EmailVerification = ({ isOpen, onClose }) => {
   const handleSubmit = async () => {
     try {
       // const userData = JSON.parse(localStorage.getItem("user"));
-      const userData = users
+      const userData = user
       const currentEmail = userData.email;
       const otpString = otp.join("");
       await api.post("/api/email/verify-otp", {

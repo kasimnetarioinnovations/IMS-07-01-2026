@@ -6,6 +6,7 @@ const cloudinary = require("../utils/cloudinary/cloudinary");
 const Supplier = require('../models/supplierModel');
 const DebitNote  = require('../models/debitNoteModel');
 const {createAuditLog } = require("../utils/auditLogger")
+const PurchaseReturn = require('../models/purchaseReturnModels');
 
 function parseDDMMYYYY(dateStr) {
     const [day, month, year] = dateStr.split('/');
@@ -876,7 +877,7 @@ exports.getAllDebitNotes = async (req, res) => {
  
 exports.getAllReturns = async (req, res) => {
     try {
-        const returns = await ProductReturn.find()
+        const returns = await PurchaseReturn.find()
             .populate('originalPurchase', 'referenceNumber')
             .populate('supplier', 'firstName lastName')
             .populate('returnedProducts.product', 'productName');

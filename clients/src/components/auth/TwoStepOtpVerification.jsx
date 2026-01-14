@@ -106,19 +106,26 @@ const OtpVerification = () => {
         { withCredentials: true });
 
       if (res?.data?.user) {
-        toast.success("OTP Verified Successfully");
-        setUser(res.data.user);
-        console.log("Cookies after OTP:", {
-          token: Cookies.get("token"),
-          twoFAToken: Cookies.get("twoFAToken"),
-          userId: Cookies.get("userId"),
-          allCookies: document.cookie
-        });
-
-        await logDeviceSession(res.data?.user?._id);
-        setTimeout(() => {
-          navigate("/dashboard", { replace: true });
-        }, 50);
+        toast.success("OTP verified. Login again to continue.");
+        try {
+          setUser(null);
+        } catch (e) { void e; }
+        try {
+          localStorage.removeItem("user");
+        } catch (e) { void e; }
+        try {
+          Cookies.remove("otpPending", { path: "/" });
+          Cookies.remove("otpEmail", { path: "/" });
+          Cookies.remove("twoFAToken", { path: "/" });
+          Cookies.remove("token", { path: "/" });
+          Cookies.remove("userId", { path: "/" });
+          Cookies.remove("userEmail", { path: "/" });
+          Cookies.remove("userName", { path: "/" });
+        } catch (e) { void e; }
+        try {
+          window.__authGraceUntil = Date.now() + 3000;
+        } catch (e) { void e; }
+        navigate("/login", { replace: true });
       } else {
         toast.error("Invalid OTP");
         setOtp(new Array(6).fill(""));
@@ -144,7 +151,11 @@ const OtpVerification = () => {
       async (position) => {
         const { latitude, longitude } = position.coords;
         try {
-          await api.post(`/api/auth/log-device`, { userId, latitude, longitude });
+          await api.post(
+            `/api/auth/log-device`,
+            { userId, latitude, longitude },
+            { withCredentials: true, skipAuthInterceptor: true }
+          );
         } catch (err) {
           console.error("Device log failed:", err);
         }

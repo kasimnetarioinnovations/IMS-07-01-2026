@@ -258,31 +258,31 @@ const trackPurchaseOrder = [
     supplier: "WeaveX Fabrics",
     deliverIn: "23 Days",
     status: "Processing",
-    total: "₹ 1,485.22/-",
+    total: "₹1,485.22/-",
   },
   {
     supplier: "WeaveX Fabrics",
     deliverIn: "23 Days",
     status: "Delivered",
-    total: "₹ 1,485.22/-",
+    total: "₹1,485.22/-",
   },
   {
     supplier: "WeaveX Fabrics",
     deliverIn: "23 Days",
     status: "Cancelled",
-    total: "₹ 1,485.22/-",
+    total: "₹1,485.22/-",
   },
   {
     supplier: "WeaveX Fabrics",
     deliverIn: "23 Days",
     status: "Processing",
-    total: "₹ 1,485.22/-",
+    total: "₹1,485.22/-",
   },
   {
     supplier: "WeaveX Fabrics",
     deliverIn: "23 Days",
     status: "Cancelled",
-    total: "₹ 1,485.22/-",
+    total: "₹1,485.22/-",
   },
 ];
 const recentOrder = [
@@ -292,7 +292,7 @@ const recentOrder = [
     noOfItems: "23",
     status: "Pending",
     paymentMethod: "UPI",
-    total: "₹ 1,485.22/-",
+    total: "₹1,485.22/-",
   },
   {
     orderId: "WeaveX Fabrics",
@@ -300,7 +300,7 @@ const recentOrder = [
     noOfItems: "23",
     status: "Pending",
     paymentMethod: "UPI",
-    total: "₹ 1,485.22/-",
+    total: "₹1,485.22/-",
   },
   {
     orderId: "WeaveX Fabrics",
@@ -308,7 +308,7 @@ const recentOrder = [
     noOfItems: "23",
     status: "Pending",
     paymentMethod: "UPI",
-    total: "₹ 1,485.22/-",
+    total: "₹1,485.22/-",
   },
   {
     orderId: "WeaveX Fabrics",
@@ -316,7 +316,7 @@ const recentOrder = [
     noOfItems: "23",
     status: "Success",
     paymentMethod: "UPI",
-    total: "₹ 1,485.22/-",
+    total: "₹1,485.22/-",
   },
   {
     orderId: "WeaveX Fabrics",
@@ -324,12 +324,12 @@ const recentOrder = [
     noOfItems: "23",
     status: "Pending",
     paymentMethod: "UPI",
-    total: "₹ 1,485.22/-",
+    total: "₹1,485.22/-",
   },
 ];
 
 const AdminDashboard = () => {
-  const { users } = useAuth()
+  const { user } = useAuth()
   const { t } = useTranslation();
   //transaction
   const navigate = useNavigate();
@@ -337,9 +337,9 @@ const AdminDashboard = () => {
   const [recentPurchases, setRecentPurchases] = useState([]);
   const [activeTransactionTab, setActiveTransactionTab] = useState("sales");
   // const [recentPurchases, setRecentPurchases] = useState([]);
-  const [user, setUser] = useState(null);
+  // const [user, setUser] = useState(null);
   const [notificationCount, setNotificationCount] = useState(0);
-  const userObj = users
+  const userObj = user
   const userId = userObj?.id || userObj?._id; // Handle both id and _id
 
 
@@ -713,16 +713,17 @@ const AdminDashboard = () => {
       });
   }, [])
   useEffect(() => {
-    // Fetch purchase returns
-    api.get("/api/purchase-returns?limit=1000000")
+    api.get("/api/purchases/return/all")
       .then((res) => {
-        const data = res.data;
-        const returns = data.returns || [];
+        const returns = Array.isArray(res.data?.returns) ? res.data.returns : [];
         const totalReturnValue = returns.reduce(
-          (acc, ret) => acc + (ret.grandTotal || 0),
+          (acc, ret) => acc + (Number(ret.grandTotal) || 0),
           0
         );
         setTotalPurchaseReturnValue(totalReturnValue);
+      })
+      .catch(() => {
+        setTotalPurchaseReturnValue(0);
       });
   }, [])
 
@@ -811,16 +812,13 @@ const AdminDashboard = () => {
   }, [])
 
   useEffect(() => {
-    // Fetch sales return value
-    api.get("/api/sales-returns?limit=1000000")
+    api.get("/api/sales/dashboard/stats")
       .then((res) => {
-        const data = res.data;
-        const returns = data.returns || [];
-        const totalReturnValue = returns.reduce(
-          (acc, ret) => acc + (ret.grandTotal || 0),
-          0
-        );
+        const totalReturnValue = Number(res.data?.totalReturnAmount) || 0;
         setTotalSalesReturnValue(totalReturnValue);
+      })
+      .catch(() => {
+        setTotalSalesReturnValue(0);
       });
   }, [])
 
@@ -899,16 +897,14 @@ const AdminDashboard = () => {
 
   // Example usage for sales returns (match route to backend)
   const fetchSalesReturns = async () => {
-    const url = `${BASE_URL}/api/sales/returns`; // Ensure this matches your backend route
-    const data = await fetchData(url);
-    setAllSalesReturns(Array.isArray(data) ? data : []);
+    const data = await fetchData(`${BASE_URL}/api/sales/dashboard/stats`);
+    setAllSalesReturns([]);
   };
 
   // Example usage for purchase returns (match route to backend)
   const fetchPurchaseReturns = async () => {
-    const url = `${BASE_URL}/api/purchases/returns`; // Ensure this matches your backend route
-    const data = await fetchData(url);
-    setAllPurchaseReturns(Array.isArray(data) ? data : []);
+    const data = await fetchData(`${BASE_URL}/api/purchases/return/all`);
+    setAllPurchaseReturns(Array.isArray(data?.returns) ? data.returns : []);
   };
 
   // ...existing code...
@@ -1749,7 +1745,8 @@ const AdminDashboard = () => {
       <div className="graph-main-dashboard" style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         {/* Graph Container */}
         <div className="graph-container">
-          {/* Retail vs Wholesale Sales */}
+
+          {/* Retail vs Wholesale Sales 
           <div className="graph-1-dash" style={styles.Graphcard}>
 
             <div style={{ objectFit: "content", width: "100$" }}>
@@ -1873,8 +1870,9 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-          </div>
-          {/* Sales Report */}
+          </div>*/}
+
+          {/* Sales Report 
           <div className="graph-2-dash" style={styles.Graphcard}>
 
             <div style={{ objectFit: "content", width: "100%" }}>
@@ -1997,6 +1995,113 @@ const AdminDashboard = () => {
               </div>
             </div>
 
+          </div>*/}
+
+          {/* Recent Orders */}
+          <div className="graph-7-dash" style={styles.Graphcard}>
+            <div style={{ borderBottom: "1px solid #C2C9D1" }}>
+              <div style={styles.Graphheader}>
+                <span style={styles.Graphtitle}>
+                  Recent Orders <img src={i_icon} alt="i_icon" />
+                </span>
+                <span style={styles.Graphbadge}>+20%</span>
+              </div>
+              <p style={styles.Graphsubtext}>Last 7 days</p>
+            </div>
+            <div className="dashboard-card-graph-scroll" style={{ borderBottom: "1px solid #C2C9D1", height: "300px", }}>
+              <table style={{ fontFamily: "Inter", width: "100%", height: "200px" }}>
+                <thead style={{ backgroundColor: "#F3F8FB" }}>
+                  <tr style={{ color: "#727681", fontSize: "14px" }}>
+                    <th style={{ padding: "10px 16px", fontWeight: "400" }}>
+                      Order ID
+                    </th>
+                    <th style={{ padding: "10px 16px", fontWeight: "400" }}>
+                      Customer
+                    </th>
+                    <th style={{ padding: "10px 16px", fontWeight: "400" }}>
+                      No. Of Items
+                    </th>
+                    <th style={{ padding: "10px 16px", fontWeight: "400" }}>
+                      Status
+                    </th>
+                    <th style={{ padding: "10px 16px", fontWeight: "400" }}>
+                      Payment Method
+                    </th>
+                    <th style={{ padding: "10px 16px", fontWeight: "400" }}>
+                      Total
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentOrder.map((item, idx) => (
+                    <tr key={idx} style={{ fontSize: "14px" }}>
+                      <td style={{ padding: "10px 16px", fontWeight: "400" }}>
+                        {item.orderId}
+                      </td>
+                      <td style={{ padding: "10px 16px", fontWeight: "400" }}>
+                        {item.customer}
+                      </td>
+                      <td style={{ padding: "10px 16px", fontWeight: "400" }}>
+                        {item.noOfItems}
+                      </td>
+
+                      <td style={{ padding: "10px 16px", fontWeight: "400" }}>
+                        <span
+                          style={{
+                            // display: "inline-flex",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            gap: "6px",
+                            textAlign: "center",
+                            padding: "1px 6px",
+                            borderRadius: "50px",
+                            backgroundColor:
+                              item.status === "Pending"
+                                ? "#FFF2D5"
+                                : item.status === "Success"
+                                  ? "#D4F7C7"
+                                  : "",
+
+                            color:
+                              item.status === "Pending"
+                                ? "#CF4F00"
+                                : item.status === "Success"
+                                  ? "#01774B"
+                                  : "",
+                          }}
+                        >
+                          <span style={{ fontSize: "12px" }}>
+                            {item.status === "Pending"
+                              ? "!"
+                              : item.status === "Success"
+                                ? "✓"
+                                : ""}
+                          </span>
+
+                          {item.status}
+                        </span>
+                      </td>
+                      <td style={{ padding: "10px 16px", fontWeight: "400" }}>
+                        {item.paymentMethod}
+                      </td>
+                      <td style={{ padding: "10px 16px", fontWeight: "400" }}>
+                        {item.total}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div style={styles.Graphfooter}>
+              <a href="/" style={styles.Graphlink}>
+                View All
+              </a>
+              <span style={styles.Graphupdate}>
+                <img src={time} alt="time" />
+                Updated 30 mins ago
+              </span>
+            </div>
           </div>
 
           {/*ims-advertisment-app-banner*/}
@@ -2209,7 +2314,8 @@ const AdminDashboard = () => {
               </div>
             </div>
           </div>
-          {/* Daily Earning */}
+
+          {/* Daily Earning 
           <div className="graph-5-dash" style={styles.Graphcard}>
             <div style={{ objectFit: "content", width: "100$" }}>
               <div style={{ borderBottom: "1px solid #C2C9D1" }}>
@@ -2331,7 +2437,8 @@ const AdminDashboard = () => {
                 </span>
               </div>
             </div>
-          </div>
+          </div>*/}
+
           {/* Track Purchase Order */}
           <div className="graph-6-dash" style={styles.Graphcard}>
             <div style={{ borderBottom: "1px solid #C2C9D1" }}>
@@ -2435,7 +2542,7 @@ const AdminDashboard = () => {
         </div>
         {/* graph container three */}
         <div className="graph-container-three">
-          {/* Recent Orders */}
+          {/* Recent Orders 
           <div className="graph-7-dash" style={styles.Graphcardrecentorders}>
             <div style={{ borderBottom: "1px solid #C2C9D1" }}>
               <div style={styles.Graphheader}>
@@ -2540,8 +2647,9 @@ const AdminDashboard = () => {
                 Updated 30 mins ago
               </span>
             </div>
-          </div>
-          {/* New Customer Vs Returning Customer */}
+          </div>*/}
+
+          {/* New Customer Vs Returning Customer 
           <div className="graph-8-dash" style={styles.Graphcard}>
             <div style={{ objectFit: "content", width: "100%" }}>
               <div style={{ borderBottom: "1px solid #C2C9D1" }}>
@@ -2663,7 +2771,7 @@ const AdminDashboard = () => {
                 </span>
               </div>
             </div>
-          </div>
+          </div>*/}
         </div>
       </div>
     </div>

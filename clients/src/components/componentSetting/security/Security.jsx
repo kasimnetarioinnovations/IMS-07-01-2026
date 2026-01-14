@@ -67,7 +67,7 @@ const Security = () => {
       }
     };
     fetchUser();
-  }, []);
+  }, [user]);
 
   // show verifyemail modal state
   const [showOTPModal, setShowOTPModal] = useState(false);
