@@ -6,6 +6,11 @@ const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
 const companysettingSchema = new mongoose.Schema({
   // Basic Information
   companyName: { type: String, required: true },
+  companyTitle: {
+  type: String,
+  default: "",
+},
+
   companyemail: { type: String, required: true },
   companyphone: { type: String, required: true },
   website: { type: String },

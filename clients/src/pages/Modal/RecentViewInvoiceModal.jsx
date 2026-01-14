@@ -94,7 +94,7 @@ function RecentViewInvoiceModal({ invoiceData, supplierData, customerData, type 
     return (
         <div
             style={{
-                height: "calc(100vh - 70px)",
+                height: "100vh",
                 overflow: 'auto',
             }}>
             <div style={{

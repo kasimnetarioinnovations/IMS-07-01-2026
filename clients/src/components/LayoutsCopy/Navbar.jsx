@@ -224,13 +224,13 @@ const Navbar = () => {
             color="rgb(31, 127, 255)"
           />
         </div>
-        <div className="nav-logo">
+        {/* <div className="nav-logo">
           <img
             src={nav_logo}
             alt="nav_logo"
             style={{ width: "100%", objectFit: "contain" }}
           />
-        </div>
+        </div> */}
 
         <div
           className="nav-search-input border-hover d-flex align-items-center gap-1"

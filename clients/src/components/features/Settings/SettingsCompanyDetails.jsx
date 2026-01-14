@@ -9,6 +9,7 @@ const SettingsCompanyDetails = () => {
   // State for form data
   const [formData, setFormData] = useState({
     companyName: "",
+      companyTitle: "", 
     companyPhone: "",
     companyEmail: "",
     gstin: "",
@@ -124,6 +125,7 @@ const SettingsCompanyDetails = () => {
     if (existingProfile) {
       // Use existing profile data for required fields
       formDataToSend.append("companyName", existingProfile.companyName || "");
+      formDataToSend.append("companyTitle", formData.companyTitle); 
       formDataToSend.append("companyemail", existingProfile.companyemail || "");
       formDataToSend.append("companyphone", existingProfile.companyphone || "");
       formDataToSend.append("companyaddress", existingProfile.companyaddress || "");
@@ -179,6 +181,7 @@ const SettingsCompanyDetails = () => {
         // Map backend fields to frontend form data
         setFormData({
           companyName: profile.companyName || "",
+            companyTitle: profile.companyTitle || "",
           companyPhone: profile.companyphone || "",
           companyEmail: profile.companyemail || "",
           gstin: profile.gstin || "",
@@ -220,6 +223,30 @@ const SettingsCompanyDetails = () => {
     fetchCompanyProfile();
   }, []);
 
+  // 🔥 COMPANY TITLE → BROWSER TAB (FIXED PLACE)
+useEffect(() => {
+  document.title =
+    formData.companyTitle?.trim() ||
+    formData.companyName?.trim() ||
+    "Company Settings";
+}, [formData.companyTitle, formData.companyName]);
+
+// ❌ ISKE BAAD KOI useEffect NAHI
+if (isLoading) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100vh",
+      }}
+    >
+      <span>Loading company details...</span>
+    </div>
+  );
+}
+
   // Handle form submission for all fields
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -232,6 +259,7 @@ const SettingsCompanyDetails = () => {
 
       // Add all form fields
       formDataToSend.append("companyName", formData.companyName);
+      formDataToSend.append("companyTitle", formData.companyTitle);
       formDataToSend.append("companyemail", formData.companyEmail);
       formDataToSend.append("companyphone", formData.companyPhone);
       formDataToSend.append("companywebsite", formData.website);
@@ -317,6 +345,7 @@ const SettingsCompanyDetails = () => {
       </div>
     );
   }
+
 
   return (
     <div className="">
@@ -451,6 +480,47 @@ const SettingsCompanyDetails = () => {
                 </div>
               </div>
             </div>
+
+               {/* Company Title */}
+             <div style={{ display: "flex", alignItems: "center", gap: "20px", justifyContent: "space-between" }}>
+              <label style={{ width: "180px", color: "#3D3D3D", fontSize: "14px" }}>
+                Company Title<span style={{ color: "red" }}>*</span> :
+              </label>
+
+              <div style={{ flex: 1, maxWidth: "792px" }}>
+                <div
+                  style={{
+                    height: "40px",
+                    padding: "8px 12px",
+                    background: "white",
+                    borderRadius: "8px",
+                    border: "1px solid #A2A8B8",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <input
+                    type="text"
+                    placeholder="Enter Company Title"
+                     value={formData.companyTitle}
+    onChange={(e) =>
+      setFormData((prev) => ({
+        ...prev,
+        companyTitle: e.target.value,
+      }))
+    }
+                    style={{
+                      border: "none",
+                      outline: "none",
+                      flex: 1,
+                      fontSize: "14px",
+                      color: "#0E101A",
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
 
             {/* Company Phone */}
             <div style={{ display: "flex", alignItems: "center", gap: "20px", justifyContent: "space-between" }}>

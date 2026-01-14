@@ -32,6 +32,40 @@ const Sidebar = () => {
      const userObj = authUser;
   const userId = authUser?._id
   const { user } = useAuth();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [companyImages, setCompanyImages] = useState(null);
+     // fetch company details
+   useEffect(() => {
+     const fetchCompanyDetails = async () => {
+       try {
+         const res = await api.get("/api/companyprofile/get", {
+           withCredentials: true
+         });
+         if (res.status === 200) {
+           setCompanyImages(res.data.data);
+           // console.log("res.data", res.data.data)
+         }
+       } catch (error) {
+         toast.error("Unable to find company details", {
+           position: "top-center",
+        });
+      }
+    };
+     fetchCompanyDetails();
+   }, []);
+
+   useEffect(() => {
+     if (companyImages?.companyFavicon) {
+       let favicon = document.querySelector("link[rel*='icon']");
+       if (!favicon) {
+        favicon = document.createElement("link");
+        favicon.rel = "icon";
+        document.head.appendChild(favicon);
+      }
+      favicon.type = "image/png";
+      favicon.href = companyImages.companyFavicon;
+     }
+  }, [companyImages]);
 
    const navigate = useNavigate();
 
@@ -254,14 +288,21 @@ useEffect(() => {
         >
           <FaAnglesLeft className="close-icon" size={22} color="#52adfa" />
         </div>
-
-        <div className="sidebar-logo d-flex justify-content-center pb-4">
+            {companyImages && (
+        <div className="sidebar-logoss d-flex justify-content-center pb-1" style={{display:"flex", justifyContent:"center"}}>
           <img
-            src={munc_logo}
-            alt="munc_logo"
-            style={{ objectFit: "contain", width: "100%", maxWidth: "150px" }}
+            src={
+                    isDarkMode
+                      ? companyImages.companyDarkLogo
+                      : companyImages.companyLogo
+                  }
+            alt="company-lpgo"
+            style={{ objectFit:"contain", maxHeight:"70px"}}
           />
+          
         </div>
+            )}
+            
 
         {/* Siebar Menu Link */}
         <div className="sidebar-menu-link" >

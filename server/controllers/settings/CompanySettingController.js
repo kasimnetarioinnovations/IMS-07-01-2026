@@ -4,6 +4,7 @@ const sendCompanyProfile = async (req, res) => {
   try {
     const {
       companyName,
+      companyTitle,
       companyemail,
       companyphone,
       companyfax,
@@ -63,6 +64,7 @@ const sendCompanyProfile = async (req, res) => {
     const updatedData = {
       // Basic Information
       companyName,
+      companyTitle: req.body.companyTitle || "",
       companyemail,
       companyphone,
       website: website || req.body.companywebsite, // Support both field names
@@ -156,6 +158,7 @@ const getCompanyProfile = async (req, res) => {
     const formattedProfile = {
       // Basic Information
       companyName: companyProfile.companyName,
+       companyTitle: companyProfile.companyTitle,
       companyemail: companyProfile.companyemail,
       companyphone: companyProfile.companyphone,
       website: companyProfile.website,
