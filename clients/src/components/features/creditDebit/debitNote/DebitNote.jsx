@@ -15,6 +15,7 @@ import Pagination from "../../../../components/Pagination";
 import api from "../../../../pages/config/axiosInstance";
 import { toast } from "react-toastify";
 import ConfirmDeleteModal from "../../../ConfirmDelete";
+import { HiOutlineDotsHorizontal } from "react-icons/hi";
 
 /* ---------------- STATUS STYLES ---------------- */
 const statusStyles = {
@@ -120,7 +121,22 @@ export default function DebitNoteList() {
 
   const menuRef = useRef(null);
   const navigate = useNavigate();
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0 });
+  const [openUpwards, setOpenUpwards] = useState(false);
+
+  const [activeRow, setActiveRow] = useState(null);
+
+  const toggleRow = (idx) => {
+    const newOpen = openRow === idx ? null : idx;
+    setOpenRow(newOpen);
+    if (newOpen === null && activeRow === idx) {
+      setActiveRow(null);
+    } else if (newOpen !== null) {
+      setActiveRow(idx);
+    }
+  };
 
   /* ---------------- FETCH ALL DEBIT NOTES ---------------- */
   const fetchDebitNotes = async () => {
@@ -373,8 +389,8 @@ export default function DebitNoteList() {
       selectedNotesForExport.length > 0
         ? `${selectedNotesForExport.length} selected debit notes exported`
         : selectAllForExport
-        ? `Page ${currentPage} debit notes exported`
-        : `All ${filteredDebitNotes.length} debit notes exported`
+          ? `Page ${currentPage} debit notes exported`
+          : `All ${filteredDebitNotes.length} debit notes exported`
     );
   };
 
@@ -452,10 +468,10 @@ export default function DebitNoteList() {
   }, []);
 
   const cardStyle = {
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 6,
+    boxShadow: "rgba(0, 0, 0, 0.1)",
+    padding: 0,
     background: "white",
-    marginTop: 20,
   };
 
   return (
@@ -482,12 +498,23 @@ export default function DebitNoteList() {
         style={{
           backgroundColor: "white",
           borderRadius: "16px",
-          padding: "20px",
-          overflowX:"auto"
+          padding: "16px",
+          overflowX: "hidden",
+          overflowY: "hidden",
+          display: "flex",
+          flexDirection: "column",
+          gap: 16,
         }}
       >
-        <div className="d-flex">
-          <div className="col-12 col-md-6 d-flex align-items-center">
+        <div
+          className="d-flex"
+          style={{
+            gap: "20px",
+            justifyContent: "space-between",
+            width: "100%",
+          }}
+        >
+          <div className="d-flex align-items-center" style={{ width: "50%" }}>
             <div
               style={{
                 background: "#F3F8FB",
@@ -529,179 +556,179 @@ export default function DebitNoteList() {
               })}
             </div>
           </div>
-          <div className="col-12 col-md-6 d-flex align-items-center justify-content-end">
-            <div className="d-flex align-items-center gap-3">
-              {/* Search Box */}
-              <div
-                className="d-flex align-items-center search-box"
+          <div className="col-12 col-md-6 d-flex align-items-center justify-content-end" style={{
+            display: "flex",
+            justifyContent: "end",
+            gap: "24px",
+            height: "33px",
+            width: "50%",
+          }}>
+            {/* Search Box */}
+            <div
+              style={{
+                width: "50%",
+                position: "relative",
+                padding: "4px 8px 4px 20px",
+                display: "flex",
+                borderRadius: 8,
+                alignItems: "center",
+                background: "#FCFCFC",
+                border: "1px solid #EAEAEA",
+                gap: "5px",
+                color: "rgba(19.75, 25.29, 61.30, 0.40)",
+              }}
+            >
+              <FiSearch style={{ color: "#14193D66" }} />
+              <input
+                type="search"
+                placeholder="Search by supplier name or invoice number"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 style={{
+                  width: "100%",
+                  border: "none",
+                  outline: "none",
+                  fontSize: 14,
                   background: "#FCFCFC",
-                  padding: "4px 20px",
-                  borderRadius: 8,
-                  border: "1px solid #EAEAEA",
-                  minHeight: 32,
+                  color: "rgba(19.75, 25.29, 61.30, 0.40)",
                 }}
-              >
-                <FiSearch style={{ color: "#14193D66" }} />
-                <input
-                  type="search"
-                  placeholder="Search by supplier name or invoice number"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  style={{
-                    border: "none",
-                    outline: "none",
-                    width: "100%",
-                    backgroundColor: "transparent",
-                    fontSize: "14px",
-                    padding: "0 10px",
-                  }}
-                />
-              </div>
-
-              {/* Export Button - Simple single button */}
-              <button
-                className="btn"
-                style={{
-                  background: "#FCFCFC",
-                  border: "1px solid #EAEAEA",
-                  borderRadius: 8,
-                  padding: "4px 14px",
-                  fontSize: "14px",
-                  color: "#0E101A",
-                  height: "32px",
-                  display: "flex",
-                  alignItems: "center",
-                  fontWeight: 500,
-                }}
-                onClick={handleExportPDF}
-              >
-                <TbFileExport
-                  style={{ color: "#14193D66", marginRight: "10px" }}
-                />
-                Export PDF
-              </button>
+              />
             </div>
+
+            {/* Export Button - Simple single button */}
+            <button
+              className="btn"
+              style={{
+                display: "flex",
+                justifyContent: "flex-start",
+                alignItems: "center",
+                gap: 9,
+                padding: "8px 16px",
+                background: "#FCFCFC",
+                borderRadius: 8,
+                outline: "1px solid #EAEAEA",
+                outlineOffset: "-1px",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "Inter, sans-serif",
+                fontSize: 14,
+                fontWeight: 400,
+                color: "#0E101A",
+                height: "33px",
+                cursor: "pointer",
+              }}
+              onClick={handleExportPDF}
+            >
+              <TbFileExport className="fs-5 text-secondary" />
+              Export
+            </button>
           </div>
         </div>
 
         {/* Table card */}
         <div style={{ ...cardStyle }}>
-          <div className="" style={{overflow:"auto", maxHeight:"calc(100vh - 410px)"}}>
+          <div className="" style={{ maxHeight: "calc(100vh - 410px)", overflowY: 'auto' }}>
             <table
-              className="table align-middle"
-              style={{ fontSize: 14, marginBottom: 0 }}
+              style={{
+                width: "100%",
+                borderSpacing: "0 0px",
+                fontFamily: "Inter",
+              }}
             >
-              <thead>
-                <tr style={{ border: "none" }}>
-                  <th style={{ width: 0, backgroundColor: "#F3F8FB" }}>
-                    <input
-                      type="checkbox"
-                      aria-label="select row"
-                      checked={selectAllForExport}
-                      onChange={handleSelectAllForExport}
-                    />
+              <thead style={{ position: "sticky", top: 0, zIndex: 9 }}>
+                <tr style={{ backgroundColor: "#F3F8FB", textAlign: "left" }}>
+                  <th
+                    style={{
+                      padding: "0px 0px",
+                      color: "#727681",
+                      fontSize: "14px",
+                      fontWeight: 400,
+                    }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "0px", justifyContent: 'center' }}>
+                      <input
+                        type="checkbox"
+                        aria-label="select row"
+                        checked={selectAllForExport}
+                        onChange={handleSelectAllForExport}
+                      />
+                    </div>
                   </th>
                   <th
                     style={{
-                      color: "#727681",
-                      fontWeight: 400,
-                      fontSize: "14px",
-                      lineHeight: "120%",
-                      fontFamily: '"Inter", sans-serif',
-                      backgroundColor: "#F3F8FB",
                       padding: "12px 16px",
+                      color: "#727681",
+                      fontSize: "14px",
+                      fontWeight: 400,
                     }}
                   >
                     Supplier Name
                   </th>
                   <th
                     style={{
-                      color: "#727681",
-                      fontWeight: 400,
-                      fontSize: "14px",
-                      lineHeight: "120%",
-                      fontFamily: '"Inter", sans-serif',
-                      backgroundColor: "#F3F8FB",
                       padding: "12px 16px",
+                      color: "#727681",
+                      fontSize: "14px",
+                      fontWeight: 400,
                     }}
                   >
                     Debit Note No.
                   </th>
                   <th
                     style={{
-                      color: "#727681",
-                      fontWeight: 400,
-                      fontSize: "14px",
-                      lineHeight: "120%",
-                      fontFamily: '"Inter", sans-serif',
-                      backgroundColor: "#F3F8FB",
                       padding: "12px 16px",
+                      color: "#727681",
+                      fontSize: "14px",
+                      fontWeight: 400,
                     }}
                   >
                     Date
                   </th>
                   <th
                     style={{
-                      color: "#727681",
-                      fontWeight: 400,
-                      fontSize: "14px",
-                      lineHeight: "120%",
-                      fontFamily: '"Inter", sans-serif',
-                      backgroundColor: "#F3F8FB",
                       padding: "12px 16px",
+                      color: "#727681",
+                      fontSize: "14px",
+                      fontWeight: 400,
                     }}
                   >
                     Return Type
                   </th>
                   <th
                     style={{
-                      color: "#727681",
-                      fontWeight: 400,
-                      fontSize: "14px",
-                      lineHeight: "120%",
-                      fontFamily: '"Inter", sans-serif',
-                      backgroundColor: "#F3F8FB",
                       padding: "12px 16px",
+                      color: "#727681",
+                      fontSize: "14px",
+                      fontWeight: 400,
                     }}
                   >
                     Payment Mode
                   </th>
                   <th
                     style={{
-                      color: "#727681",
-                      fontWeight: 400,
-                      fontSize: "14px",
-                      lineHeight: "120%",
-                      fontFamily: '"Inter", sans-serif',
-                      backgroundColor: "#F3F8FB",
                       padding: "12px 16px",
+                      color: "#727681",
+                      fontSize: "14px",
+                      fontWeight: 400,
                     }}
                   >
                     Status
                   </th>
                   <th
                     style={{
-                      color: "#727681",
-                      fontWeight: 400,
-                      fontSize: "14px",
-                      lineHeight: "120%",
-                      fontFamily: '"Inter", sans-serif',
-                      backgroundColor: "#F3F8FB",
                       padding: "12px 16px",
+                      color: "#727681",
+                      fontSize: "14px",
+                      fontWeight: 400,
                     }}
                   >
                     Total Amount
                   </th>
                   <th
                     style={{
-                      color: "#727681",
-                      fontWeight: 400,
-                      fontSize: "14px",
-                      lineHeight: "120%",
-                      fontFamily: '"Inter", sans-serif',
-                      backgroundColor: "#F3F8FB",
                       padding: "12px 16px",
+                      color: "#727681",
+                      fontSize: "14px",
+                      fontWeight: 400,
                     }}
                   >
                     Due Amount
@@ -709,14 +736,11 @@ export default function DebitNoteList() {
                   <th
                     className="text-center"
                     style={{
-                      width: 60,
-                      color: "#727681",
-                      fontWeight: 400,
-                      fontSize: "14px",
-                      lineHeight: "120%",
-                      fontFamily: '"Inter", sans-serif',
-                      backgroundColor: "#F3F8FB",
                       padding: "12px 16px",
+                      color: "#727681",
+                      fontSize: "14px",
+                      fontWeight: 400,
+                      fontFamily: '"Inter", sans-serif',
                     }}
                   >
                     Actions
@@ -727,7 +751,12 @@ export default function DebitNoteList() {
                 {loading && (
                   <tr>
                     <td colSpan="10" className="text-center py-4">
-                      Loading...
+                      <div
+                        className="spinner-border text-primary"
+                        role="status"
+                      >
+                        <span className="visually-hidden">Loading...</span>
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -789,48 +818,56 @@ export default function DebitNoteList() {
                       statusStyles[row.status.type] || statusStyles.warning;
 
                     return (
-                      <tr key={row._id} style={{ borderBottom: "none" }}>
+                      <tr key={row._id}
+                        className={`table-hover ${activeRow === idx ? "active-row" : ""}`}
+                        style={{
+                          borderBottom: "1px solid #EAEAEA",
+                          cursor: 'pointer',
+                        }}
+                      >
                         {/* Checkbox */}
                         <td
                           className="text-center"
-                          style={{ padding: "12px 16px" }}
+                          style={{ padding: "4px 16px" }}
                         >
-                          <input
-                            type="checkbox"
-                            aria-label="select row"
-                            checked={selectedNotesForExport.includes(row._id)}
-                            onChange={() => handleCheckboxChange(row._id)}
-                          />
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: 'center' }}>
+                            <input
+                              type="checkbox"
+                              aria-label="select row"
+                              checked={selectedNotesForExport.includes(row._id)}
+                              onChange={() => handleCheckboxChange(row._id)}
+                            />
+                          </div>
                         </td>
 
                         {/* Supplier */}
-                        <td style={{ color: "#0E101A", padding: "12px 16px" }}>
+                        <td style={{ color: "#0E101A", padding: "4px 16px" }}>
                           {row.supplier}
                         </td>
 
                         {/* Invoice */}
-                        <td style={{ padding: "12px 16px" }}>{row.invoice}</td>
+                        <td style={{ padding: "4px 16px" }}>{row.invoice}</td>
 
                         {/* Dates */}
-                        <td style={{ padding: "12px 16px" }}>{row.dates}</td>
+                        <td style={{ padding: "4px 16px" }}>{row.dates}</td>
 
                         {/* Return Type */}
                         <td
                           style={{
                             color: returnTypeStyles[row.returntype]?.color,
-                            padding: "12px 16px",
+                            padding: "4px 16px",
                           }}
                         >
                           {row.returntype}
                         </td>
 
                         {/* Payment Mode */}
-                        <td style={{ padding: "12px 16px" }}>
+                        <td style={{ padding: "4px 16px" }}>
                           {row.paymentmode}
                         </td>
 
                         {/* Status chip */}
-                        <td style={{ padding: "12px 16px" }}>
+                        <td style={{ padding: "4px 16px" }}>
                           <div
                             style={{
                               display: "inline-flex",
@@ -865,24 +902,57 @@ export default function DebitNoteList() {
                         </td>
 
                         {/* Total Amount */}
-                        <td style={{ padding: "12px 16px" }}>
+                        <td style={{ padding: "4px 16px" }}>
                           {row.totalamount}
                         </td>
 
                         {/* Due Amount */}
-                        <td style={{ padding: "12px 16px" }}>
+                        <td style={{ padding: "4px 16px" }}>
                           {row.dueamount}
                         </td>
 
                         {/* Actions */}
                         <td
-                          className="text-center"
-                          style={{ padding: "12px 16px", position: "relative" }}
+                          style={{
+                            padding: "4px 16px",
+                            position: "relative",
+                            overflow: "visible",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                          }}
                         >
                           <button
-                            onClick={() =>
+                            onClick={(e) => {
+                              e.stopPropagation();
+
+                              const rect =
+                                e.currentTarget.getBoundingClientRect();
                               setOpenMenu(openMenu === idx ? null : idx)
-                            }
+
+                              const dropdownHeight = 160; // your menu height
+                              const spaceBelow =
+                                window.innerHeight - rect.bottom;
+                              const spaceAbove = rect.top;
+
+                              // decide direction
+                              if (
+                                spaceBelow < dropdownHeight &&
+                                spaceAbove > dropdownHeight
+                              ) {
+                                setOpenUpwards(true);
+                                setDropdownPos({
+                                  x: rect.left,
+                                  y: rect.top - 6, // position above button
+                                });
+                              } else {
+                                setOpenUpwards(false);
+                                setDropdownPos({
+                                  x: rect.left,
+                                  y: rect.bottom + 6, // position below button
+                                });
+                              }
+                            }}
                             className="btn"
                             style={{
                               border: "none",
@@ -890,75 +960,88 @@ export default function DebitNoteList() {
                               padding: 4,
                               display: "flex",
                               alignItems: "center",
+                              justifyContent: "center",
+                              position: "relative",
                             }}
                             aria-label="actions"
                           >
-                            <BsThreeDots style={{ color: "#6C748C" }} />
+                            <HiOutlineDotsHorizontal size={28} color="grey" />
                           </button>
 
                           {openMenu === idx && (
                             <div
-                              ref={menuRef}
                               style={{
-                                position: "absolute",
-                                right: 0,
-                                width: "180px",
-                                backgroundColor: "#fff",
-                                borderRadius: "12px",
-                                boxShadow: "0 8px 25px rgba(0, 0, 0, 0.15)",
-                                border: "1px solid #E5E7EB",
-                                overflow: "hidden",
-                                animation: "fadeIn 0.2s ease-out",
-                                zIndex: 1000,
+                                position: "fixed",
+                                top: openUpwards
+                                  ? dropdownPos.y - 60
+                                  : dropdownPos.y,
+                                left: dropdownPos.x - 80,
+                                zIndex: 999999,
                               }}
                             >
-                              {menuItems.map((item, index) => (
-                                <div
-                                  key={index}
-                                  onClick={() =>
-                                    handleMenuAction(item.action, row._id, row)
-                                  }
-                                  style={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "12px",
-                                    padding: "10px 16px",
-                                    fontFamily: "Inter, sans-serif",
-                                    fontSize: "14px",
-                                    fontWeight: 500,
-                                    cursor: "pointer",
-                                    transition: "0.2s",
-                                    color: item.className
-                                      ? "#dc3545"
-                                      : "#344054",
-                                    textDecoration: "none",
-                                    ...(item.action === "edit" &&
-                                    (row.status.label === "Approved" ||
-                                      row.status.label === "Cancelled")
-                                      ? { opacity: 0.5, cursor: "not-allowed" }
-                                      : {}),
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    if (
-                                      !(
-                                        item.action === "edit" &&
+                              <div
+                                ref={menuRef}
+                                style={{
+                                  background: "white",
+                                  padding: 8,
+                                  borderRadius: 12,
+                                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                                  minWidth: 170,
+                                  height: "auto", // height must match dropdownHeight above
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: 4,
+                                }}
+                              >
+                                {menuItems.map((item, index) => (
+                                  <div
+                                    key={index}
+                                    onClick={() =>
+                                      handleMenuAction(item.action, row._id, row)
+                                    }
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "12px",
+                                      padding: "2px 16px",
+                                      borderRadius: 8,
+                                      fontFamily: "Inter, sans-serif",
+                                      fontSize: "14px",
+                                      fontWeight: 500,
+                                      cursor: "pointer",
+                                      transition: "0.2s",
+                                      color: item.className
+                                        ? "#dc3545"
+                                        : "#344054",
+                                      textDecoration: "none",
+                                      ...(item.action === "edit" &&
                                         (row.status.label === "Approved" ||
                                           row.status.label === "Cancelled")
-                                      )
-                                    ) {
+                                        ? { opacity: 0.5, cursor: "not-allowed" }
+                                        : {}),
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      if (
+                                        !(
+                                          item.action === "edit" &&
+                                          (row.status.label === "Approved" ||
+                                            row.status.label === "Cancelled")
+                                        )
+                                      ) {
+                                        e.currentTarget.style.backgroundColor =
+                                          "#e3f2fd";
+                                      }
+                                    }}
+                                    onMouseLeave={(e) => {
                                       e.currentTarget.style.backgroundColor =
-                                        "#e3f2fd";
-                                    }
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor =
-                                      "transparent";
-                                  }}
-                                >
-                                  <span>{item.icon}</span>
-                                  <span>{item.label}</span>
-                                </div>
-                              ))}
+                                        "transparent";
+                                    }}
+                                  >
+                                    <span style={{ fontSize: '24px' }}>{item.icon}</span>
+                                    <span>{item.label}</span>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </td>
@@ -971,7 +1054,7 @@ export default function DebitNoteList() {
         </div>
 
         {/* Pagination */}
-        <div style={{ marginTop: 20 }}>
+        <div className="page-redirect-btn px-2">
           <Pagination
             currentPage={currentPage}
             total={filteredDebitNotes.length}
@@ -983,8 +1066,15 @@ export default function DebitNoteList() {
               setSelectAllForExport(false);
               window.scrollTo({ top: 0, behavior: "smooth" });
             }}
+            onItemsPerPageChange={(n) => {
+              setItemsPerPage(n);
+              setCurrentPage(1);
+              setSelectedNotesForExport([]);
+              setSelectAllForExport(false);
+            }}
           />
         </div>
+
         <ConfirmDeleteModal
           isOpen={showDeleteModal}
           onCancel={() => {
@@ -1009,9 +1099,8 @@ export default function DebitNoteList() {
             }
           }}
           title="Delete Debit Note"
-          message={`Are you sure you want to delete debit note "${
-            selectedDebit?.debitNoteNumber || selectedDebit?.invoice
-          }"? This action cannot be undone.`}
+          message={`Are you sure you want to delete debit note "${selectedDebit?.debitNoteNumber || selectedDebit?.invoice
+            }"? This action cannot be undone.`}
         />
 
         <style>{`
