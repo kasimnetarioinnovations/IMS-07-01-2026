@@ -72,4 +72,7 @@ router.get(
 // Sales list route
 router.get("/sales/list", authMiddleware, invoiceController.getSalesList);
 
+// for recentsales invocie
+router.post("/send-email", authMiddleware, invoiceController.sendThroughEmail);
+router.post("/send-sms", authMiddleware, invoiceController.sendThroughSMS);
 module.exports = router;

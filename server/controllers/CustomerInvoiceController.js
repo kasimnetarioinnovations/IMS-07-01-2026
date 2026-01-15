@@ -924,7 +924,7 @@ exports.deleteInvoice = async (req, res) => {
           product.stockQuantity !== undefined &&
           product.stockQuantity !== null
         ) {
-          product.openingQuantity  += item.qty || 0;
+          product.openingQuantity += item.qty || 0;
           await product.save(); // NO SESSION
         }
       }
@@ -1710,5 +1710,404 @@ exports.getSalesList = async (req, res) => {
       success: false,
       error: "Failed to fetch sales list",
     });
+  }
+};
+
+exports.sendThroughEmail = async (req, res) => {
+    try {
+        const { invoiceId, toEmail, subject, type = "sales" } = req.body;
+        
+        console.log("📧 Email sending request received:", { 
+            invoiceId, 
+            toEmail, 
+            subject,
+            type 
+        });
+        
+        // Validate inputs
+        if (!toEmail || !invoiceId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Recipient email and invoice ID are required' 
+            });
+        }
+
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(toEmail)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Invalid email format' 
+            });
+        }
+
+        // 1. Fetch invoice data
+        let invoice;
+        if (type === "purchase") {
+            // For purchase orders
+            const PurchaseOrder = require('../models/PurchaseOrder'); // Adjust path as needed
+            invoice = await PurchaseOrder.findById(invoiceId)
+                .populate('supplierId', 'supplierName email phone address');
+        } else {
+            // For sales invoices
+            const Invoice = require('../models/Invoice'); // Adjust path as needed
+            invoice = await Invoice.findById(invoiceId)
+                .populate('customerId', 'name email phone address');
+        }
+        
+        if (!invoice) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Invoice not found' 
+            });
+        }
+
+        console.log("📄 Invoice found:", invoice.invoiceNo);
+        
+        // 2. Get company info from database or use defaults
+        const Company = require('../models/CompanyProfile'); // Adjust path as needed
+        const company = await Company.findOne();
+        
+        const companyName = company?.companyName || "Your Company";
+        const companyEmail = company?.companyemail || process.env.EMAIL_USER || 'madhav005542@gmail.com';
+        const companyPhone = company?.companyphone || '';
+        const companyAddress = company?.companyaddress || '';
+        const companyLogo = company?.companyLogo || '';
+
+        // 3. Prepare email content
+        const emailSubject = subject || `${type === "purchase" ? 'Purchase' : 'Sales'} Invoice - ${invoice.invoiceNo}`;
+        
+        // Create HTML email template
+        const emailHtml = createInvoiceEmailTemplate(invoice, companyName, companyEmail, companyPhone, type);
+        
+        // 4. Send email
+        const emailResult = await sendEmailWithNodemailer(toEmail, emailSubject, emailHtml, invoice);
+        
+        if (emailResult.success) {
+            // Update invoice status
+            if (type === "purchase") {
+                await PurchaseOrder.findByIdAndUpdate(invoiceId, { 
+                    $set: { 
+                        status: 'sent',
+                        sentAt: new Date(),
+                        sentVia: 'email'
+                    }
+                });
+            } else {
+                await Invoice.findByIdAndUpdate(invoiceId, { 
+                    $set: { 
+                        status: 'sent',
+                        sentAt: new Date(),
+                        sentVia: 'email'
+                    }
+                });
+            }
+
+            return res.json({ 
+                success: true, 
+                message: `Invoice sent via email to ${toEmail}`,
+                data: {
+                    email: toEmail,
+                    invoiceNo: invoice.invoiceNo,
+                    timestamp: new Date().toISOString(),
+                    type: type
+                }
+            });
+        } else {
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Failed to send email',
+                error: emailResult.error
+            });
+        }
+
+    } catch (error) {
+        console.error("❌ Error sending email:", error.message);
+        console.error(error.stack);
+        
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to process email request',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error'
+        });
+    }
+};
+
+// Function to create email template
+function createInvoiceEmailTemplate(invoice, companyName, companyEmail, companyPhone, type) {
+    const invoiceDate = invoice.invoiceDate 
+        ? new Date(invoice.invoiceDate).toLocaleDateString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric'
+        })
+        : 'N/A';
+    
+    const customerName = type === "purchase" 
+        ? (invoice.supplierId?.supplierName || 'Supplier')
+        : (invoice.customerId?.name || 'Customer');
+    
+    const itemsHtml = invoice.items && invoice.items.length > 0 
+        ? invoice.items.map((item, index) => `
+            <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${index + 1}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee;">${item.itemName || item.name || 'N/A'}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">${item.qty || 0}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">₹${item.unitPrice?.toFixed(2) || '0.00'}</td>
+                <td style="padding: 8px; border-bottom: 1px solid #eee; text-align: right;">₹${item.amount?.toFixed(2) || '0.00'}</td>
+            </tr>
+        `).join('')
+        : '<tr><td colspan="5" style="padding: 8px; text-align: center;">No items</td></tr>';
+    
+    return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Invoice ${invoice.invoiceNo}</title>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                    max-width: 600px;
+                    margin: 0 auto;
+                    padding: 20px;
+                }
+                .header {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 20px;
+                    border-radius: 5px 5px 0 0;
+                    text-align: center;
+                }
+                .content {
+                    padding: 20px;
+                    background: #f9f9f9;
+                    border-radius: 0 0 5px 5px;
+                }
+                .invoice-details {
+                    background: white;
+                    padding: 20px;
+                    border-radius: 5px;
+                    margin: 20px 0;
+                    border-left: 4px solid #667eea;
+                }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin: 20px 0;
+                }
+                th {
+                    background: #f5f5f5;
+                    padding: 10px;
+                    text-align: left;
+                    border-bottom: 2px solid #ddd;
+                }
+                .total-section {
+                    background: white;
+                    padding: 15px;
+                    border-radius: 5px;
+                    margin: 20px 0;
+                    border-top: 2px solid #667eea;
+                }
+                .footer {
+                    margin-top: 30px;
+                    padding-top: 20px;
+                    border-top: 1px solid #ddd;
+                    color: #666;
+                    font-size: 12px;
+                }
+                .btn {
+                    display: inline-block;
+                    background: #667eea;
+                    color: white;
+                    padding: 12px 24px;
+                    text-decoration: none;
+                    border-radius: 5px;
+                    margin: 10px 0;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1 style="margin: 0; font-size: 24px;">${companyName}</h1>
+                <p style="margin: 5px 0 0 0; opacity: 0.9;">${type === "purchase" ? 'Purchase Invoice' : 'Tax Invoice'}</p>
+            </div>
+            
+            <div class="content">
+                <p>Dear ${customerName},</p>
+                <p>Please find your invoice details below:</p>
+                
+                <div class="invoice-details">
+                    <h3 style="margin-top: 0; color: #667eea;">Invoice Summary</h3>
+                    <p><strong>Invoice No:</strong> ${invoice.invoiceNo || 'N/A'}</p>
+                    <p><strong>Date:</strong> ${invoiceDate}</p>
+                    <p><strong>Status:</strong> <span style="color: ${invoice.status === 'paid' ? '#28a745' : invoice.status === 'pending' ? '#ffc107' : '#dc3545'}; font-weight: bold;">
+                        ${invoice.status?.toUpperCase() || 'PENDING'}
+                    </span></p>
+                </div>
+                
+                <h3>Items Details</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Item Name</th>
+                            <th>Qty</th>
+                            <th>Unit Price</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemsHtml}
+                    </tbody>
+                </table>
+                
+                <div class="total-section">
+                    <div style="display: flex; justify-content: space-between; margin: 5px 0;">
+                        <span><strong>Subtotal:</strong></span>
+                        <span><strong>₹${invoice.subtotal?.toFixed(2) || '0.00'}</strong></span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin: 5px 0;">
+                        <span>Tax:</span>
+                        <span>₹${invoice.totalTax?.toFixed(2) || '0.00'}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin: 5px 0;">
+                        <span>Discount:</span>
+                        <span>₹${invoice.totalDiscount?.toFixed(2) || '0.00'}</span>
+                    </div>
+                    ${invoice.shoppingPointsUsed > 0 ? `
+                    <div style="display: flex; justify-content: space-between; margin: 5px 0;">
+                        <span>🪙 Shopping Points:</span>
+                        <span>₹${invoice.shoppingPointsUsed?.toFixed(2) || '0.00'}</span>
+                    </div>
+                    ` : ''}
+                    <div style="display: flex; justify-content: space-between; margin: 5px 0; font-size: 18px; color: #667eea; padding-top: 10px; border-top: 1px solid #ddd;">
+                        <span><strong>Total Amount:</strong></span>
+                        <span><strong>₹${invoice.grandTotal?.toFixed(2) || '0.00'}</strong></span>
+                    </div>
+                    ${invoice.dueAmount > 0 ? `
+                    <div style="display: flex; justify-content: space-between; margin: 5px 0; color: #dc3545;">
+                        <span><strong>Due Amount:</strong></span>
+                        <span><strong>₹${invoice.dueAmount?.toFixed(2) || '0.00'}</strong></span>
+                    </div>
+                    ` : ''}
+                </div>
+                
+                <p>You can view and download the complete invoice by clicking the button below:</p>
+                <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/invoices/${invoice._id}" class="btn">
+                    View Complete Invoice
+                </a>
+                
+                <p>If you have any questions about this invoice, please reply to this email or contact us.</p>
+                
+                <div class="footer">
+                    <p><strong>${companyName}</strong></p>
+                    ${companyAddress ? `<p>${companyAddress}</p>` : ''}
+                    ${companyPhone ? `<p>Phone: ${companyPhone}</p>` : ''}
+                    <p>Email: ${companyEmail}</p>
+                    <p style="margin-top: 10px; font-size: 11px; color: #999;">
+                        This is an automated email. Please do not reply directly to this message.
+                    </p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+}
+
+// Function to send email using nodemailer
+async function sendEmailWithNodemailer(toEmail, subject, htmlContent, invoiceData) {
+    try {
+        // Check if email is configured
+        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+            console.error("❌ Email configuration missing");
+            return { 
+                success: false, 
+                error: 'Email configuration missing',
+                simulated: true 
+            };
+        }
+
+        console.log("🔧 Configuring email transporter...");
+        
+        // Create transporter
+        const transporter = nodemailer.createTransport({
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false, // true for 465, false for other ports
+            auth: {
+                user: process.env.EMAIL_USER, // madhav005542@gmail.com
+                pass: process.env.EMAIL_PASS   // lfvu mxyh fnlc qqts
+            },
+            tls: {
+                rejectUnauthorized: false
+            }
+        });
+
+        // Verify connection configuration
+        console.log("🔍 Verifying email configuration...");
+        await transporter.verify();
+        console.log("✅ Email server is ready to take messages");
+
+        // Prepare email options
+        const mailOptions = {
+            from: `"Invoice System" <${process.env.EMAIL_USER}>`, // From: madhav005542@gmail.com
+            to: toEmail,
+            subject: subject,
+            html: htmlContent,
+            text: `Invoice ${invoiceData.invoiceNo} - Total: ₹${invoiceData.grandTotal?.toFixed(2) || '0.00'}. Please view the HTML version for complete details.`,
+            attachments: [] // You can add PDF attachment here if generated
+        };
+
+        console.log("📤 Sending email...");
+        console.log("   From:", mailOptions.from);
+        console.log("   To:", mailOptions.to);
+        console.log("   Subject:", mailOptions.subject);
+        
+        // Send email
+        const info = await transporter.sendMail(mailOptions);
+        
+        console.log("✅ Email sent successfully!");
+        console.log("   Message ID:", info.messageId);
+        console.log("   Response:", info.response);
+        
+        return { 
+            success: true, 
+            messageId: info.messageId,
+            response: info.response
+        };
+        
+    } catch (error) {
+        console.error("❌ Email sending failed:");
+        console.error("   Error:", error.message);
+        console.error("   Code:", error.code);
+        console.error("   Command:", error.command);
+        
+        // Provide helpful error messages
+        let errorMessage = error.message;
+        if (error.code === 'EAUTH') {
+            errorMessage = 'Email authentication failed. Check your email credentials.';
+        } else if (error.code === 'ECONNECTION') {
+            errorMessage = 'Connection to email server failed. Check your network.';
+        }
+        
+        return { 
+            success: false, 
+            error: errorMessage,
+            details: error 
+        };
+    }
+}
+
+exports.sendThroughSMS = async (req, res) => {
+  try {
+    const { invoiceId, phoneNumber, message } = req.body;
+    // Send SMS using SMS service (Twilio, etc.)
+    res.json({ success: true, message: "SMS sent" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };

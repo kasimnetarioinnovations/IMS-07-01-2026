@@ -1,5 +1,4 @@
-
-import React from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { RiFileDownloadLine } from "react-icons/ri";
 import { PiNewspaperClipping } from "react-icons/pi";
 import { ImPrinter } from "react-icons/im";
@@ -7,51 +6,160 @@ import { RiMessage2Fill } from "react-icons/ri";
 import { RiWhatsappFill } from "react-icons/ri";
 import { IoIosArrowBack } from "react-icons/io";
 import { Link } from 'react-router-dom';
+import { format } from "date-fns";
+import { toast } from "react-toastify";
+import numberToWords from "number-to-words";
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 
+import api from '../../pages/config/axiosInstance';
 import CompanyLogo from '../../assets/images/kasperlogo.png'
 import TaxInvoiceLogo from '../../assets/images/taxinvoice.png'
 import Qrcode from '../../assets/images/qrcode.png';
-import { toWords } from 'number-to-words';
 
-function RecentViewInvoiceModal({ invoiceData, supplierData, customerData, type = "purchase" }) {
-    // Helper function to format date
-    const formatDate = (dateString) => {
-        if (!dateString) return '---';
+function RecentViewInvoiceModal({ invoiceData, supplierData, customerData, type = "purchase", invoiceId }) {
+    const [invoice, setInvoice] = useState(invoiceData || null);
+    const [companyData, setCompanyData] = useState(null);
+    const [terms, setTerms] = useState(null);
+    const [loading, setLoading] = useState(!invoiceData);
+    const [isDownloading, setIsDownloading] = useState(false);
+    const invoiceRef = useRef(null);
+
+    // Fetch invoice data if not provided
+    useEffect(() => {
+        const fetchInvoice = async () => {
+            if (invoiceData) return;
+            try {
+                const res = await api.get(`/api/invoices/${invoiceId}`);
+                setInvoice(res.data.invoice);
+            } catch (err) {
+                toast.error("Failed to load invoice");
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchInvoice();
+    }, [invoiceId, invoiceData]);
+
+    // Fetch company data
+    useEffect(() => {
+        const fetchCompanyData = async () => {
+            try {
+                const res = await api.get(`/api/companyprofile/get`);
+                setCompanyData(res.data.data);
+            } catch (error) {
+                console.error("Error fetching company profile:", error);
+            }
+        };
+        fetchCompanyData();
+    }, []);
+
+    // Fetch terms and conditions
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const res = await api.get('/api/notes-terms-settings');
+                setTerms(res.data.data);
+            } catch (error) {
+                console.error('Error fetching notes & terms settings:', error);
+            }
+        };
+        fetchSettings();
+    }, []);
+
+    // Function to handle PDF download
+    const handleDownloadPDF = async () => {
+        if (!invoiceRef.current) return;
+        setIsDownloading(true);
+
         try {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-IN', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric'
+            const element = invoiceRef.current;
+            const canvas = await html2canvas(element, {
+                scale: 2,
+                backgroundColor: "#ffffff",
+                useCORS: true,
+                width: 595,
+                height: 842,
             });
+
+            const imgData = canvas.toDataURL("image/png");
+            const pdf = new jsPDF("p", "mm", "a4");
+            const pdfWidth = 210;
+            const pdfHeight = 297;
+
+            pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+
+            const fileName = `${type === "purchase" ? 'purchase' : 'sales'}-invoice-${invoice?.invoiceNo || "invoice"}.pdf`;
+            pdf.save(fileName);
+            toast.success("PDF downloaded successfully!");
+
         } catch (error) {
-            return '---';
+            console.error("Error generating PDF:", error);
+            toast.error("Failed to generate PDF");
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
+    // Function to handle printing
+    const handlePrint = () => {
+        if (!invoiceRef.current) {
+            toast.error("Invoice content not available");
+            return;
+        }
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Print Invoice - ${invoice?.invoiceNo}</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 20px;
+                    }
+                    @media print {
+                        body {
+                            padding: 0;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                ${invoiceRef.current.innerHTML}
+                <script>
+                    window.onload = function() {
+                        window.print();
+                        setTimeout(() => window.close(), 1000);
+                    }
+                </script>
+            </body>
+            </html>
+        `);
+        printWindow.document.close();
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        try {
+            return format(new Date(dateString), "dd MMM yyyy");
+        } catch (error) {
+            return 'N/A';
         }
     };
 
     // Helper function to format currency
     const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('en-IN', {
-            style: 'currency',
-            currency: 'INR',
-            minimumFractionDigits: 2,
-        }).format(amount || 0);
+        if (amount == null) return '₹0.00';
+        return `₹${parseFloat(amount).toFixed(2)}`;
     };
-
-    // Calculate values from invoiceData
-    const subtotal = invoiceData?.subtotal || 0;
-    const totalTax = invoiceData?.totalTax || 0;
-    const totalDiscount = invoiceData?.totalDiscount || 0;
-    const additionalCharges = invoiceData?.additionalCharges || 0;
-    const shoppingPointsUsed = invoiceData?.shoppingPointsUsed || 0;
-    const pointValue = invoiceData?.pointValue || 10;
-    const pointsDiscount = shoppingPointsUsed * pointValue;
-    const grandTotal = invoiceData?.grandTotal || 0;
-    const dueAmount = invoiceData?.dueAmount || 0;
-    const paidAmount = invoiceData?.paidAmount || 0;
 
     // Get company info based on type
     const getCompanyInfo = () => {
+        const customer = invoice?.customerId || {};
+
         if (type === "purchase") {
             return {
                 fromTitle: "From",
@@ -61,27 +169,27 @@ function RecentViewInvoiceModal({ invoiceData, supplierData, customerData, type 
                 fromPhone: supplierData?.supplier?.phone || supplierData?.phone || 'N/A',
                 fromEmail: supplierData?.supplier?.email || supplierData?.email || 'N/A',
                 fromGSTIN: supplierData?.supplier?.gstin || supplierData?.gstin || 'N/A',
-                toName: "Kasper Infotech Pvt. Ltd.",
-                toAddress: "Your Company Address Here",
-                toPhone: "Your Company Phone",
-                toEmail: "Your Company Email",
-                toGSTIN: "Your Company GSTIN",
+                toName: companyData?.companyName || "Your Company Name",
+                toAddress: companyData?.companyaddress || "Your Company Address Here",
+                toPhone: companyData?.companyphone || "Your Company Phone",
+                toEmail: companyData?.companyemail || "Your Company Email",
+                toGSTIN: companyData?.gstin || "Your Company GSTIN",
                 documentTitle: "PURCHASE INVOICE"
             };
         } else {
             return {
                 fromTitle: "From",
-                toTitle: "Company Details",
-                fromName: "Kasper Infotech Pvt. Ltd.",
-                fromAddress: "Your Company Address Here",
-                fromPhone: "Your Company Phone",
-                fromEmail: "Your Company Email",
-                fromGSTIN: "Your Company GSTIN",
-                toName: customerData?.customer?.name || customerData?.name || 'N/A',
-                toAddress: customerData?.customer?.address || customerData?.address || 'N/A',
-                toPhone: customerData?.customer?.phone || customerData?.phone || 'N/A',
-                toEmail: customerData?.customer?.email || customerData?.email || 'N/A',
-                toGSTIN: customerData?.customer?.gstin || customerData?.gstin || 'N/A',
+                toTitle: "Customer Details",
+                fromName: companyData?.companyName || "Your Company Name",
+                fromAddress: companyData?.companyaddress || "Your Company Address Here",
+                fromPhone: companyData?.companyphone || "Your Company Phone",
+                fromEmail: companyData?.companyemail || "Your Company Email",
+                fromGSTIN: companyData?.gstin || "Your Company GSTIN",
+                toName: customer.name || customerData?.name || 'N/A',
+                toAddress: customer.address || customerData?.address || 'N/A',
+                toPhone: customer.phone || customerData?.phone || 'N/A',
+                toEmail: customer.email || customerData?.email || 'N/A',
+                toGSTIN: customer.gstin || customerData?.gstin || 'N/A',
                 documentTitle: "TAX INVOICE"
             };
         }
@@ -90,9 +198,18 @@ function RecentViewInvoiceModal({ invoiceData, supplierData, customerData, type 
     const companyInfo = getCompanyInfo();
 
     // Get invoice items
-    const invoiceItems = Array.isArray(invoiceData?.items) ? invoiceData.items : [];
+    const invoiceItems = Array.isArray(invoice?.items) ? invoice.items : [];
+    const bankDetails = invoice?.bankDetails || {};
+    const totalInWords = invoice?.grandTotal != null
+        ? `${numberToWords.toWords(invoice.grandTotal).toUpperCase()} RUPEES ONLY`
+        : "";
+
+    if (loading) return <div>Loading invoice...</div>;
+    if (!invoice) return <div>Invoice not found</div>;
+
     return (
         <div
+            ref={invoiceRef}
             style={{
                 height: "100vh",
                 overflow: 'auto',
@@ -106,7 +223,6 @@ function RecentViewInvoiceModal({ invoiceData, supplierData, customerData, type 
                 display: "flex",
                 height: '87vh'
             }}>
-
                 {/* Left Side */}
                 <div
                     style={{
@@ -134,7 +250,7 @@ function RecentViewInvoiceModal({ invoiceData, supplierData, customerData, type 
                             alignItems: 'center',
                         }}>
                             <div style={{ width: '100px' }}>
-                                <img src={CompanyLogo} alt='company logo' style={{ width: '100%', objectFit: 'contain', }} />
+                                <img src={companyData?.companyLogo || CompanyLogo} alt='company logo' style={{ width: '100%', objectFit: 'contain', }} />
                             </div>
                             <div style={{ width: '130px' }}>
                                 <img src={TaxInvoiceLogo} alt='tax invoice' style={{ width: '100%', objectFit: 'contain', }} />
@@ -150,8 +266,8 @@ function RecentViewInvoiceModal({ invoiceData, supplierData, customerData, type 
                             }}
                         />
                         <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
-                            <span>{companyInfo.documentTitle} Date - {formatDate(invoiceData?.invoiceDate || invoiceData?.date)}</span>
-                            <span style={{ marginRight: '12px' }}>Invoice No. - {invoiceData?.invoiceNo || 'N/A'}</span>
+                            <span>{companyInfo.documentTitle} Date - {formatDate(invoice?.invoiceDate)}</span>
+                            <span style={{ marginRight: '12px' }}>Invoice No. - {invoice?.invoiceNo || 'N/A'}</span>
                         </div>
                         <div
                             style={{
@@ -172,18 +288,18 @@ function RecentViewInvoiceModal({ invoiceData, supplierData, customerData, type 
                         </div>
                         <div style={{ width: '100%', display: 'flex', justifyContent: 'space-around', marginTop: '2px', alignItems: 'center', borderBottom: '1px solid #EAEAEA' }}>
                             <div style={{ borderRight: '1px solid #EAEAEA', width: '50%', padding: '3px' }}>
-                                <div>Name : <span style={{ color: 'black', fontWeight: '600' }}>{companyInfo.toName}</span></div>
-                                <div>Address : {companyInfo.toAddress}</div>
-                                <div style={{ marginTop: '8px' }}>Phone : {companyInfo.toPhone}</div>
-                                <div>Email : {companyInfo.toEmail}</div>
-                                <div>GSTIN : {companyInfo.toGSTIN}</div>
+                                <div>Name : <span style={{ color: 'black', fontWeight: '600' }}>{companyInfo.fromName}</span></div>
+                                <div>Address : {companyInfo.fromAddress}</div>
+                                <div style={{ marginTop: '8px' }}>Phone : {companyInfo.fromPhone}</div>
+                                <div>Email : {companyInfo.fromEmail}</div>
+                                <div>GSTIN : {companyInfo.fromGSTIN}</div>
                             </div>
                             <div style={{ width: '50%', padding: '3px' }}>
-                                <div>Name : <span style={{ color: 'black', fontWeight: '600' }}>{companyInfo.fromName}</span></div>
-                                <div>Address : {companyInfo.fromAddress} </div>
-                                <div style={{ marginTop: '8px' }}>Phone :  {companyInfo.fromPhone}</div>
-                                <div>Email : {companyInfo.fromEmail}</div>
-                                <div>GSTIN :  {companyInfo.fromGSTIN}</div>
+                                <div>Name : <span style={{ color: 'black', fontWeight: '600' }}>{companyInfo.toName}</span></div>
+                                <div>Address : {companyInfo.toAddress} </div>
+                                <div style={{ marginTop: '8px' }}>Phone :  {companyInfo.toPhone}</div>
+                                <div>Email : {companyInfo.toEmail}</div>
+                                <div>GSTIN :  {companyInfo.toGSTIN}</div>
                             </div>
                         </div>
                         <div className='table-responsive mt-3' >
@@ -200,7 +316,7 @@ function RecentViewInvoiceModal({ invoiceData, supplierData, customerData, type 
                                     </tr>
                                     <tr>
                                         <th style={{ borderRight: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA' }}>%</th>
-                                        <th style={{ borderRight: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA' }}>%</th>
+                                        <th style={{ borderRight: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA' }}>₹</th>
                                     </tr>
                                 </thead>
                                 <tbody style={{ textAlign: "center" }}>
@@ -210,10 +326,10 @@ function RecentViewInvoiceModal({ invoiceData, supplierData, customerData, type 
                                             <td style={{ borderRight: '1px solid #EAEAEA', }}>{item.itemName || item.name || 'N/A'}</td>
                                             <td style={{ borderRight: '1px solid #EAEAEA', }}>{item.hsnCode || item.hsn || '-'}</td>
                                             <td style={{ borderRight: '1px solid #EAEAEA', }}>{item.qty || 0}</td>
-                                            <td style={{ borderRight: '1px solid #EAEAEA', }}>{formatCurrency(item.unitPrice || 0)}</td>
+                                            <td style={{ borderRight: '1px solid #EAEAEA', }}>{formatCurrency(item.unitPrice)}</td>
                                             <td style={{ borderRight: '1px solid #EAEAEA', }}>{item.taxRate || 0}%</td>
-                                            <td style={{ borderRight: '1px solid #EAEAEA', }}>{formatCurrency(item.taxAmount || 0)}</td>
-                                            <td style={{ borderRight: '1px solid #EAEAEA', }}>{formatCurrency(item.amount || 0)}</td>
+                                            <td style={{ borderRight: '1px solid #EAEAEA', }}>{formatCurrency(item.taxAmount)}</td>
+                                            <td style={{ borderRight: '1px solid #EAEAEA', }}>{formatCurrency(item.amount)}</td>
                                         </tr>
                                     ))}
                                     {/* Fill remaining rows for consistent layout */}
@@ -236,8 +352,7 @@ function RecentViewInvoiceModal({ invoiceData, supplierData, customerData, type 
                         <div style={{ width: '100%', display: 'flex', justifyContent: 'space-around', marginTop: '15px', borderTop: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA', }}>
                             <div style={{ borderRight: '', width: '50%', padding: '3px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                 <u>Total in words</u>
-                                <div style={{ marginTop: '5px', fontWeight: '600' }}> {toWords(Math.round(grandTotal)).toUpperCase()} RUPEES ONLY
-                                </div>
+                                <div style={{ marginTop: '5px', fontWeight: '600', fontSize: '12px' }}>{totalInWords}</div>
                                 <div
                                     style={{
                                         width: '100%',
@@ -250,17 +365,18 @@ function RecentViewInvoiceModal({ invoiceData, supplierData, customerData, type 
                                 <div style={{ marginTop: '2px', textDecoration: 'underline' }}>Bank Details</div>
                                 <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', padding: '0px 5px' }}>
                                     <div style={{ textAlign: 'left' }}>
-                                        <div>Bank : <span style={{ color: 'black', fontWeight: '600' }}>ICICI Bank</span></div>
-                                        <div>Branch : <span style={{ color: 'black', fontWeight: '600' }}>Noida, Sector 62</span></div>
-                                        <div>Account No.: <span style={{ color: 'black', fontWeight: '600' }}>278415630109014</span></div>
-                                        <div>IFSC : <span style={{ color: 'black', fontWeight: '600' }}>ICINO512345</span></div>
-                                        <div>Upi : <span style={{ color: 'black', fontWeight: '600' }}>abc@ybl</span></div>
+                                        <div>Bank : <span style={{ color: 'black', fontWeight: '600' }}>{bankDetails?.bankName || 'N/A'}</span></div>
+                                        <div>Branch : <span style={{ color: 'black', fontWeight: '600' }}>{bankDetails?.branch || 'N/A'}</span></div>
+                                        <div>Account Holder : <span style={{ color: 'black', fontWeight: '600' }}>{bankDetails?.accountHolderName || 'N/A'}</span></div>
+                                        <div>Account No.: <span style={{ color: 'black', fontWeight: '600' }}>{bankDetails?.accountNumber || 'N/A'}</span></div>
+                                        <div>IFSC : <span style={{ color: 'black', fontWeight: '600' }}>{bankDetails?.ifsc || 'N/A'}</span></div>
+                                        <div>UPI : <span style={{ color: 'black', fontWeight: '600' }}>{bankDetails?.upiId || 'N/A'}</span></div>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
                                         <div style={{ width: '45px', objectFit: 'contain' }}>
-                                            <img src={Qrcode} alt='QR Code' style={{ width: '100%' }} />
+                                            <img src={bankDetails?.qrCode || Qrcode} alt='QR Code' style={{ width: '100%' }} />
                                         </div>
-                                        <div>Pay Using Upi</div>
+                                        <div>Pay Using UPI</div>
                                     </div>
                                 </div>
                             </div>
@@ -268,33 +384,34 @@ function RecentViewInvoiceModal({ invoiceData, supplierData, customerData, type 
                             <div style={{ width: '50%', padding: '3px', borderLeft: '1px solid #EAEAEA' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #EAEAEA', padding: '1px 8px' }}>
                                     <span>Sub-total</span>
-                                    <span style={{ color: 'black', }}>₹{formatCurrency(subtotal)}</span>
+                                    <span style={{ color: 'black', }}>{formatCurrency(invoice?.subtotal)}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #EAEAEA', padding: '1px 8px' }}>
                                     <span>Tax Amount</span>
-                                    <span style={{ color: 'black', }}>₹{formatCurrency(totalTax)}</span>
+                                    <span style={{ color: 'black', }}>{formatCurrency(invoice?.totalTax)}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #EAEAEA', padding: '2px 8px' }}>
                                     <span>Discount</span>
-                                    <span style={{ color: 'black', }}>₹{formatCurrency(totalDiscount)}</span>
+                                    <span style={{ color: 'black', }}>{formatCurrency(invoice?.totalDiscount)}</span>
                                 </div>
-                                {type === "sales" && shoppingPointsUsed > 0 && (
+                                {type === "sales" && invoice?.shoppingPointsUsed > 0 && (
                                     <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #EAEAEA', padding: '2px 8px' }}>
-                                        <span>🪙 Shopping Points ({shoppingPointsUsed} points)</span>
-                                        <span style={{ color: 'black', }}>{formatCurrency(pointsDiscount)}</span>
+                                        <span>🪙 Shopping Points</span>
+                                        <span style={{ color: 'black', }}>{formatCurrency(invoice?.shoppingPointsUsed || 0)}</span>
                                     </div>
                                 )}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #EAEAEA', padding: '2px 8px' }}>
-                                    <span>Additional Charge</span>
-                                    <span style={{ color: 'black', }}>₹{formatCurrency(additionalCharges)}</span>
+                                    <span>Additional Charges</span>
+                                    <span style={{ color: 'black', }}>{formatCurrency(invoice?.additionalCharges)}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #EAEAEA', padding: '1px 8px', }}>
                                     <span style={{ fontWeight: '700', fontSize: '10px' }}>Total</span>
-                                    <span style={{ color: 'black', fontWeight: '600', fontSize: '10px' }}>₹{formatCurrency(grandTotal)}</span>
+                                    <span style={{ color: 'black', fontWeight: '600', fontSize: '10px' }}>{formatCurrency(invoice?.grandTotal)}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 8px' }}>
                                     <span>Due Amount</span>
-                                    <span style={{ color: dueAmount > 0 ? 'red' : 'black', fontWeight: dueAmount > 0 ? '600' : '400' }}>₹{formatCurrency(dueAmount)}
+                                    <span style={{ color: invoice?.dueAmount > 0 ? 'red' : 'black', fontWeight: invoice?.dueAmount > 0 ? '600' : '400' }}>
+                                        {formatCurrency(invoice?.dueAmount)}
                                     </span>
                                 </div>
                             </div>
@@ -303,6 +420,7 @@ function RecentViewInvoiceModal({ invoiceData, supplierData, customerData, type 
                         <div style={{ width: '100%', display: 'flex', justifyContent: 'space-around', borderBottom: '1px solid #EAEAEA', }}>
                             <div style={{ borderRight: '', width: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                 <u>Term & Conditions</u>
+                                <div style={{ marginTop: '5px', fontSize: '10px' }}>{terms?.termsText || 'No terms and conditions set.'}</div>
                             </div>
 
                             <div style={{ width: '50%', borderLeft: '1px solid #EAEAEA' }}>
@@ -312,7 +430,9 @@ function RecentViewInvoiceModal({ invoiceData, supplierData, customerData, type 
                             </div>
                         </div>
                         <div style={{ width: '100%', justifyContent: 'center', display: 'flex' }}>
-                            <span style={{ marginTop: '5px' }}>Earned 🪙 {Math.floor(paidAmount / 10)} Shopping Point on this purchase. Redeem on your next purchase.</span>
+                            <span style={{ marginTop: '5px', fontSize: '10px' }}>
+                                Earned 🪙 Shopping Point on this purchase. Redeem on your next purchase.
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -321,4 +441,4 @@ function RecentViewInvoiceModal({ invoiceData, supplierData, customerData, type 
     )
 }
 
-export default RecentViewInvoiceModal
+export default RecentViewInvoiceModal;

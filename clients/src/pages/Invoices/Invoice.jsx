@@ -17,6 +17,27 @@ import Pagination from "../../components/Pagination";
 import Barcode from "../../assets/images/barcode.jpg";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import ConfirmDeleteModal from "../../components/ConfirmDelete";
+import { HiOutlineDotsHorizontal } from "react-icons/hi";
+
+// Add menu items similar to customers
+const menuItems = [
+  // {
+  //   label: "View",
+  //   icon: <TbEye size={18} />,
+  //   action: "view",
+  // },
+  // {
+  //   label: "Share",
+  //   icon: <GrShareOption size={18} />,
+  //   action: "share",
+  // },
+  {
+    label: "Delete",
+    icon: <TbTrash size={18} />,
+    action: "delete",
+  },
+];
 
 const Invoice = () => {
   const [invoices, setInvoices] = useState([]);
@@ -33,19 +54,50 @@ const Invoice = () => {
   const navigate = useNavigate();
   const [shareLoadingId, setShareLoadingId] = useState(null);
 
+  // Add state for delete modal and menu
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [openMenuIndex, setOpenMenuIndex] = useState(null);
+  const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0 });
+  const [openUpwards, setOpenUpwards] = useState(false);
+  const menuRef = useRef();
+
   const [activeRow, setActiveRow] = useState(null);
 
-  const toggleRow = (index) => {
-    const newOpen = openRow === index ? null : index;
-    setOpenRow(newOpen);
-    if (newOpen === null && activeRow === index) {
-      setActiveRow(null);
-    } else if (newOpen !== null) {
-      setActiveRow(index);
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setOpenMenuIndex(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Handle menu actions
+  const handleMenuAction = async (action, invoice) => {
+    setOpenMenuIndex(null);
+    switch (action) {
+      case "view":
+        navigate(`/sales-invoice/${invoice._id}`);
+        break;
+      case "share":
+        await shareInvoice(
+          invoice._id,
+          invoice.customerId?.email,
+          invoice.customerId?.phone
+        );
+        break;
+      case "delete":
+        setSelectedInvoice(invoice);
+        setShowDeleteModal(true);
+        break;
+      default:
+        break;
     }
   };
 
-  // const token = localStorage.getItem("token");
   // Fetch invoices from backend (CustomerInvoiceController)
   const fetchInvoices = async () => {
     setLoading(true);
@@ -64,7 +116,6 @@ const Invoice = () => {
       });
       const res = await api.get('/api/invoices', {
         params,
-        // headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data?.success && Array.isArray(res.data.invoices)) {
         setInvoices(res.data.invoices);
@@ -91,82 +142,30 @@ const Invoice = () => {
     setPage(1);
   }, [search, customer, startDate, endDate]);
 
-  // Pagination controls
-  const totalPages = Math.ceil(total / limit);
+  // Delete invoice function
+  const deleteInvoice = async (invoiceId) => {
+    try {
+      await api.delete(`/api/invoices/${invoiceId}`);
+      toast.success("Invoice deleted successfully!");
+      fetchInvoices(); // Refresh the list
+    } catch (error) {
+      console.error("Failed to delete invoice:", error);
+      toast.error("Failed to delete invoice");
+    }
+  };
 
-  // Calculation helpers (copied from AddSalesModal.jsx for consistency)
-  const [summary, setSummary] = useState({
-    subTotal: 0,
-    discountSum: 0,
-    taxableSum: 0,
-    cgst: 0,
-    sgst: 0,
-    taxSum: 0,
-    shippingCost: 0,
-    labourCost: 0,
-    orderDiscount: 0,
-    roundOff: 0,
-    grandTotal: 0,
-  });
-  const [isUpdating, setIsUpdating] = useState(false);
-  // const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    if (!Array.isArray(invoices)) return;
-    const allItems = invoices.flatMap((inv) => Array.isArray(inv.items) ? inv.items : []);
-    let subTotal = 0;
-    let discountSum = 0;
-    let taxableSum = 0;
-    let taxSum = 0;
-    let grandTotal = 0;
-
-    allItems.forEach((item) => {
-      const qty = Number(item.qty || 1);
-      const price = Number(item.unitPrice || 0);
-      const discountAmount = Number(item.discountAmt || 0);
-      const taxableAmount = Math.max(0, qty * price - discountAmount);
-      const taxRate = Number(item.taxRate || 0);
-      const taxAmount = item.taxAmount !== undefined
-        ? Number(item.taxAmount || 0)
-        : (taxableAmount * taxRate) / 100;
-      const lineTotal = item.amount !== undefined
-        ? Number(item.amount || 0)
-        : taxableAmount + taxAmount;
-
-      subTotal += qty * price;
-      discountSum += discountAmount;
-      taxableSum += taxableAmount;
-      taxSum += taxAmount;
-      grandTotal += lineTotal;
-    });
-
-    const cgst = taxSum / 2;
-    const sgst = taxSum / 2;
-
-    setSummary({
-      subTotal,
-      discountSum,
-      taxableSum,
-      cgst,
-      sgst,
-      taxSum,
-      grandTotal,
-    });
-  }, [invoices]);
-
+  // Handle bulk delete
   const handleBulkDelete = async () => {
     const confirmed = await DeleteAlert({});
     if (!confirmed) return;
     try {
-      // const token = localStorage.getItem("token");
       await api.post(
         '/api/invoice/bulk-delete',
         {
           ids: selectedInvoices,
         },
       );
-      toast.success("Selected countries deleted");
+      toast.success("Selected invoices deleted");
       setSelectedInvoices([]);
       fetchInvoices();
     } catch (error) {
@@ -174,14 +173,14 @@ const Invoice = () => {
       if (error.response?.status === 401) {
         toast.error("Unauthorized. please login again");
       } else if (error.response?.status === 403) {
-        toast.error("You don't have permission to delete state");
+        toast.error("You don't have permission to delete invoices");
       } else {
         toast.error("Bulk delete failed. Please try again");
       }
     }
   };
 
-  // share invoice via email (matches backend: POST /api/invoice/email/:id)
+  // Share invoice via email (matches backend: POST /api/invoice/email/:id)
   const shareInvoice = async (invoiceMongoId, customerEmail, customerPhone) => {
     try {
       setShareLoadingId(invoiceMongoId);
@@ -190,21 +189,18 @@ const Invoice = () => {
       await api.post(
         `/api/invoice/email/${encodeURIComponent(invoiceMongoId)}`,
         { email: customerEmail || undefined },
-        // { headers: { Authorization: `Bearer ${token}` } }
       );
 
       // Send WhatsApp
       await api.post(
         `/api/invoice/whatsapp/${encodeURIComponent(invoiceMongoId)}`,
         { phone: customerPhone || undefined },
-        // { headers: { Authorization: `Bearer ${token}` } }
       );
 
       // Send SMS
       await api.post(
         `/api/invoice/sms/${invoiceMongoId}`,
         { phone: customerPhone },
-        // { headers: { Authorization: `Bearer ${token}` } }
       );
 
       toast.success("Invoice shared.");
@@ -216,39 +212,7 @@ const Invoice = () => {
     }
   };
 
-
-  const [viewBarcode, setViewBarcode] = useState([]);
-  const [viewOptions, setViewOptions] = useState([]);
-
-  const buttonRefs = useRef([]);
-  const modelRef = useRef(null); // reference to modal area
-
-  // ✅ close when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      // close only when:
-      const isClickInsideModel =
-        modelRef.current && modelRef.current.contains(event.target);
-
-      const isClickInsideButton =
-        buttonRefs.current[viewBarcode] &&
-        buttonRefs.current[viewBarcode].contains(event.target);
-
-      buttonRefs.current[viewOptions] &&
-        buttonRefs.current[viewOptions].contains(event.target);
-
-      if (!isClickInsideModel && !isClickInsideButton) {
-        setViewBarcode(false);
-        setViewOptions(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [viewBarcode][viewOptions]);
-
-  const tabs = [{ label: "All", count: total, active: true }];
-
+  // Export PDF function
   const handlePdf = () => {
     const doc = new jsPDF();
     doc.text("Invoice", 14, 15);
@@ -265,6 +229,11 @@ const Invoice = () => {
     const visibleRows = selectedInvoices.length > 0
       ? invoices.filter((e) => selectedInvoices.includes(e._id))
       : invoices;
+
+    if (visibleRows.length === 0) {
+      toast.warn("No invoices selected to export");
+      return;
+    }
 
     const tableRows = visibleRows.map((e) => [
       e.invoiceNo,
@@ -290,8 +259,13 @@ const Invoice = () => {
       theme: "striped",
     });
 
-    doc.save("invoices.pdf");
+    const filename = `invoices-${visibleRows.length}-${new Date().toISOString().split('T')[0]}`;
+    doc.save(`${filename}.pdf`);
+
+    toast.success(`Exported ${visibleRows.length} invoice${visibleRows.length !== 1 ? "s" : ""}`);
   };
+
+  const tabs = [{ label: "All", count: total, active: true }];
 
   return (
     <div className="p-4">
@@ -302,7 +276,7 @@ const Invoice = () => {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          padding: "0px 0px 16px 0px", // Optional: padding for container
+          padding: "0px 0px 16px 0px",
         }}
       >
         {/* Left: Title + Icon */}
@@ -398,13 +372,29 @@ const Invoice = () => {
               height: "33px",
             }}
           >
-            {/* {selectedInvoices.length > 0 && (
-              <div className="">
-                <div className="btn btn-danger" onClick={handleBulkDelete}>
-                  Delete Selected({selectedInvoices.length})
-                </div>
+            {/* Bulk delete button */}
+            {selectedInvoices.length > 0 && (
+              <div
+                className="button-hover"
+                style={{
+                  borderRadius: "8px",
+                  padding: "5px 16px",
+                  border: "1px solid #dc3545",
+                  color: "#dc3545",
+                  fontFamily: "Inter",
+                  backgroundColor: "white",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  cursor: "pointer",
+                }}
+                onClick={handleBulkDelete}
+              >
+                <TbTrash /> Delete Selected ({selectedInvoices.length})
               </div>
-            )} */}
+            )}
 
             {/* search bar */}
             <div
@@ -454,13 +444,15 @@ const Invoice = () => {
                 outline: "1px solid #EAEAEA",
                 outlineOffset: "-1px",
                 border: "none",
-                cursor: "pointer",
+                cursor: invoices.length > 0 ? "pointer" : "not-allowed",
                 fontFamily: "Inter, sans-serif",
                 fontSize: 14,
                 fontWeight: 400,
                 color: "#0E101A",
                 height: "33px",
+                opacity: invoices.length > 0 ? 1 : 0.5,
               }}
+              disabled={invoices.length === 0}
             >
               <TbFileExport className="fs-5 text-secondary" />
               Export
@@ -621,198 +613,248 @@ const Invoice = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9}>Loading...</td>
+                  <td colSpan={8} className="text-center py-5">
+                    Loading invoices...
+                  </td>
                 </tr>
               ) : invoices.length === 0 ? (
-                <td colSpan="9" className="text-center p-3">
-                  <span className="" style={{ fontStyle: "italic" }}>No Invoice Data Available</span>
-                </td>
+                <tr>
+                  <td colSpan={8} className="text-center py-5 text-muted">
+                    No invoices found
+                  </td>
+                </tr>
               ) : (
-                invoices.map((inv, idx) => {
-                  if (Array.isArray(inv.items) && inv.items.length > 0) {
-                    return inv.items.map((item, pidx) => {
-                      const qty = Number(item.qty || 1);
-                      const price = Number(item.unitPrice || 0);
-                      const discountAmount = Number(item.discountAmt || 0);
-                      const taxableAmount = Math.max(0, qty * price - discountAmount);
-                      const taxRate = Number(item.taxRate || 0);
-                      const taxAmount = item.taxAmount !== undefined
-                        ? Number(item.taxAmount || 0)
-                        : (taxableAmount * taxRate) / 100;
-                      const lineTotal = item.amount !== undefined
-                        ? Number(item.amount || 0)
-                        : taxableAmount + taxAmount;
-                      return (
-                        <tr key={`${inv._id || idx}-${pidx}`}
-                          style={{ borderBottom: "1px solid #FCFCFC", cursor: 'pointer' }}
-                          onClick={() =>
-                            navigate(`/sales-invoice/${inv._id}`)
+                invoices.map((inv, idx) => (
+                  <tr key={inv._id}
+                    style={{ borderBottom: "1px solid #EAEAEA", cursor: 'pointer' }}
+                    onClick={() => navigate(`/sales-invoice/${inv._id}`)}
+                    className={`table-hover ${activeRow === idx ? "active-row" : ""}`}
+                  >
+                    {/* invoice no */}
+                    <td style={{ padding: "8px 16px", verticalAlign: "middle", height: '46px', }}>
+                      <div
+                        style={{ display: "flex", alignItems: "center", gap: 12 }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          style={{ width: 18, height: 18, }}
+                          checked={selectedInvoices.includes(inv._id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedInvoices((prev) => {
+                                const next = new Set(prev);
+                                next.add(inv._id);
+                                return Array.from(next);
+                              });
+                            } else {
+                              setSelectedInvoices((prev) =>
+                                prev.filter((id) => id !== inv._id)
+                              );
+                            }
+                          }}
+                        />
+                        <div>
+                          <div
+                            style={{
+                              fontSize: 14,
+                              color: "#0E101A",
+                              whiteSpace: "nowrap",
+                              display: "flex",
+                              gap: "5px",
+                              justifyContent: "center",
+                              alignItems: "center",
+                            }}
+                          >
+                            {inv.invoiceNo}
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    {/* customer details */}
+                    <td
+                      style={{
+                        padding: "8px 16px",
+                        fontSize: 14,
+                        color: "#0E101A",
+                      }}
+                    >
+                      <span>
+                        {inv.customerId?.name ||
+                          inv.customerId?.email ||
+                          inv.customerId?._id ||
+                          "-"}
+                      </span>
+                    </td>
+
+                    {/* date */}
+                    <td
+                      style={{
+                        padding: "8px 16px",
+                        fontSize: 14,
+                        color: "#0E101A",
+                      }}
+                    >
+                      {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "-"}
+                    </td>
+
+                    {/* amount */}
+                    <td
+                      style={{
+                        padding: "8px 16px",
+                        fontSize: 14,
+                        color: "#0E101A",
+                      }}
+                    >
+                      ₹{inv.grandTotal?.toFixed(2) || "0.00"}
+                    </td>
+
+                    {/* paid */}
+                    <td
+                      style={{
+                        padding: "8px 16px",
+                        fontSize: 14,
+                        color: "#0E101A",
+                      }}
+                    >
+                      ₹{Number(inv.paidAmount ?? 0).toFixed(2)}
+                    </td>
+
+                    {/* due amount */}
+                    <td
+                      style={{
+                        padding: "8px 16px",
+                        fontSize: 14,
+                        color: "#0E101A",
+                      }}
+                    >
+                      ₹{Number(inv.dueAmount ?? 0).toFixed(2)}
+                    </td>
+
+                    {/* status */}
+                    <td
+                      style={{
+                        padding: "8px 16px",
+                        fontSize: 14,
+                        color: "#0E101A",
+                      }}
+                    >
+                      <span
+                        className={`badge badge-soft-${(inv.status === "paid" ? "success" : "danger")} badge-xs shadow-none`}
+                      >
+                        <i className="ti ti-point-filled me-1" />
+                        {inv.status || "-"}
+                      </span>
+                    </td>
+
+                    {/* action */}
+                    <td
+                      style={{ padding: "8px 16px", position: "relative", overflow: "visible" }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {/* three dot button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenMenuIndex(
+                            openMenuIndex === idx ? null : idx
+                          );
+                          const rect = e.currentTarget.getBoundingClientRect();
+
+                          const dropdownHeight = 180;
+                          const spaceBelow = window.innerHeight - rect.bottom;
+                          const spaceAbove = rect.top;
+
+                          // decide direction
+                          if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+                            setOpenUpwards(true);
+                            setDropdownPos({
+                              x: rect.left,
+                              y: rect.top - 6,
+                            });
+                          } else {
+                            setOpenUpwards(false);
+                            setDropdownPos({
+                              x: rect.left,
+                              y: rect.bottom + 6,
+                            });
                           }
-                          className={`table-hover ${activeRow === idx ? "active-row" : ""
-                            }`}
+                        }}
+                        className="btn"
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          padding: 4,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          position: "relative",
+                        }}
+                        aria-label="actions"
+                      >
+                        <HiOutlineDotsHorizontal size={28} color="grey" />
+                      </button>
+
+                      {/* dropdown */}
+                      {openMenuIndex === idx && (
+                        <div
+                          style={{
+                            position: "fixed",
+                            top: openUpwards
+                              ? dropdownPos.y - 180
+                              : dropdownPos.y,
+                            left: dropdownPos.x - 80,
+                            zIndex: 999999,
+                          }}
                         >
-                          {/* invoice no */}
-                          <td style={{ padding: "8px 16px", verticalAlign: "middle", height: '46px', }}>
-                            <div
-                              style={{ display: "flex", alignItems: "center", gap: 12 }}
-                            >
-                              <input
-                                type="checkbox"
-                                style={{ width: 18, height: 18, }}
-                                checked={selectedInvoices.includes(inv._id)}
-                                onChange={(e) => {
-                                  if (e.target.checked) {
-                                    setSelectedInvoices((prev) => {
-                                      const next = new Set(prev);
-                                      next.add(inv._id);
-                                      return Array.from(next);
-                                    });
-                                  } else {
-                                    setSelectedInvoices((prev) =>
-                                      prev.filter((id) => id !== inv._id)
-                                    );
-                                  }
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                              <div>
-                                <div
-                                  style={{
-                                    fontSize: 14,
-                                    color: "#0E101A",
-                                    whiteSpace: "nowrap",
-                                    display: "flex",
-                                    gap: "5px",
-                                    justifyContent: "center",
-                                    alignItems: "center",
-                                  }}
-                                >
-                                  <div>
-                                    {inv.invoiceNo}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-
-                          {/* customer details */}
-                          <td
+                          <div
+                            ref={menuRef}
                             style={{
-                              padding: "8px 16px",
-                              fontSize: 14,
-                              color: "#0E101A",
+                              background: "white",
+                              padding: 8,
+                              borderRadius: 12,
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                              minWidth: 180,
+                              height: "auto",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 4,
                             }}
                           >
-                            <span>
-                              {inv.customerId?.name ||
-                                inv.customerId?.email ||
-                                inv.customerId?._id ||
-                                "-"}
-                            </span>
-                          </td>
-
-                          {/* date */}
-                          <td
-                            style={{
-                              padding: "8px 16px",
-                              fontSize: 14,
-                              color: "#0E101A",
-                            }}
-                          >
-                            {inv.dueDate ? new Date(inv.dueDate).toLocaleDateString() : "-"}
-                          </td>
-
-                          {/* amount */}
-                          <td
-                            style={{
-                              padding: "8px 16px",
-                              fontSize: 14,
-                              color: "#0E101A",
-                            }}
-                          >
-                            ₹{inv.grandTotal.toFixed(2)}
-                          </td>
-
-                          {/* paid */}
-                          <td
-                            style={{
-                              padding: "8px 16px",
-                              fontSize: 14,
-                              color: "#0E101A",
-                            }}
-                          >
-                            ₹{Number(inv.paidAmount ?? 0).toFixed(2)}
-                          </td>
-
-                          {/* due amount */}
-                          <td
-                            style={{
-                              padding: "8px 16px",
-                              fontSize: 14,
-                              color: "#0E101A",
-                            }}
-                          >
-                            ₹{Number(inv.dueAmount ?? 0).toFixed(2)}
-                          </td>
-
-                          {/* status */}
-                          <td
-                            style={{
-                              padding: "8px 16px",
-                              fontSize: 14,
-                              color: "#0E101A",
-                            }}
-                          >
-                            <span
-                              className={`badge badge-soft-${(inv.status === "paid" ? "success" : "danger")} badge-xs shadow-none`}
-                            >
-                              <i className="ti ti-point-filled me-1" />
-                              {inv.status || "-"}
-                            </span>
-                          </td>
-
-                          {/* action */}
-                          <td onClick={(e) => e.stopPropagation()}>
-                            <div className="edit-delete-action d-flex align-items-center justify-content-center gap-2">
-                              {/* <a
-                                className="p-2 d-flex align-items-center justify-content-between border rounded"
-                                  onClick={() =>
-                                    navigate(`/sales-invoice/${inv._id}`)
-                                  }
-                              >
-                                <TbEye className="feather-eye" />
-                              </a> */}
-                              <a
-                                className="p-2 d-flex align-items-center justify-content-between border rounded"
-                                data-bs-toggle="modal"
-                                data-bs-target="#delete"
-                              >
-                                <TbTrash className="feather-trash-2" />
-                              </a>
-                              {/* <a
-                                className="p-2 d-flex align-items-center justify-content-between border rounded"
-                                onClick={() =>
-                                  shareInvoice(
-                                    inv._id,
-                                    inv.customerId?.email,
-                                    inv.customerId?.phone
-                                  )
-                                }
+                            {menuItems.map((item) => (
+                              <div
+                                key={item.action}
+                                onClick={() => handleMenuAction(item.action, inv)}
+                                className="button-action"
                                 style={{
-                                  opacity: shareLoadingId === inv._id ? 0.6 : 1,
-                                  pointerEvents: shareLoadingId === inv._id ? "none" : "auto"
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 12,
+                                  padding: "8px 12px",
+                                  fontFamily: "Inter, sans-serif",
+                                  fontSize: 16,
+                                  fontWeight: 400,
+                                  cursor: "pointer",
+                                  borderRadius: 8,
                                 }}
-                                title="Share via Email & WhatsApp"
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = "#e3f2fd";
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = "transparent";
+                                }}
                               >
-                                <GrShareOption />
-                              </a> */}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    });
-                  }
-                })
+                                <span>{item.icon}</span>
+                                <span>{item.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -831,8 +873,30 @@ const Invoice = () => {
             }}
           />
         </div>
-
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmDeleteModal
+        isOpen={showDeleteModal}
+        onCancel={() => {
+          setShowDeleteModal(false);
+          setSelectedInvoice(null);
+        }}
+        onConfirm={async () => {
+          try {
+            await deleteInvoice(selectedInvoice._id);
+            toast.success("Invoice deleted successfully!");
+            fetchInvoices();
+          } catch (error) {
+            toast.error("Failed to delete invoice");
+          } finally {
+            setShowDeleteModal(false);
+            setSelectedInvoice(null);
+          }
+        }}
+        title="Delete Invoice"
+        message={`Are you sure you want to delete invoice ${selectedInvoice?.invoiceNo || ''}? This action cannot be undone.`}
+      />
     </div>
   );
 };
