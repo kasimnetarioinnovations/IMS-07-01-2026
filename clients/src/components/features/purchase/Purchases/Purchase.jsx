@@ -26,6 +26,7 @@ import { toast } from "react-toastify";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { HiOutlineDotsHorizontal } from "react-icons/hi";
 
 const statsTop = [
   {
@@ -176,19 +177,35 @@ export default function Purchase() {
   const [selectedOrdersForExport, setSelectedOrdersForExport] = useState([]);
   const [selectAllOrdersForExport, setSelectAllOrdersForExport] =
     useState(false);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [selectedRowIds, setSelectedRowIds] = useState(new Set());
   const [allVisibleSelected, setAllVisibleSelected] = useState(false);
 
+  const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0 });
+  const [openUpwards, setOpenUpwards] = useState(false);
+
+  const [activeRow, setActiveRow] = useState(null);
+
+  const toggleRow = (idx) => {
+    const newOpen = openRow === idx ? null : idx;
+    setOpenRow(newOpen);
+    if (newOpen === null && activeRow === idx) {
+      setActiveRow(null);
+    } else if (newOpen !== null) {
+      setActiveRow(idx);
+    }
+  };
+
   // Fetch purchase orders
-  const fetchPurchaseOrders = async (page = 1, status = "") => {
+  const fetchPurchaseOrders = async (page = 1, status = "", limitOverride) => {
     try {
       setLoading(true);
       console.log("Fetching purchase orders...");
 
       const params = {
         page,
-        limit: 10,
+        limit: limitOverride ?? itemsPerPage,
         ...(status && status !== "all" && { status }),
         ...(search && { search }),
       };
@@ -545,7 +562,7 @@ export default function Purchase() {
   }, [selectedRowIds, purchaseOrders]);
 
   return (
-    <div className="px-4 py-4" style={{overflowY:"auto", height:"100vh"}}>
+    <div className="px-4 py-4" style={{ overflowY: "auto", height: "100vh" }}>
       {/* Header: back + title + right-side controls */}
       <div className="d-flex justify-content-between align-items-center mb-3">
         <div className="d-flex align-items-center justify-content-center gap-3">
@@ -706,13 +723,16 @@ export default function Purchase() {
         ))}
       </div>
 
-      {/* Search + Tabs */}
+      {/* Search + Tabs + Table */}
       <div
         style={{
           backgroundColor: "white",
           borderRadius: "16px",
-          padding: "20px",
-          overflowX:"auto"
+          padding: "16px",
+          overflowX: "auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: 16,
         }}
       >
         <div
@@ -720,10 +740,10 @@ export default function Purchase() {
           style={{
             gap: "20px",
             justifyContent: "space-between",
-            marginBottom: "20px",
+            width: "100%",
           }}
         >
-          <div className="col-md-6 d-flex align-items-center">
+          <div className="col-md-6 d-flex align-items-center" style={{width: "50%"}}>
             <div
               style={{
                 background: "#F3F8FB",
@@ -766,30 +786,41 @@ export default function Purchase() {
               })}
             </div>
           </div>
-          <div className="d-flex align-items-center gap-4">
+          <div className="d-flex align-items-center gap-4" style={{
+            display: "flex",
+            justifyContent: "end",
+            gap: "24px",
+            height: "33px",
+            width: "50%",
+          }}>
             {/* Search Box */}
             <div
-              className="d-flex align-items-center search-box"
               style={{
-                background: "#FCFCFC",
-                padding: "5px 16px",
+                width: "50%",
+                position: "relative",
+                padding: "4px 8px 4px 20px",
+                display: "flex",
                 borderRadius: 8,
+                alignItems: "center",
+                background: "#FCFCFC",
                 border: "1px solid #EAEAEA",
-                width: "465px",
+                gap: "5px",
+                color: "rgba(19.75, 25.29, 61.30, 0.40)",
               }}
             >
               <FiSearch style={{ color: "#14193D66" }} />
               <input
                 type="search"
-                placeholder="Search by supplier or invoice number"
+                placeholder="Search by Supplier name, invoice no."
                 value={search}
                 onChange={handleSearch}
                 style={{
+                  width: "100%",
                   border: "none",
                   outline: "none",
-                  width: "100%",
-                  backgroundColor: "transparent",
-                  fontSize: "15px",
+                  fontSize: 14,
+                  background: "#FCFCFC",
+                  color: "rgba(19.75, 25.29, 61.30, 0.40)",
                 }}
               />
             </div>
@@ -798,19 +829,22 @@ export default function Purchase() {
             {/* Export Button */}
             <button
               style={{
-                background: "#FCFCFC",
-                border: "1px solid #EAEAEA",
-                borderRadius: 8,
-                padding: "4px 14px",
-                fontSize: "14px",
-                fontFamily: '"Inter", sans-serif',
-                color: "#0E101A",
-                height: "32px",
-                whiteSpace: "nowrap",
                 display: "flex",
+                justifyContent: "flex-start",
                 alignItems: "center",
-                justifyContent: "center",
-                fontWeight: 500,
+                gap: 9,
+                padding: "8px 16px",
+                background: "#FCFCFC",
+                borderRadius: 8,
+                outline: "1px solid #EAEAEA",
+                outlineOffset: "-1px",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "Inter, sans-serif",
+                fontSize: 14,
+                fontWeight: 400,
+                color: "#0E101A",
+                height: "33px",
                 cursor:
                   selectedRowIds.size > 0 || purchaseOrders.length > 0
                     ? "pointer"
@@ -828,89 +862,75 @@ export default function Purchase() {
                   : "Export all"
               }
             >
-              <TbFileExport
-                className="fs-5 text-secondary"
-                style={{ marginRight: "10px" }}
-              />
-              Export PDF
+              <TbFileExport className="fs-5 text-secondary" />
+              Export
             </button>
           </div>
         </div>
 
-        {/* Table card */}
+        {/* Table */}
         <div style={{ ...cardStyle }}>
           <div
             className="table-responsive"
             style={{
-              cursor: "pointer",
-              maxHeight:"calc(100vh - 410px)",
+              // cursor: "pointer",
+              maxHeight: "calc(100vh - 410px)",
               overflowY: "scroll",
               scrollbarWidth: "none",
               msOverflowStyle: "none",
             }}
           >
             {/* wrapper for top + bottom spacing (important for sticky alignment) */}
-            <div>
+            <div style={{ maxHeight: "calc(100vh - 410px)", overflowY: 'auto' }}>
               <table
-                className="table align-middle"
                 style={{
-                  fontSize: 14,
-                  marginBottom: 0,
-                  borderCollapse: "separate",
-                  borderSpacing: 0,
+                  width: "100%",
+                  borderSpacing: "0 0px",
+                  fontFamily: "Inter",
                 }}
               >
-                <thead>
-                  <tr>
+                <thead style={{ position: "sticky", top: 0, zIndex: 9 }}>
+                  <tr style={{ backgroundColor: "#F3F8FB", textAlign: "left" }}>
                     {/* Checkbox */}
                     <th
                       style={{
-                        width: 0,
-                        backgroundColor: "#F3F8FB",
-                        position: "sticky",
-                        top: 0,
-                        zIndex: 10,
-                        fontWeight: 400,
-                        padding: "12px 16px",
+                        padding: "0px 0px",
                         color: "#727681",
                         fontSize: "14px",
-                        fontFamily: '"Inter", sans-serif',
+                        fontWeight: 400,
                       }}
                     >
-                      <input
-                        type="checkbox"
-                        aria-label="select all"
-                        checked={allVisibleSelected}
-                        onChange={(e) => {
-                          const next = new Set(selectedRowIds);
-                          if (e.target.checked) {
-                            // Add all current page orders
-                            purchaseOrders.forEach((order) => {
-                              if (order._id) next.add(order._id);
-                            });
-                          } else {
-                            // Remove all current page orders
-                            purchaseOrders.forEach((order) => {
-                              if (order._id) next.delete(order._id);
-                            });
-                          }
-                          setSelectedRowIds(next);
-                        }}
-                      />
+                      <div style={{ display: "flex", alignItems: "center", gap: "0px", justifyContent: 'center' }}>
+                        <input
+                          type="checkbox"
+                          aria-label="select all"
+                          checked={allVisibleSelected}
+                          onChange={(e) => {
+                            const next = new Set(selectedRowIds);
+                            if (e.target.checked) {
+                              // Add all current page orders
+                              purchaseOrders.forEach((order) => {
+                                if (order._id) next.add(order._id);
+                              });
+                            } else {
+                              // Remove all current page orders
+                              purchaseOrders.forEach((order) => {
+                                if (order._id) next.delete(order._id);
+                              });
+                            }
+                            setSelectedRowIds(next);
+                          }}
+                        />
+                      </div>
                     </th>
 
                     {/* Supplier Name */}
                     <th
                       style={{
-                        backgroundColor: "#F3F8FB",
-                        position: "sticky",
-                        top: 0,
-                        zIndex: 10,
-                        fontWeight: 400,
                         padding: "12px 16px",
                         color: "#727681",
                         fontSize: "14px",
-                        fontFamily: '"Inter", sans-serif',
+                        fontWeight: 400,
                       }}
                     >
                       Supplier Name
@@ -919,15 +939,10 @@ export default function Purchase() {
                     {/* Invoice */}
                     <th
                       style={{
-                        backgroundColor: "#F3F8FB",
-                        position: "sticky",
-                        top: 0,
-                        zIndex: 10,
-                        fontWeight: 400,
                         padding: "12px 16px",
                         color: "#727681",
                         fontSize: "14px",
-                        fontFamily: '"Inter", sans-serif',
+                        fontWeight: 400,
                       }}
                     >
                       Invoice No.
@@ -936,15 +951,10 @@ export default function Purchase() {
                     {/* Items */}
                     <th
                       style={{
-                        backgroundColor: "#F3F8FB",
-                        position: "sticky",
-                        zIndex: 10,
-                        fontWeight: 400,
                         padding: "12px 16px",
                         color: "#727681",
                         fontSize: "14px",
-                        fontFamily: '"Inter", sans-serif',
-                        top: 0,
+                        fontWeight: 400,
                       }}
                     >
                       No. Of Items
@@ -953,15 +963,11 @@ export default function Purchase() {
                     {/* Dates */}
                     <th
                       style={{
-                        backgroundColor: "#F3F8FB",
-                        position: "sticky",
-                        zIndex: 10,
-                        fontWeight: 400,
                         padding: "12px 16px",
                         color: "#727681",
                         fontSize: "14px",
+                        fontWeight: 400,
                         fontFamily: '"Inter", sans-serif',
-                        top: 0,
                       }}
                     >
                       Order Date & Arriving On
@@ -970,15 +976,11 @@ export default function Purchase() {
                     {/* Status */}
                     <th
                       style={{
-                        backgroundColor: "#F3F8FB",
-                        position: "sticky",
-                        zIndex: 10,
-                        fontWeight: 400,
                         padding: "12px 16px",
                         color: "#727681",
                         fontSize: "14px",
+                        fontWeight: 400,
                         fontFamily: '"Inter", sans-serif',
-                        top: 0,
                       }}
                     >
                       Status
@@ -987,15 +989,11 @@ export default function Purchase() {
                     {/* Total */}
                     <th
                       style={{
-                        backgroundColor: "#F3F8FB",
-                        position: "sticky",
-                        zIndex: 10,
-                        fontWeight: 400,
                         padding: "12px 16px",
                         color: "#727681",
                         fontSize: "14px",
+                        fontWeight: 400,
                         fontFamily: '"Inter", sans-serif',
-                        top: 0,
                       }}
                     >
                       Total Amount
@@ -1005,16 +1003,11 @@ export default function Purchase() {
                     <th
                       className="text-center"
                       style={{
-                        width: 60,
-                        backgroundColor: "#F3F8FB",
-                        position: "sticky",
-                        zIndex: 10,
-                        fontWeight: 400,
                         padding: "12px 16px",
                         color: "#727681",
                         fontSize: "14px",
+                        fontWeight: 400,
                         fontFamily: '"Inter", sans-serif',
-                        top: 0,
                       }}
                     >
                       Actions
@@ -1025,7 +1018,7 @@ export default function Purchase() {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan="8" className="text-center py-5">
+                      <td colSpan="8" className="text-center py-4">
                         <div
                           className="spinner-border text-primary"
                           role="status"
@@ -1036,7 +1029,7 @@ export default function Purchase() {
                     </tr>
                   ) : purchaseOrders.length === 0 ? (
                     <tr>
-                      <td colSpan="8" className="text-center text-muted py-5">
+                      <td colSpan="8" className="text-center py-4">
                         No purchase orders found
                       </td>
                     </tr>
@@ -1049,45 +1042,54 @@ export default function Purchase() {
                       const itemsCount = order.items?.length || 0;
 
                       return (
-                        <tr key={order._id} style={{ verticalAlign: "middle" }}>
+                        <tr
+                          key={order._id}
+                          className={`table-hover ${activeRow === idx ? "active-row" : ""}`}
+                          style={{
+                            borderBottom: "1px solid #EAEAEA",
+                            cursor: 'pointer',
+                          }}
+                        >
                           {/* Checkbox */}
                           <td
                             className="text-center"
-                            style={{ padding: "14px 16px" }}
+                            style={{ padding: "4px 16px" }}
                           >
-                            <input
-                              type="checkbox"
-                              aria-label="select row"
-                              checked={selectedRowIds.has(order._id)}
-                              onChange={(e) => {
-                                const next = new Set(selectedRowIds);
-                                if (e.target.checked) {
-                                  if (order._id) next.add(order._id);
-                                } else {
-                                  if (order._id) next.delete(order._id);
-                                }
-                                setSelectedRowIds(next);
-                              }}
-                            />
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: 'center' }}>
+                              <input
+                                type="checkbox"
+                                aria-label="select row"
+                                checked={selectedRowIds.has(order._id)}
+                                onChange={(e) => {
+                                  const next = new Set(selectedRowIds);
+                                  if (e.target.checked) {
+                                    if (order._id) next.add(order._id);
+                                  } else {
+                                    if (order._id) next.delete(order._id);
+                                  }
+                                  setSelectedRowIds(next);
+                                }}
+                              />
+                            </div>
                           </td>
 
                           {/* Supplier */}
                           <td
-                            style={{ padding: "14px 16px", color: "#0E101A" }}
+                            style={{ padding: "4px 16px", color: "#0E101A" }}
                           >
                             {supplierName} ({itemsCount} items)
                           </td>
 
                           {/* Invoice */}
-                          <td style={{ padding: "14px 16px" }}>
+                          <td style={{ padding: "4px 16px" }}>
                             {order.invoiceNo}
                           </td>
 
                           {/* Items */}
-                          <td style={{ padding: "14px 16px" }}>{itemsCount}</td>
+                          <td style={{ padding: "4px 16px" }}>{itemsCount}</td>
 
                           {/* Dates */}
-                          <td style={{ padding: "14px 16px" }}>
+                          <td style={{ padding: "4px 16px" }}>
                             <div
                               style={{
                                 display: "flex",
@@ -1101,13 +1103,13 @@ export default function Purchase() {
                           </td>
 
                           {/* Status chip */}
-                          <td style={{ padding: "14px 16px" }}>
+                          <td style={{ padding: "4px 16px" }}>
                             <div
                               style={{
                                 display: "inline-flex",
                                 alignItems: "center",
                                 gap: 8,
-                                padding: "6px 10px",
+                                padding: "2px 5px",
                                 borderRadius: 50,
                                 background: sty.bg,
                                 color: sty.color,
@@ -1140,22 +1142,52 @@ export default function Purchase() {
                           </td>
 
                           {/* Amount */}
-                          <td style={{ padding: "14px 16px" }}>
+                          <td style={{ padding: "4px 16px" }}>
                             ₹ {order.grandTotal?.toLocaleString("en-IN")}/-
                           </td>
 
                           {/* Actions */}
                           <td
-                            className="text-center"
                             style={{
-                              padding: "14px 16px",
+                              padding: "4px 16px",
                               position: "relative",
+                              overflow: "visible",
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
                             }}
                           >
                             <button
-                              onClick={() =>
+                              onClick={(e) => {
+                                e.stopPropagation();
+
+                                const rect =
+                                  e.currentTarget.getBoundingClientRect();
                                 setOpenMenu(openMenu === idx ? null : idx)
-                              }
+
+                                const dropdownHeight = 160; // your menu height
+                                const spaceBelow =
+                                  window.innerHeight - rect.bottom;
+                                const spaceAbove = rect.top;
+
+                                // decide direction
+                                if (
+                                  spaceBelow < dropdownHeight &&
+                                  spaceAbove > dropdownHeight
+                                ) {
+                                  setOpenUpwards(true);
+                                  setDropdownPos({
+                                    x: rect.left,
+                                    y: rect.top - 6, // position above button
+                                  });
+                                } else {
+                                  setOpenUpwards(false);
+                                  setDropdownPos({
+                                    x: rect.left,
+                                    y: rect.bottom + 6, // position below button
+                                  });
+                                }
+                              }}
                               className="btn"
                               style={{
                                 border: "none",
@@ -1163,69 +1195,79 @@ export default function Purchase() {
                                 padding: 4,
                                 display: "flex",
                                 alignItems: "center",
+                                justifyContent: "center",
+                                position: "relative",
                               }}
                               aria-label="actions"
                             >
-                              <BsThreeDots style={{ color: "#6C748C" }} />
+                              <HiOutlineDotsHorizontal size={20} color="grey" />
                             </button>
 
                             {openMenu === idx && (
                               <div
-                                ref={menuRef}
                                 style={{
-                                  position: "absolute",
-                                  right: 140,
-                                  width: "210px",
-                                  backgroundColor: "#ffff",
-                                  borderRadius: "12px",
-                                  boxShadow: "0 8px 25px rgba(0, 0, 0, 0.15)",
-                                  border: "1px solid #E5E7EB",
-                                  overflow: "hidden",
-                                  animation: "fadeIn 0.2s ease-out",
-                                  zIndex: 1000,
+                                  position: "fixed",
+                                  top: openUpwards
+                                    ? dropdownPos.y - 60
+                                    : dropdownPos.y,
+                                  left: dropdownPos.x - 80,
+                                  zIndex: 999999,
                                 }}
                               >
-                                {menuItems.map((item) => (
-                                  <div
-                                    key={item.action}
-                                    onClick={() =>
-                                      handleMenuAction(order, item.action)
-                                    }
-                                    style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: "12px",
-                                      padding: "8px 18px",
-                                      fontFamily: "Inter, sans-serif",
-                                      fontSize: "14px",
-                                      fontWeight: 500,
-                                      cursor: "pointer",
-                                      transition: "0.2s",
-                                      textDecoration: "none",
-                                      color: "#344054",
-                                    }}
-                                    onMouseEnter={(e) => {
-                                      e.currentTarget.style.backgroundColor =
-                                        "#e3f2fd";
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      e.currentTarget.style.backgroundColor =
-                                        "transparent";
-                                    }}
-                                  >
-                                    <span style={{ fontSize: "18px" }}>
-                                      {item.icon}
-                                    </span>
-                                    <span>{item.label}</span>
-                                  </div>
-                                ))}
-                                {/* animation */}
-                                <style>{`
+                                <div
+                                  ref={menuRef}
+                                  style={{
+                                    background: "white",
+                                    padding: 8,
+                                    borderRadius: 12,
+                                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                                    minWidth: 170,
+                                    height: "auto", // height must match dropdownHeight above
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 4,
+                                  }}
+                                >
+                                  {menuItems.map((item) => (
+                                    <div
+                                      key={item.action}
+                                      onClick={() =>
+                                        handleMenuAction(order, item.action)
+                                      }
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 12,
+                                        padding: "8px 12px",
+                                        fontFamily: "Inter, sans-serif",
+                                        fontSize: 16,
+                                        fontWeight: 400,
+                                        cursor: "pointer",
+                                        borderRadius: 8,
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor =
+                                          "#e3f2fd";
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor =
+                                          "transparent";
+                                      }}
+                                    >
+                                      <span style={{ fontSize: "20px" }}>
+                                        {item.icon}
+                                      </span>
+                                      <span>{item.label}</span>
+                                    </div>
+                                  ))}
+                                  {/* animation */}
+                                  <style>{`
                                     @keyframes fadeIn {
                                       from { opacity: 0; transform: translateY(-6px); }
                                       to { opacity: 1; transform: translateY(0); }
                                     }
                                   `}</style>
+                                </div>
                               </div>
                             )}
                           </td>
@@ -1237,16 +1279,6 @@ export default function Purchase() {
               </table>
             </div>
           </div>
-
-          {/* Pagination */}
-          {!loading && purchaseOrders.length > 0 && (
-            <Pagination
-              currentPage={currentPage}
-              itemsPerPage={10}
-              total={totalCount}
-              onPageChange={handlePageChange}
-            />
-          )}
 
           <ConfirmDeleteModal
             isOpen={showDeleteModal}
@@ -1266,6 +1298,38 @@ export default function Purchase() {
             onConfirm={(status) => updateInvoiceStatus(status)}
           />
         </div>
+
+        {/* Pagination */}
+        {!loading && purchaseOrders.length > 0 && (
+          <div className="page-redirect-btn px-2">
+            <Pagination
+              currentPage={currentPage}
+              itemsPerPage={itemsPerPage}
+              total={totalCount}
+              onPageChange={handlePageChange}
+              onItemsPerPageChange={(n) => {
+                setItemsPerPage(n);
+                setCurrentPage(1);
+                let status = "";
+                switch (activeTab) {
+                  case "pending":
+                    status = "converted";
+                    break;
+                  case "approved":
+                    status = "received";
+                    break;
+                  case "rejected":
+                    status = "cancelled";
+                    break;
+                  default:
+                    status = "";
+                }
+                fetchPurchaseOrders(1, status, n);
+              }}
+            />
+          </div>
+        )}
+
       </div>
     </div>
   );
