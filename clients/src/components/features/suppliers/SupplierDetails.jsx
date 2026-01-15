@@ -180,10 +180,10 @@ const SupplierDetails = ({ onClose, supplierId }) => {
     );
   }
   return (
-    <div style={{ padding: "20px", fontFamily: '"Inter", sans-serif', }}>
+    <div style={{ padding: "20px", fontFamily: '"Inter", sans-serif'}}>
       <div style={{ padding: "20px", backgroundColor: "#FFFF" }}>
         {/* supplier, edit */}
-        <div className="d-flex justify-content-between" >
+        <div className="d-flex justify-content-between"  style={{flexWrap:"wrap"}} >
           <div style={{ display: "flex", alignItems: "center" }}>
             <h2 style={{ color: "#000000", fontWeight: 500, fontSize: "22px", lineHeight: "120%", marginBottom: "20px" }}>Supplier Details</h2>
           </div>

@@ -542,9 +542,9 @@ const SupplierDebitNote = () => {
         navigate(`/create-supplier-debitnote/${supplier._id}`, { replace: true });
     };
     return (
-        <div className="px-4 py-4">
-            <div className="">
-                <div className="">
+        <div className="p-4" style={{height:"100vh", overflow:"auto"}}>
+            
+               
                     {/* Header - SAME UI */}
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <div className="d-flex align-items-center">
@@ -582,7 +582,7 @@ const SupplierDebitNote = () => {
                     {/* Supplier Details Section - EXACT SAME UI as customer */}
                     <div
                         className="section-card"
-                        style={{ padding: "20px", height: "640px", overflowX: "scroll", scrollbarWidth: "none" }}
+                        style={{ padding: "20px", height: "auto" , overflow:"auto", maxHeight:"calc(100vh - 160px)"}}
                     >
                         <h6 className="section-title">Supplier Details</h6>
 
