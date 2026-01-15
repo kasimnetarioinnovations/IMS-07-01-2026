@@ -852,13 +852,15 @@ const SupplierList = () => {
                     position: "fixed",
                     top: 0,
                     right: 0,
-                    width: "940px",
+                    width:"100%",
+                    maxWidth: "940px",
                     height: "100vh",
                     background: "white",
                     boxShadow: "-4px 0 20px rgba(0,0,0,0.1)",
                     transition: "right 0.4s ease",
                     zIndex: 9999,
-                    overflowY: "auto",
+                    overflow: "auto",
+                   
                   }}
                 >
                   <SupplierDetails

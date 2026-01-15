@@ -8,8 +8,8 @@ const EmptySupplier = () => {
   const [openAddModal, setOpenAddModal] = useState(false);
   const navigate = useNavigate();
   return (
-    <div className="page-wrapper">
-      <div className="content">
+   
+      <div className="p-4">
         <div style={{ maxHeight: "80vh", display: "flex", justifyContent: "center", }}>
           <div
             style={{
@@ -55,15 +55,16 @@ const EmptySupplier = () => {
           {/* Add Customer Modal */}
           {openAddModal && (
             <div
-              style={{
-                position: "fixed",
-                inset: 0,
-                background: "rgba(0,0,0,0.5)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                zIndex: 9999,
-              }}
+              // style={{
+              //   position: "fixed",
+              //   inset: 0,
+              //   background: "rgba(0,0,0,0.5)",
+              //   display: "flex",
+              //   alignItems: "center",
+              //   justifyContent: "center",
+              //   zIndex: 9999,
+              // }}
+              //  style={{ backgroundColor: rgba(0, 0, 0, 0.27)}}
               onClick={() => setOpenAddModal(false)}
             >
               <div onClick={(e) => e.stopPropagation()}>
@@ -77,7 +78,7 @@ const EmptySupplier = () => {
           )}
         </div>
       </div>
-    </div>
+    
   )
 }
 
