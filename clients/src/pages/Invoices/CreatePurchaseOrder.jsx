@@ -79,7 +79,9 @@ function CreatePurchaseOrder() {
     const [supplier, setSupplier] = useState({
         name: "",
         phone: "",
+        email: "",
         address: "",
+        gstin: "",
         supplierId: "",
     });
 
@@ -110,7 +112,7 @@ function CreatePurchaseOrder() {
     const fetchSupplierForSearch = async () => {
         try {
             const response = await api.get('/api/suppliers');
-            console.log("Supplier API response:", response.data);
+            console.log("Supplier API response:", response.data.suppliers);
 
             // The response has {total: X, suppliers: [...]}
             if (response.data && Array.isArray(response.data.suppliers)) {
@@ -171,15 +173,18 @@ function CreatePurchaseOrder() {
                 if (supplierId) {
                     const supplierRes = await api.get(`/api/suppliers/${supplierId}`);
                     const s = supplierRes.data;
+                    console.log("Fetched supplier data:", s);
                     setSupplier({
-                        name: s.name || "",
+                        name: s.supplierName || "",
                         phone: s.phone || "",
                         address: [s.address.addressLine, s.address.state, s.address.pincode]
                             .filter(Boolean)
                             .join(", "),
                         email: s.email || "",
                         gstin: s.gstin || "",
+                        supplierId: s._id
                     });
+                    setSupplierSearch(s.supplierName || "")
                 }
 
                 // Fetch products
@@ -224,6 +229,7 @@ function CreatePurchaseOrder() {
 
     // handle supplier selection from dropdown
     const handleSupplierSelect = (selectedSupplier) => {
+        console.log("Selected supplier:", selectedSupplier);
         setSupplier({
             name: selectedSupplier.name || "",
             phone: selectedSupplier.phone || "",
@@ -1042,7 +1048,7 @@ function CreatePurchaseOrder() {
                                                                 fontSize: "14px",
                                                                 cursor: isFromNavbar ? "pointer" : "text",
                                                             }}
-                                                            value={supplier.name}
+                                                            value={isFromNavbar ? supplierSearch : supplier.name || ""}
                                                             onChange={(e) => {
                                                                 if (isFromNavbar) {
                                                                     // In navbar mode, show dropdown and search
