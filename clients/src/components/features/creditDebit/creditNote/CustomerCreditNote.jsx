@@ -521,7 +521,7 @@ const CustomerCreditNote = () => {
   }, []);
 
   return (
-    <div className="px-4 py-4">
+    <div className="p-4" style={{overflowY:"auto", height:"100vh"}}>
       <div className="">
         <div className="">
           {/* Header */}
@@ -579,7 +579,7 @@ const CustomerCreditNote = () => {
           {/* Customer Section */}
           <div
             className="section-card"
-            style={{ padding: "20px", height: "630px", overflowX: "scroll", scrollbarWidth: "none" }}
+            style={{ padding: "20px", overflow:"auto", maxHeight:"calc(100vh - 160px)" }}
           >
             <h6 className="section-title">Customer Details</h6>
 

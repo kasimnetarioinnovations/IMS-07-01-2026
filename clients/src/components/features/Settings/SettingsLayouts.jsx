@@ -28,7 +28,7 @@ const SettingsLayouts = () => {
             width: "100%",
             gap: "32px",
             height: "calc(100vh - 150px)",
-            overflow: "hidden",
+            overflow: "auto",
           }}
         >
           {/* Sidebar */}

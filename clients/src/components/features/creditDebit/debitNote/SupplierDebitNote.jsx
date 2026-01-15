@@ -542,9 +542,8 @@ const SupplierDebitNote = () => {
         navigate(`/create-supplier-debitnote/${supplier._id}`, { replace: true });
     };
     return (
+        <div>
         <div className="p-4" style={{height:"100vh", overflow:"auto"}}>
-            
-               
                     {/* Header - SAME UI */}
                     <div className="d-flex justify-content-between align-items-center mb-4">
                         <div className="d-flex align-items-center">
@@ -1794,7 +1793,7 @@ const SupplierDebitNote = () => {
                     </div>
                 )}
             </div>
-        </div>
+        // </div>
     );
 };
 
