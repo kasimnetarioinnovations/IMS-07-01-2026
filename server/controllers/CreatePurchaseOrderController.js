@@ -291,37 +291,36 @@ exports.createInvoice = async (req, res) => {
     //   invoice.roundOffValue = Math.round(totalBeforeRound) - totalBeforeRound;
     // }
     // Calculate round off value if needed
-if (autoRoundOff) {
-  // Ensure all values are numbers, default to 0 if undefined/NaN
-  const itemsDiscount = validatedItems.reduce(
-    (sum, item) => sum + (parseFloat(item.discountAmt) || 0),
-    0
-  );
-  
-  const additionalDiscountValue = 
-    (parseFloat(additionalDiscount.amt) || 0) + 
-    ((parseFloat(subtotal) || 0) * ((parseFloat(additionalDiscount.pct) || 0)) / 100);
-  
-  const totalDiscountCalc = itemsDiscount + additionalDiscountValue;
+    if (autoRoundOff) {
+      // Ensure all values are numbers, default to 0 if undefined/NaN
+      const itemsDiscount = validatedItems.reduce(
+        (sum, item) => sum + (parseFloat(item.discountAmt) || 0),
+        0
+      );
 
-  // Convert all values to numbers with fallback to 0
-  const subTotalNum = parseFloat(subtotal) || 0;
-  const totalTaxNum = parseFloat(totalTax) || 0;
-  const additionalChargesNum = parseFloat(additionalCharges) || 0;
-  
-  const totalBeforeRound = 
-    subTotalNum + 
-    totalTaxNum + 
-    additionalChargesNum - 
-    totalDiscountCalc;
-  
-  // Check if totalBeforeRound is a valid number before calculating roundOffValue
-  if (!isNaN(totalBeforeRound)) {
-    invoice.roundOffValue = Math.round(totalBeforeRound) - totalBeforeRound;
-  } else {
-    invoice.roundOffValue = 0; // Default to 0 if calculation fails
-  }
-}
+      const additionalDiscountValue =
+        (parseFloat(additionalDiscount.amt) || 0) +
+        ((parseFloat(subtotal) || 0) *
+          (parseFloat(additionalDiscount.pct) || 0)) /
+          100;
+
+      const totalDiscountCalc = itemsDiscount + additionalDiscountValue;
+
+      // Convert all values to numbers with fallback to 0
+      const subTotalNum = parseFloat(subtotal) || 0;
+      const totalTaxNum = parseFloat(totalTax) || 0;
+      const additionalChargesNum = parseFloat(additionalCharges) || 0;
+
+      const totalBeforeRound =
+        subTotalNum + totalTaxNum + additionalChargesNum - totalDiscountCalc;
+
+      // Check if totalBeforeRound is a valid number before calculating roundOffValue
+      if (!isNaN(totalBeforeRound)) {
+        invoice.roundOffValue = Math.round(totalBeforeRound) - totalBeforeRound;
+      } else {
+        invoice.roundOffValue = 0; // Default to 0 if calculation fails
+      }
+    }
 
     // Save invoice
     await invoice.save();
@@ -420,7 +419,7 @@ exports.getAllInvoices = async (req, res) => {
     if (status) {
       const allowedStatuses = [
         "draft",
-         "converted",
+        "converted",
         "received",
         "partial",
         "cancelled",
@@ -437,19 +436,21 @@ exports.getAllInvoices = async (req, res) => {
       filter.status = status;
     }
 
-    // Date range filter
-   if (startDate) {
-  const start = new Date(startDate);
-  start.setHours(0, 0, 0, 0);
-  filter.invoiceDate.$gte = start;
-}
+    if (startDate || endDate) {
+      filter.invoiceDate = {};
+      // Date range filter
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        filter.invoiceDate.$gte = start;
+      }
 
-if (endDate) {
-  const end = new Date(endDate);
-  end.setHours(23, 59, 59, 999);
-  filter.invoiceDate.$lte = end;
-}
-
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        filter.invoiceDate.$lte = end;
+      }
+    }
 
     // Pagination
     const pageNum = Math.max(1, parseInt(page) || 1);
@@ -458,7 +459,9 @@ if (endDate) {
 
     // Build query
     let query = Invoice.find(filter)
-      .select("_id invoiceNo invoiceDate dueDate grandTotal paidAmount dueAmount status items")
+      .select(
+        "_id invoiceNo invoiceDate dueDate grandTotal paidAmount dueAmount status items"
+      )
       .populate("supplierId", "supplierName  phone email")
       .populate("createdBy", "firstName lastName")
       .sort({ createdAt: -1 })
@@ -466,24 +469,23 @@ if (endDate) {
       .limit(limitNum);
 
     // Handle search
-   if (search) {
-  const supplierIds = await Supplier.find({
-    supplierName: { $regex: search, $options: "i" },
-  }).distinct("_id");
+    if (search) {
+      const supplierIds = await Supplier.find({
+        supplierName: { $regex: search, $options: "i" },
+      }).distinct("_id");
 
-  query = Invoice.find({
-    ...filter,
-    $or: [
-      { invoiceNo: { $regex: search, $options: "i" } },
-      { supplierId: { $in: supplierIds } },
-    ],
-  })
-    .populate("supplierId", "supplierName phone email")
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limitNum);
-}
-
+      query = Invoice.find({
+        ...filter,
+        $or: [
+          { invoiceNo: { $regex: search, $options: "i" } },
+          { supplierId: { $in: supplierIds } },
+        ],
+      })
+        .populate("supplierId", "supplierName phone email")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum);
+    }
 
     const invoices = await query;
     const total = await Invoice.countDocuments(filter);
@@ -667,24 +669,23 @@ exports.updateInvoice = async (req, res) => {
     invoice.calculateTotals();
 
     // Handle status update
-   // Handle status update ONLY if status not explicitly sent
-if (
-  updateData.status === undefined &&
-  (updateData.paidAmount !== undefined ||
-    updateData.fullyReceived !== undefined)
-) {
-  const newPaidAmount = invoice.paidAmount || 0;
-  const newFullyReceived = invoice.fullyReceived || false;
+    // Handle status update ONLY if status not explicitly sent
+    if (
+      updateData.status === undefined &&
+      (updateData.paidAmount !== undefined ||
+        updateData.fullyReceived !== undefined)
+    ) {
+      const newPaidAmount = invoice.paidAmount || 0;
+      const newFullyReceived = invoice.fullyReceived || false;
 
-  if (newFullyReceived || newPaidAmount >= invoice.grandTotal) {
-    invoice.status = "received";
-  } else if (newPaidAmount > 0) {
-    invoice.status = "partial";
-  } else {
-    invoice.status = "draft";
-  }
-}
-
+      if (newFullyReceived || newPaidAmount >= invoice.grandTotal) {
+        invoice.status = "received";
+      } else if (newPaidAmount > 0) {
+        invoice.status = "partial";
+      } else {
+        invoice.status = "draft";
+      }
+    }
 
     // Handle file uploads
     if (req.files && req.files.length > 0) {
@@ -1160,7 +1161,14 @@ exports.getInvoiceStats = async (req, res) => {
 exports.getInvoicesBySupplier = async (req, res) => {
   try {
     const { supplierId } = req.params;
-    const { status, startDate, endDate, limit = 50, page = 1, search = "" } = req.query;
+    const {
+      status,
+      startDate,
+      endDate,
+      limit = 50,
+      page = 1,
+      search = "",
+    } = req.query;
 
     if (!mongoose.Types.ObjectId.isValid(supplierId)) {
       return res.status(400).json({
@@ -1175,22 +1183,21 @@ exports.getInvoicesBySupplier = async (req, res) => {
       filter.status = status;
     }
 
-   if (startDate || endDate) {
-  filter.invoiceDate = {};
+    if (startDate || endDate) {
+      filter.invoiceDate = {};
 
-  if (startDate) {
-    const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0);
-    filter.invoiceDate.$gte = start;
-  }
+      if (startDate) {
+        const start = new Date(startDate);
+        start.setHours(0, 0, 0, 0);
+        filter.invoiceDate.$gte = start;
+      }
 
-  if (endDate) {
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
-    filter.invoiceDate.$lte = end;
-  }
-}
-
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        filter.invoiceDate.$lte = end;
+      }
+    }
 
     const limitNum = parseInt(limit);
     const pageNum = Math.max(1, parseInt(page));
@@ -1211,8 +1218,9 @@ exports.getInvoicesBySupplier = async (req, res) => {
       )
       .populate({
         path: "items.productId",
-        select: "itemBarcode openingQuantity productName hsn purchasePrice category",
-        populate: { path: "category", select: "categoryName" }
+        select:
+          "itemBarcode openingQuantity productName hsn purchasePrice category",
+        populate: { path: "category", select: "categoryName" },
       })
       .sort({ invoiceDate: -1 })
       .skip(skip)
@@ -1222,7 +1230,10 @@ exports.getInvoicesBySupplier = async (req, res) => {
 
     const summary = {
       totalInvoices: total,
-      totalAmount: invoices.reduce((sum, inv) => sum + (inv.grandTotal || 0), 0),
+      totalAmount: invoices.reduce(
+        (sum, inv) => sum + (inv.grandTotal || 0),
+        0
+      ),
       totalPaid: invoices.reduce((sum, inv) => sum + (inv.paidAmount || 0), 0),
       totalDue: invoices.reduce((sum, inv) => sum + (inv.dueAmount || 0), 0),
     };

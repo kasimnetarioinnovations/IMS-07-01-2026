@@ -10,6 +10,8 @@ import Purchaseimg from "../../../../assets/images/purchaserupe.png";
 import Dueamountimg from "../../../../assets/images/dueamount.png";
 import { FaCheck } from "react-icons/fa6";
 import { RxCross2 } from "react-icons/rx";
+import PurchaseImg from "../../../../assets/images/purchase.png";
+import { MdOutlineAddShoppingCart } from 'react-icons/md';
 import ConfirmDeleteModal from "../../../../components/ConfirmDelete";
 import Convertpurchasepopupmodal from "./Convertpurchasepopupmodal";
 import DatePicker from "../../../DateFilterDropdown";
@@ -122,13 +124,13 @@ const menuItems = [
   //   ),
   //   action: "view",
   // },
-  // {
-  //   label: "Create Debit Notes",
-  //   icon: (
-  //     <img src={CreditNoteImg} alt="debit" style={{ width: 18, height: 18 }} />
-  //   ),
-  //   action: "debit_note",
-  // },
+  {
+    label: "Create Debit Notes",
+    icon: (
+      <img src={CreditNoteImg} alt="debit" style={{ width: 18, height: 18 }} />
+    ),
+    action: "debit_note",
+  },
   // {
   //   label: "Duplicate",
   //   icon: (
@@ -182,34 +184,24 @@ export default function Purchase() {
   const [selectedRowIds, setSelectedRowIds] = useState(new Set());
   const [allVisibleSelected, setAllVisibleSelected] = useState(false);
 
-  const [dropdownPos, setDropdownPos] = useState({ x: 0, y: 0 });
-  const [openUpwards, setOpenUpwards] = useState(false);
+  const isDataEmpty = purchaseOrders.length === 0 && !loading;
+  const hasDateFilter = selectedDateRange.startDate || selectedDateRange.endDate;
+  const hasSearchQuery = search.trim() !== "";
+  // determine what to show
+  const showEmptyCreatePurchasePage = isDataEmpty && !hasDateFilter && !hasSearchQuery;
+  const showNoResultsInTable = isDataEmpty && (hasDateFilter || hasSearchQuery)
 
-  const [activeRow, setActiveRow] = useState(null);
-
-  const toggleRow = (idx) => {
-    const newOpen = openRow === idx ? null : idx;
-    setOpenRow(newOpen);
-    if (newOpen === null && activeRow === idx) {
-      setActiveRow(null);
-    } else if (newOpen !== null) {
-      setActiveRow(idx);
-    }
-  };
 
   // Fetch purchase orders
   const fetchPurchaseOrders = async (page = 1, status = "", limitOverride) => {
     try {
       setLoading(true);
-      console.log("Fetching purchase orders...");
-
       const params = {
         page,
         limit: limitOverride ?? itemsPerPage,
         ...(status && status !== "all" && { status }),
         ...(search && { search }),
       };
-
       // ONLY add dates if they are selected (not null)
       if (selectedDateRange.startDate) {
         params.startDate = format(selectedDateRange.startDate, "yyyy-MM-dd");
@@ -217,18 +209,8 @@ export default function Purchase() {
       if (selectedDateRange.endDate) {
         params.endDate = format(selectedDateRange.endDate, "yyyy-MM-dd");
       }
-
-      console.log("API Params:", params);
-      console.log("Calling endpoint: /api/purchase-orders");
-
       const response = await api.get("/api/purchase-orders", { params });
-
-      console.log("API Response:", response.data);
-
       if (response.data.success) {
-        console.log("Purchase orders data:", response.data.invoices);
-        console.log("Total count:", response.data.total);
-
         setPurchaseOrders(response.data.invoices || []);
         setTotalCount(response.data.total || 0);
         setTotalPages(response.data.pagination?.totalPages || 1);
@@ -322,7 +304,7 @@ export default function Purchase() {
         handleDuplicateInvoice(invoice);
         break;
       case "debit_note":
-        navigate(`/create-debitnote?invoiceId=${invoice._id}`);
+        navigate('/create-supplier-debitnote');
         break;
       default:
         break;
@@ -356,6 +338,12 @@ export default function Purchase() {
       );
       if (response.data.success) {
         toast.success("Purchase order deleted successfully");
+        // imediatley update local state
+        setPurchaseOrders((prev) => prev.filter((order) => order._id !== selectedInvoice._id))
+        // reset stats and tabs immediately
+        const updatedOrders = purchaseOrders.filter((order) => order._id !== selectedInvoice._id)
+        updateStats(updatedOrders);
+        updateTabCounts(updatedOrders)
         fetchPurchaseOrders();
         setShowDeleteModal(false);
         setSelectedInvoice(null);
@@ -563,10 +551,67 @@ export default function Purchase() {
 
   return (
     <div className="px-4 py-4" style={{ overflowY: "auto", height: "100vh" }}>
-      {/* Header: back + title + right-side controls */}
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <div className="d-flex align-items-center justify-content-center gap-3">
-          {/* <span
+      {showEmptyCreatePurchasePage ? (
+        // Show empty state component
+        <div className='px-4 py-2' style={{ maxHeight: "80vh", display: "flex", justifyContent: "center" }}>
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "500px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "flex-start",
+              marginTop: "10vh",
+              textAlign: "center",
+              fontWeight: 400,
+              lineHeight: "120%",
+            }}
+          >
+            <p style={{ fontSize: '32px', color: "#000000", marginBottom: "20px" }}>
+              Purchase Order
+            </p>
+            <p style={{ width: "350px", marginBottom: "16px" }}>
+              <span style={{ fontSize: "16px", color: "#727681" }}>
+                👋 Looks like your Purchase list is empty.<br />
+                Add your first Purchase to create purchase order.
+              </span>
+            </p>
+            <img
+              src={PurchaseImg}
+              alt="purchase"
+              style={{ width: "240px", marginBottom: "20px" }}
+            />
+            <Link
+              to='/create-purchase-orders'
+              style={{ textDecoration: "none" }}
+            >
+              <button
+                style={{
+                  background: "#1F7FFF",
+                  border: "1px solid #1F7FFF",
+                  borderRadius: "8px",
+                  padding: "8px 16px",
+                  color: "#FFFFFF",
+                  fontWeight: 400,
+                  fontSize: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
+                }}
+              >
+                <MdOutlineAddShoppingCart />
+                Create Purchase
+              </button>
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Header: back + title + right-side controls */}
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <div className="d-flex align-items-center justify-content-center gap-3">
+              {/* <span
             style={{
               backgroundColor: "white",
               width: "32px",
@@ -581,121 +626,121 @@ export default function Purchase() {
           >
             <img src={total_orders_icon} alt="total_orders_icon" />
           </span> */}
-          <h3
-            style={{
-              fontSize: "22px",
-              color: "#0E101A",
-              fontFamily: '"Inter", sans-serif',
-              fontWeight: 500,
-              lineHeight: "120%",
-            }}
-          >
-            All Purchase Orders
-          </h3>
-        </div>
-
-        <div className="d-flex align-items-center gap-3">
-          {/* <div className="d-flex align-items-center gap-4">
-            <DatePicker
-              selectedDateRange={selectedDateRange}
-              setSelectedDateRange={setSelectedDateRange}
-            />
-          </div> */}
-
-          {/* Create Purchase */}
-          {/* <Link style={{ textDecoration: "none" }} to="/create-purchase-order">
-            <button
-              className="btn d-flex align-items-center"
-              style={{
-                background: "#fff",
-                border: "1.5px solid #1F7FFF",
-                color: "#1F7FFF",
-                borderRadius: "8px",
-                padding: "8px 16px",
-                boxShadow: "-1px -1px 1.6px rgba(0,0,0,0.08) inset",
-                fontWeight: 500,
-                fontSize: "14px",
-                fontFamily: '"Inter", sans-serif',
-              }}
-            >
-              <MdAddShoppingCart style={{ marginRight: 8, fontSize: "16px" }} />
-              Create Purchase
-            </button>
-          </Link> */}
-        </div>
-      </div>
-
-      {/* Top stat cards */}
-      <div className="row g-3 mb-3">
-        {stats.map((s, idx) => (
-          <Link
-            to={s.link}
-            key={idx}
-            className="col-12 col-sm-6 col-lg-3"
-            style={{ textDecoration: "none" }}
-          >
-            <div
-              className="d-flex justify-content-between align-items-center bg-white position-relative"
-              style={{
-                width: "100%",
-                height: "86px",
-                padding: "16px 24px 16px 16px",
-                fontFamily: "Inter",
-                boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
-                border: "1px solid #E5F0FF",
-                borderRadius: "8px",
-                backgroundColor: "#FFFFFF",
-              }}
-            >
-              {/* Blue Left Accent Line */}
-              <span
+              <h3
                 style={{
-                  position: "absolute",
-                  left: 0,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  width: "4px",
-                  height: "70%",
-                  backgroundColor: "#1F7FFF",
-                  borderRadius: "1px 10px 1px 10px",
+                  fontSize: "22px",
+                  color: "#0E101A",
+                  fontFamily: '"Inter", sans-serif',
+                  fontWeight: 500,
+                  lineHeight: "120%",
                 }}
-              ></span>
-
-              {/* Left Content */}
-              <div
-                className="d-flex align-items-center"
-                style={{ gap: "24px" }}
               >
-                <div className="d-flex flex-column" style={{ gap: "11px" }}>
-                  <h6
-                    className="mb-0"
-                    style={{
-                      fontSize: "14px",
-                      color: "#727681",
-                      fontWeight: "500",
-                    }}
-                  >
-                    {s.title}
-                  </h6>
-                  <div className="d-flex align-items-end gap-2">
-                    <h5
-                      className="mb-0"
-                      style={{
-                        fontSize: "22px",
-                        color: "#0E101A",
-                        fontWeight: "600",
-                      }}
-                    >
-                      {s.value}
-                    </h5>
-                    {s.currency && (
-                      <span style={{ fontSize: "14px", color: "#0E101A" }}>
-                        {s.currency}
-                      </span>
-                    )}
-                  </div>
-                </div>
+                All Purchase Orders
+              </h3>
+            </div>
+
+            <div className="d-flex align-items-center gap-3">
+              <div className="d-flex align-items-center gap-4">
+                <DatePicker
+                  selectedDateRange={selectedDateRange}
+                  setSelectedDateRange={setSelectedDateRange}
+                />
               </div>
+
+              {/* Create Purchase */}
+              <Link style={{ textDecoration: "none" }} to="/create-purchase-orders">
+                <button
+                  className="btn d-flex align-items-center"
+                  style={{
+                    background: "#fff",
+                    border: "1.5px solid #1F7FFF",
+                    color: "#1F7FFF",
+                    borderRadius: "8px",
+                    padding: "8px 16px",
+                    boxShadow: "-1px -1px 1.6px rgba(0,0,0,0.08) inset",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                    fontFamily: '"Inter", sans-serif',
+                  }}
+                >
+                  <MdAddShoppingCart style={{ marginRight: 8, fontSize: "16px" }} />
+                  Create Purchase
+                </button>
+              </Link>
+            </div>
+          </div>
+
+          {/* Top stat cards */}
+          <div className="row g-3 mb-3">
+            {stats.map((s, idx) => (
+              <Link
+                to={s.link}
+                key={idx}
+                className="col-12 col-sm-6 col-lg-3"
+                style={{ textDecoration: "none" }}
+              >
+                <div
+                  className="d-flex justify-content-between align-items-center bg-white position-relative"
+                  style={{
+                    width: "100%",
+                    height: "86px",
+                    padding: "16px 24px 16px 16px",
+                    fontFamily: "Inter",
+                    boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
+                    border: "1px solid #E5F0FF",
+                    borderRadius: "8px",
+                    backgroundColor: "#FFFFFF",
+                  }}
+                >
+                  {/* Blue Left Accent Line */}
+                  <span
+                    style={{
+                      position: "absolute",
+                      left: 0,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      width: "4px",
+                      height: "70%",
+                      backgroundColor: "#1F7FFF",
+                      borderRadius: "1px 10px 1px 10px",
+                    }}
+                  ></span>
+
+                  {/* Left Content */}
+                  <div
+                    className="d-flex align-items-center"
+                    style={{ gap: "24px" }}
+                  >
+                    <div className="d-flex flex-column" style={{ gap: "11px" }}>
+                      <h6
+                        className="mb-0"
+                        style={{
+                          fontSize: "14px",
+                          color: "#727681",
+                          fontWeight: "500",
+                        }}
+                      >
+                        {s.title}
+                      </h6>
+                      <div className="d-flex align-items-end gap-2">
+                        <h5
+                          className="mb-0"
+                          style={{
+                            fontSize: "22px",
+                            color: "#0E101A",
+                            fontWeight: "600",
+                          }}
+                        >
+                          {s.value}
+                        </h5>
+                        {s.currency && (
+                          <span style={{ fontSize: "14px", color: "#0E101A" }}>
+                            {s.currency}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
               {/* Right Icon Circle */}
               <div
@@ -758,33 +803,28 @@ export default function Purchase() {
                 const active = activeTab === t.label;
                 return (
                   <div
-                    key={t.label}
-                    onClick={() => handleTabChange(t)}
-                    role="button"
+                    className="d-flex justify-content-center align-items-center rounded-circle"
                     style={{
-                      padding: "6px 12px",
-                      borderRadius: 8,
-                      background: active ? "#fff" : "transparent",
-                      boxShadow: active ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
-                      display: "flex",
-                      gap: 8,
-                      alignItems: "center",
-                      cursor: "pointer",
-                      minWidth: 90,
-                      whiteSpace: "nowrap",
-                      height: "33px",
+                      width: "50px",
+                      height: "50px",
+                      backgroundColor: "#FFFFFF",
+                      border: "1px solid #E5F0FF",
+                      flexShrink: 0,
                     }}
                   >
-                    <div style={{ fontSize: 14, color: "#0E101A" }}>
-                      {t.label}
-                    </div>
-                    <div style={{ color: "#727681", fontSize: 14 }}>
-                      {t.count}
-                    </div>
+                    <img
+                      src={s.image}
+                      alt={s.title}
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        objectFit: "contain",
+                      }}
+                    />
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              </Link>
+            ))}
           </div>
           <div className="d-flex align-items-center gap-4" style={{
             display: "flex",
@@ -1091,14 +1131,10 @@ export default function Purchase() {
                           {/* Dates */}
                           <td style={{ padding: "4px 16px" }}>
                             <div
-                              style={{
-                                display: "flex",
-                                gap: 6,
-                                flexWrap: "wrap",
-                              }}
+                              className="spinner-border text-primary"
+                              role="status"
                             >
-                              <span>{formatDate(order.invoiceDate)}</span>&
-                              <span>{getArrivingDate(order.invoiceDate)}</span>
+                              <span className="visually-hidden">Loading...</span>
                             </div>
                           </td>
 
@@ -1132,14 +1168,7 @@ export default function Purchase() {
                                     display: "inline-block",
                                   }}
                                 />
-                              ) : (
-                                <span style={{ color: sty.color }}>
-                                  {sty.icon}
-                                </span>
-                              )}
-                              {sty.label}
-                            </div>
-                          </td>
+                              </td>
 
                           {/* Amount */}
                           <td style={{ padding: "4px 16px" }}>
@@ -1267,70 +1296,49 @@ export default function Purchase() {
                                       to { opacity: 1; transform: translateY(0); }
                                     }
                                   `}</style>
-                                </div>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Pagination */}
+              {!loading && purchaseOrders.length > 0 && (
+                <Pagination
+                  currentPage={currentPage}
+                  itemsPerPage={10}
+                  total={totalCount}
+                  onPageChange={handlePageChange}
+                />
+              )}
+
+              <ConfirmDeleteModal
+                isOpen={showDeleteModal}
+                onCancel={() => {
+                  setShowDeleteModal(false);
+                  setSelectedInvoice(null);
+                }}
+                onConfirm={handleDeleteInvoice}
+                title="Delete Purchase Order"
+                message={`Are you sure you want to delete invoice ${selectedInvoice?.invoiceNo}? This action cannot be undone.`}
+              />
+
+              {/* Convert purchase modal */}
+              <Convertpurchasepopupmodal
+                isOpen={showModal}
+                onCancel={() => setShowModal(false)}
+                onConfirm={(status) => updateInvoiceStatus(status)}
+              />
             </div>
           </div>
-
-          <ConfirmDeleteModal
-            isOpen={showDeleteModal}
-            onCancel={() => {
-              setShowDeleteModal(false);
-              setSelectedInvoice(null);
-            }}
-            onConfirm={handleDeleteInvoice}
-            title="Delete Purchase Order"
-            message={`Are you sure you want to delete invoice ${selectedInvoice?.invoiceNo}? This action cannot be undone.`}
-          />
-
-          {/* Convert purchase modal */}
-          <Convertpurchasepopupmodal
-            isOpen={showModal}
-            onCancel={() => setShowModal(false)}
-            onConfirm={(status) => updateInvoiceStatus(status)}
-          />
-        </div>
-
-        {/* Pagination */}
-        {!loading && purchaseOrders.length > 0 && (
-          <div className="page-redirect-btn px-2">
-            <Pagination
-              currentPage={currentPage}
-              itemsPerPage={itemsPerPage}
-              total={totalCount}
-              onPageChange={handlePageChange}
-              onItemsPerPageChange={(n) => {
-                setItemsPerPage(n);
-                setCurrentPage(1);
-                let status = "";
-                switch (activeTab) {
-                  case "pending":
-                    status = "converted";
-                    break;
-                  case "approved":
-                    status = "received";
-                    break;
-                  case "rejected":
-                    status = "cancelled";
-                    break;
-                  default:
-                    status = "";
-                }
-                fetchPurchaseOrders(1, status, n);
-              }}
-            />
-          </div>
-        )}
-
-      </div>
+        </>
+      )};
     </div>
   );
 }
