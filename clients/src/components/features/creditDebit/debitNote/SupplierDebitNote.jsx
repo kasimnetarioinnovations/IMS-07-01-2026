@@ -7,10 +7,20 @@ import total_orders_icon from "../../../../assets/images/totalorders-icon.png";
 import api from "../../../../pages/config/axiosInstance";
 import { toast } from "react-toastify";
 import { IoChevronDownOutline } from "react-icons/io5";
+import AddSuppliers from "../../../../pages/Modal/suppliers/AddSupplierModals";
+import { FiSearch } from "react-icons/fi"; // Add this impor
 
 const SupplierDebitNote = () => {
     const location = useLocation();
     const navigate = useNavigate();
+
+    // State for supplier selection/search
+    const [supplierSearch, setSupplierSearch] = useState("");
+    const [allSuppliers, setAllSuppliers] = useState([]);
+    const [filteredSuppliers, setFilteredSuppliers] = useState([]);
+    const [showSupplierDropdown, setShowSupplierDropdown] = useState(false);
+    // modal state
+    const [openAddModal, setOpenAddModal] = useState(false);
     const { supplierId } = useParams();
     const [showPreview, setShowPreview] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -20,6 +30,7 @@ const SupplierDebitNote = () => {
     const [loadingInvoices, setLoadingInvoices] = useState(false);
     const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const isFromNavbar = !supplierId && !location.state?.supplier;
 
     // Form state - SAME STRUCTURE as customer credit note
     const [formData, setFormData] = useState({
@@ -102,18 +113,44 @@ const SupplierDebitNote = () => {
     const fetchSuppliers = async () => {
         try {
             const response = await api.get("/api/suppliers");
+            console.log('ddqq', response.data)
+
             let suppliersData = [];
-            if (Array.isArray(response.data)) {
+
+            // Check if response has suppliers property
+            if (response.data && response.data.suppliers && Array.isArray(response.data.suppliers)) {
+                suppliersData = response.data.suppliers;
+            } else if (Array.isArray(response.data)) {
                 suppliersData = response.data;
             } else if (response.data?.data && Array.isArray(response.data.data)) {
                 suppliersData = response.data.data;
             }
+
             setSuppliers(suppliersData);
+            setAllSuppliers(suppliersData);
+            setFilteredSuppliers(suppliersData);
         } catch (error) {
             console.error("Failed to load suppliers:", error);
             toast.error("Failed to load suppliers");
         }
     };
+
+    // Handle supplier search
+    useEffect(() => {
+        if (!supplierSearch.trim()) {
+            setFilteredSuppliers(allSuppliers);
+            return;
+        }
+        const searchTerm = supplierSearch.toLowerCase();
+        const filtered = allSuppliers.filter((sup) =>
+            sup.name?.toLowerCase().includes(searchTerm) ||
+            sup.supplierName?.toLowerCase().includes(searchTerm) ||
+            sup.company?.toLowerCase().includes(searchTerm) ||
+            sup.phone?.includes(supplierSearch) ||
+            sup.email?.toLowerCase().includes(searchTerm)
+        );
+        setFilteredSuppliers(filtered);
+    }, [supplierSearch, allSuppliers]);
 
     const fetchProducts = async () => {
         try {
@@ -133,62 +170,62 @@ const SupplierDebitNote = () => {
         }
     };
 
-   const fetchSupplierInvoices = async (supplierId) => {
-  try {
-    setLoadingInvoices(true);
-    
-    // CORRECT ENDPOINT: Use your purchase orders route
-    const response = await api.get(`/api/purchase-orders?supplierId=${supplierId}`);
-    
-    let invoicesData = [];
-    
-    // Adjust based on your actual API response structure
-    if (response.data && Array.isArray(response.data)) {
-      // Direct array response
-      invoicesData = response.data;
-    } else if (response.data?.data && Array.isArray(response.data.data)) {
-      // Response with data property
-      invoicesData = response.data.data;
-    } else if (response.data?.purchaseOrders && Array.isArray(response.data.purchaseOrders)) {
-      // Response with purchaseOrders property
-      invoicesData = response.data.purchaseOrders;
-    } else if (response.data?.invoices && Array.isArray(response.data.invoices)) {
-      // Response with invoices property
-      invoicesData = response.data.invoices;
-    }
-    
-    // Filter to only show invoices that can have debit notes
-    // (typically received/partial invoices, not cancelled)
-    const filteredInvoices = invoicesData.filter(invoice => 
-      invoice.status !== 'cancelled' && 
-      invoice.status !== 'draft'
-    );
-    
-    setSupplierInvoices(filteredInvoices);
-  } catch (error) {
-    console.error("Failed to load purchase orders:", error);
-    
-    // Try alternative endpoint structure
-    try {
-      const altResponse = await api.get(`/api/purchase-orders/supplier/${supplierId}`);
-      
-      if (altResponse.data) {
-        let altData = [];
-        if (Array.isArray(altResponse.data)) {
-          altData = altResponse.data;
-        } else if (altResponse.data.data) {
-          altData = altResponse.data.data;
+    const fetchSupplierInvoices = async (supplierId) => {
+        try {
+            setLoadingInvoices(true);
+
+            // CORRECT ENDPOINT: Use your purchase orders route
+            const response = await api.get(`/api/purchase-orders?supplierId=${supplierId}`);
+
+            let invoicesData = [];
+
+            // Adjust based on your actual API response structure
+            if (response.data && Array.isArray(response.data)) {
+                // Direct array response
+                invoicesData = response.data;
+            } else if (response.data?.data && Array.isArray(response.data.data)) {
+                // Response with data property
+                invoicesData = response.data.data;
+            } else if (response.data?.purchaseOrders && Array.isArray(response.data.purchaseOrders)) {
+                // Response with purchaseOrders property
+                invoicesData = response.data.purchaseOrders;
+            } else if (response.data?.invoices && Array.isArray(response.data.invoices)) {
+                // Response with invoices property
+                invoicesData = response.data.invoices;
+            }
+
+            // Filter to only show invoices that can have debit notes
+            // (typically received/partial invoices, not cancelled)
+            const filteredInvoices = invoicesData.filter(invoice =>
+                invoice.status !== 'cancelled' &&
+                invoice.status !== 'draft'
+            );
+
+            setSupplierInvoices(filteredInvoices);
+        } catch (error) {
+            console.error("Failed to load purchase orders:", error);
+
+            // Try alternative endpoint structure
+            try {
+                const altResponse = await api.get(`/api/purchase-orders/supplier/${supplierId}`);
+
+                if (altResponse.data) {
+                    let altData = [];
+                    if (Array.isArray(altResponse.data)) {
+                        altData = altResponse.data;
+                    } else if (altResponse.data.data) {
+                        altData = altResponse.data.data;
+                    }
+                    setSupplierInvoices(altData);
+                }
+            } catch (secondError) {
+                console.error("Alternative endpoint also failed:", secondError);
+                setSupplierInvoices([]);
+            }
+        } finally {
+            setLoadingInvoices(false);
         }
-        setSupplierInvoices(altData);
-      }
-    } catch (secondError) {
-      console.error("Alternative endpoint also failed:", secondError);
-      setSupplierInvoices([]);
-    }
-  } finally {
-    setLoadingInvoices(false);
-  }
-};
+    };
 
     const handleSupplierSelect = (supplier) => {
         setFormData((prev) => ({
@@ -200,91 +237,114 @@ const SupplierDebitNote = () => {
             invoiceNumber: "",
             items: [],
         }));
+        setSupplierSearch(supplier.name || supplier.company || "");
+        setShowSupplierDropdown(false);
     };
 
-const handleInvoiceSelect = async (invoice) => {
-  try {
-    // Fetch detailed purchase order
-    const invoiceResponse = await api.get(`/api/purchase-orders/${invoice._id}`);
-    
-    // Check different response structures
-    let invoiceDetails = null;
-    if (invoiceResponse.data?.purchaseOrder) {
-      invoiceDetails = invoiceResponse.data.purchaseOrder;
-    } else if (invoiceResponse.data?.invoice) {
-      invoiceDetails = invoiceResponse.data.invoice;
-    } else {
-      invoiceDetails = invoiceResponse.data;
-    }
-    
-    if (!invoiceDetails || !invoiceDetails.items) {
-      toast.error("Could not load invoice items");
-      return;
-    }
-    
-    // Map purchase order items to debit note items
-    const itemsFromInvoice = invoiceDetails.items.map((item, index) => ({
-      id: index + 1,
-      productId: item.productId?._id || item.productId,
-      name: item.itemName || item.name || "Product",
-      description: item.description || "",
-      quantity: item.qty || item.quantity || 1,
-      originalQuantity: item.qty || item.quantity || 1,
-      unit: item.unit || "Pcs",
-      unitPrice: item.unitPrice || item.price || 0,
-      tax: item.taxType || `GST @ ${item.taxRate || 5}%`,
-      taxRate: item.taxRate || 5,
-      taxAmount: item.taxAmount || 0,
-      discountPercent: item.discountPct || 0,
-      discountAmount: item.discountAmt || 0,
-      amount: item.amount || 0,
-      isSelected: true,
-    })); // <-- Fixed: Removed extra comma and added closing parenthesis
-    
-    setFormData((prev) => ({
-      ...prev,
-      invoiceId: invoice._id,
-      // Use the purchase order invoice number
-      invoiceNumber: invoice.invoiceNo || invoice.invoiceNumber || "",
-      items: itemsFromInvoice,
-    }));
-    
-    toast.success(`Loaded ${itemsFromInvoice.length} items from invoice`);
-  } catch (error) {
-    console.error("Failed to load invoice details:", error);
-    
-    // Fallback: Use the basic invoice data if detailed fetch fails
-    if (invoice.items && invoice.items.length > 0) {
-      const itemsFromBasic = invoice.items.map((item, index) => ({
-        id: index + 1,
-        productId: item.productId?._id || item.productId,
-        name: item.itemName || item.name || "Product",
-        quantity: item.qty || item.quantity || 1,
-        originalQuantity: item.qty || item.quantity || 1,
-        unit: item.unit || "Pcs",
-        unitPrice: item.unitPrice || 0,
-        tax: item.taxType || `GST @ 5%`,
-        taxRate: item.taxRate || 5,
-        taxAmount: item.taxAmount || 0,
-        discountPercent: item.discountPct || 0,
-        discountAmount: item.discountAmt || 0,
-        amount: item.amount || 0,
-        isSelected: true,
-      })); // <-- Fixed: Added closing parenthesis
-      
-      setFormData((prev) => ({
-        ...prev,
-        invoiceId: invoice._id,
-        invoiceNumber: invoice.invoiceNo || "",
-        items: itemsFromBasic,
-      }));
-      
-      toast.success(`Loaded ${itemsFromBasic.length} items from invoice`);
-    } else {
-      toast.error("Failed to load invoice details");
-    }
-  }
-};
+    const handleClearSupplier = () => {
+        setFormData((prev) => ({
+            ...prev,
+            supplierId: "",
+            supplierName: "",
+            phone: "",
+            invoiceId: "",
+            invoiceNumber: "",
+            items: [],
+        }));
+        setSupplierSearch("");
+        setShowSupplierDropdown(false);
+    };
+
+    const handleNewSupplierCreated = (newSupplier) => {
+        fetchSuppliers();
+        // Auto select the newly created supplier
+        handleSupplierSelect(newSupplier);
+        toast.success('Supplier created successfully!');
+    };
+
+    const handleInvoiceSelect = async (invoice) => {
+        try {
+            // Fetch detailed purchase order
+            const invoiceResponse = await api.get(`/api/purchase-orders/${invoice._id}`);
+
+            // Check different response structures
+            let invoiceDetails = null;
+            if (invoiceResponse.data?.purchaseOrder) {
+                invoiceDetails = invoiceResponse.data.purchaseOrder;
+            } else if (invoiceResponse.data?.invoice) {
+                invoiceDetails = invoiceResponse.data.invoice;
+            } else {
+                invoiceDetails = invoiceResponse.data;
+            }
+
+            if (!invoiceDetails || !invoiceDetails.items) {
+                toast.error("Could not load invoice items");
+                return;
+            }
+
+            // Map purchase order items to debit note items
+            const itemsFromInvoice = invoiceDetails.items.map((item, index) => ({
+                id: index + 1,
+                productId: item.productId?._id || item.productId,
+                name: item.itemName || item.name || "Product",
+                description: item.description || "",
+                quantity: item.qty || item.quantity || 1,
+                originalQuantity: item.qty || item.quantity || 1,
+                unit: item.unit || "Pcs",
+                unitPrice: item.unitPrice || item.price || 0,
+                tax: item.taxType || `GST @ ${item.taxRate || 5}%`,
+                taxRate: item.taxRate || 5,
+                taxAmount: item.taxAmount || 0,
+                discountPercent: item.discountPct || 0,
+                discountAmount: item.discountAmt || 0,
+                amount: item.amount || 0,
+                isSelected: true,
+            })); // <-- Fixed: Removed extra comma and added closing parenthesis
+
+            setFormData((prev) => ({
+                ...prev,
+                invoiceId: invoice._id,
+                // Use the purchase order invoice number
+                invoiceNumber: invoice.invoiceNo || invoice.invoiceNumber || "",
+                items: itemsFromInvoice,
+            }));
+
+            toast.success(`Loaded ${itemsFromInvoice.length} items from invoice`);
+        } catch (error) {
+            console.error("Failed to load invoice details:", error);
+
+            // Fallback: Use the basic invoice data if detailed fetch fails
+            if (invoice.items && invoice.items.length > 0) {
+                const itemsFromBasic = invoice.items.map((item, index) => ({
+                    id: index + 1,
+                    productId: item.productId?._id || item.productId,
+                    name: item.itemName || item.name || "Product",
+                    quantity: item.qty || item.quantity || 1,
+                    originalQuantity: item.qty || item.quantity || 1,
+                    unit: item.unit || "Pcs",
+                    unitPrice: item.unitPrice || 0,
+                    tax: item.taxType || `GST @ 5%`,
+                    taxRate: item.taxRate || 5,
+                    taxAmount: item.taxAmount || 0,
+                    discountPercent: item.discountPct || 0,
+                    discountAmount: item.discountAmt || 0,
+                    amount: item.amount || 0,
+                    isSelected: true,
+                })); // <-- Fixed: Added closing parenthesis
+
+                setFormData((prev) => ({
+                    ...prev,
+                    invoiceId: invoice._id,
+                    invoiceNumber: invoice.invoiceNo || "",
+                    items: itemsFromBasic,
+                }));
+
+                toast.success(`Loaded ${itemsFromBasic.length} items from invoice`);
+            } else {
+                toast.error("Failed to load invoice details");
+            }
+        }
+    };
 
     const handleItemSelect = (index) => {
         const updatedItems = [...formData.items];
@@ -375,92 +435,99 @@ const handleInvoiceSelect = async (invoice) => {
         }));
     };
 
-   const handleSubmit = async (action) => {
-    try {
-        const selectedItems = formData.items.filter(
-            (item) => item.isSelected && item.quantity > 0 && item.productId
-        );
+    const handleSubmit = async (action) => {
+        try {
+            if (!formData.supplierId) {
+                toast.error("Please select a supplier");
+                return;
+            }
+            const selectedItems = formData.items.filter(
+                (item) => item.isSelected && item.quantity > 0 && item.productId
+            );
 
-        if (selectedItems.length === 0) {
-            toast.error("Please select at least one item to return");
-            return;
+            if (selectedItems.length === 0) {
+                toast.error("Please select at least one item to return");
+                return;
+            }
+
+            if (!formData.supplierId) {
+                toast.error("Please select a supplier");
+                return;
+            }
+
+            if (!formData.invoiceId) {
+                toast.error("Please select an invoice");
+                return;
+            }
+
+            setLoading(true);
+
+            // Prepare data according to your backend model
+            const debitNoteData = {
+                supplierId: formData.supplierId,
+                supplierName: formData.supplierName,
+                phone: formData.phone,
+                invoiceId: formData.invoiceId,
+                // supplierInvoiceNo should match your model field
+                supplierInvoiceNo: formData.invoiceNumber,
+                date: formData.date,
+                reason: "defective_goods", // Default reason for supplier debit note
+                items: selectedItems.map((item) => ({
+                    productId: item.productId,
+                    name: item.name,
+                    description: item.description || "",
+                    quantity: item.quantity,
+                    unit: item.unit,
+                    unitPrice: item.unitPrice,
+                    taxRate: item.taxRate,
+                    taxAmount: item.taxAmount,
+                    discountPercent: item.discountPercent,
+                    discountAmount: item.discountAmount,
+                    total: item.amount,
+                })),
+                subtotal: formData.subtotal,
+                totalDiscount: formData.discount,
+                additionalCharges: formData.shippingCharges, // Match model field name
+                roundOff: formData.roundOff,
+                totalAmount: formData.totalAmount,
+                status: action === "save" ? "draft" : "issued",
+                notes: formData.notes,
+                fullyReceived: formData.fullyReceived, // Add if needed
+            };
+
+            console.log("Submitting debit note:", debitNoteData);
+
+            const response = await api.post("/api/supplier-debit-notes", debitNoteData);
+
+            toast.success(
+                `Debit note ${action === "save" ? "saved as draft" : "issued successfully"}`
+            );
+
+            // Navigate based on action
+            if (action === "saveAndPrint") {
+                navigate("/skeleton?redirect=/supplier-debit-notes");
+            } else if (action === "save" || action === "issued") {
+                navigate("/skeleton?redirect=/supplier-debit-notes");
+            }
+        } catch (error) {
+            console.error("Submit error:", error);
+            toast.error(
+                error.response?.data?.error ||
+                error.response?.data?.message ||
+                "Failed to save debit note"
+            );
+        } finally {
+            setLoading(false);
         }
-
-        if (!formData.supplierId) {
-            toast.error("Please select a supplier");
-            return;
-        }
-
-        if (!formData.invoiceId) {
-            toast.error("Please select an invoice");
-            return;
-        }
-
-        setLoading(true);
-
-        // Prepare data according to your backend model
-        const debitNoteData = {
-            supplierId: formData.supplierId,
-            supplierName: formData.supplierName,
-            phone: formData.phone,
-            invoiceId: formData.invoiceId,
-            // supplierInvoiceNo should match your model field
-            supplierInvoiceNo: formData.invoiceNumber,
-            date: formData.date,
-            reason: "defective_goods", // Default reason for supplier debit note
-            items: selectedItems.map((item) => ({
-                productId: item.productId,
-                name: item.name,
-                description: item.description || "",
-                quantity: item.quantity,
-                unit: item.unit,
-                unitPrice: item.unitPrice,
-                taxRate: item.taxRate,
-                taxAmount: item.taxAmount,
-                discountPercent: item.discountPercent,
-                discountAmount: item.discountAmount,
-                total: item.amount,
-            })),
-            subtotal: formData.subtotal,
-            totalDiscount: formData.discount,
-            additionalCharges: formData.shippingCharges, // Match model field name
-            roundOff: formData.roundOff,
-            totalAmount: formData.totalAmount,
-            status: action === "save" ? "draft" : "issued",
-            notes: formData.notes,
-            fullyReceived: formData.fullyReceived, // Add if needed
-        };
-
-        console.log("Submitting debit note:", debitNoteData);
-        
-        const response = await api.post("/api/supplier-debit-notes", debitNoteData);
-
-        toast.success(
-            `Debit note ${action === "save" ? "saved as draft" : "issued successfully"}`
-        );
-
-        // Navigate based on action
-        if (action === "saveAndPrint") {
-            navigate("/skeleton?redirect=/supplier-debit-notes");
-        } else if (action === "save" || action === "issued") {
-            navigate("/skeleton?redirect=/supplier-debit-notes");
-        }
-    } catch (error) {
-        console.error("Submit error:", error);
-        toast.error(
-            error.response?.data?.error || 
-            error.response?.data?.message || 
-            "Failed to save debit note"
-        );
-    } finally {
-        setLoading(false);
-    }
-};
+    };
 
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setIsInvoiceOpen(false);
+            }
+            if (!event.target.closest('.supplier-search-container')) {
+                setShowSupplierDropdown(false);
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
@@ -515,7 +582,7 @@ const handleInvoiceSelect = async (invoice) => {
                     {/* Supplier Details Section - EXACT SAME UI as customer */}
                     <div
                         className="section-card"
-                        style={{ padding: "20px", height: "auto" }}
+                        style={{ padding: "20px", height: "640px", overflowX: "scroll", scrollbarWidth: "none" }}
                     >
                         <h6 className="section-title">Supplier Details</h6>
 
@@ -526,7 +593,7 @@ const handleInvoiceSelect = async (invoice) => {
                                 style={{ display: "flex", alignItems: "center", gap: "20px" }}
                             >
                                 {/* Supplier Name */}
-                                <div className="col-md-7">
+                                {/* <div className="col-md-7">
                                     <label className="form-label supplierlabel">
                                         Supplier Name <span className="text-danger">*</span>
                                     </label>
@@ -543,6 +610,232 @@ const handleInvoiceSelect = async (invoice) => {
                                             value={formData.supplierName}
                                             readOnly
                                         />
+                                    </div>
+                                </div> */}
+                                {/* Supplier Name */}
+                                <div className="col-md-7">
+                                    <label className="form-label supplierlabel">
+                                        Supplier Name <span className="text-danger">*</span>
+                                    </label>
+                                    <div style={{ position: "relative" }} className="supplier-search-container">
+                                        <div
+                                            style={{
+                                                borderRadius: "8px",
+                                                border: "1px solid #EAEAEA",
+                                                padding: "6px 8px",
+                                                display: "flex",
+                                                gap: "4px",
+                                                alignItems: "center",
+                                                border: "1px solid #A2A8B8",
+                                            }}
+                                        >
+                                            {/* Input field */}
+                                            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "8px" }}>
+                                                <FiSearch
+                                                    style={{
+                                                        color: "#666",
+                                                        cursor: "pointer",
+                                                        fontSize: "16px"
+                                                    }}
+                                                    onClick={() => setShowSupplierDropdown(true)}
+                                                />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search or select supplier..."
+                                                    style={{
+                                                        width: "100%",
+                                                        border: "none",
+                                                        outline: "none",
+                                                        fontSize: "14px",
+                                                        cursor: "pointer",
+                                                    }}
+                                                    value={supplierSearch}
+                                                    onChange={(e) => {
+                                                        setSupplierSearch(e.target.value);
+                                                        setShowSupplierDropdown(true);
+                                                    }}
+                                                    onFocus={() => setShowSupplierDropdown(true)}
+                                                    readOnly={formData.supplierId}
+                                                />
+                                            </div>
+
+                                            {/* Action buttons */}
+                                            <div style={{ display: "flex", gap: "4px" }}>
+                                                {formData.supplierId ? (
+                                                    // When supplier is selected - show clear button
+                                                    <button
+                                                        onClick={handleClearSupplier}
+                                                        style={{
+                                                            background: "transparent",
+                                                            border: "none",
+                                                            color: "#dc3545",
+                                                            cursor: "pointer",
+                                                            fontSize: "12px",
+                                                            padding: "2px 6px",
+                                                            whiteSpace: "nowrap",
+                                                        }}
+                                                    >
+                                                        Change
+                                                    </button>
+                                                ) : (
+                                                    // When no supplier - show add button
+                                                    <button
+                                                        onClick={() => setOpenAddModal(true)}
+                                                        style={{
+                                                            background: "#1F7FFF",
+                                                            color: "white",
+                                                            border: "none",
+                                                            borderRadius: "4px",
+                                                            cursor: "pointer",
+                                                            fontSize: "12px",
+                                                            padding: "4px 8px",
+                                                            whiteSpace: "nowrap",
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            gap: "4px",
+                                                        }}
+                                                    >
+                                                        + Add
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Supplier Dropdown */}
+                                        {showSupplierDropdown && (
+                                            <div style={{
+                                                position: "absolute",
+                                                top: "100%",
+                                                left: 0,
+                                                right: 0,
+                                                backgroundColor: "white",
+                                                border: "1px solid #EAEAEA",
+                                                borderRadius: "8px",
+                                                maxHeight: "300px",
+                                                overflowY: "auto",
+                                                zIndex: 1000,
+                                                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                                marginTop: "4px",
+                                            }}>
+                                                {!Array.isArray(filteredSuppliers) || filteredSuppliers.length === 0 ? (
+                                                    <div style={{ padding: "12px", color: "#666", textAlign: "center" }}>
+                                                        No suppliers found
+                                                        <div style={{ marginTop: "8px" }}>
+                                                            <button
+                                                                onClick={() => {
+                                                                    setOpenAddModal(true);
+                                                                    setShowSupplierDropdown(false);
+                                                                }}
+                                                                style={{
+                                                                    padding: "6px 12px",
+                                                                    backgroundColor: "#1F7FFF",
+                                                                    color: "white",
+                                                                    border: "none",
+                                                                    borderRadius: "4px",
+                                                                    cursor: "pointer",
+                                                                    fontSize: "12px",
+                                                                }}
+                                                            >
+                                                                + Add New Supplier
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <div style={{
+                                                            padding: "8px 12px",
+                                                            borderBottom: "1px solid #f0f0f0",
+                                                            backgroundColor: "#f8f9fa",
+                                                            fontSize: "12px",
+                                                            color: "#666",
+                                                        }}>
+                                                            Select supplier or <button
+                                                                onClick={() => {
+                                                                    setOpenAddModal(true);
+                                                                    setShowSupplierDropdown(false);
+                                                                }}
+                                                                style={{
+                                                                    background: "transparent",
+                                                                    border: "none",
+                                                                    color: "#1F7FFF",
+                                                                    cursor: "pointer",
+                                                                    fontWeight: "500",
+                                                                }}
+                                                            >
+                                                                add new
+                                                            </button>
+                                                        </div>
+                                                        {filteredSuppliers.map((sup) => {
+                                                            if (!sup || typeof sup !== 'object') return null;
+
+                                                            const supplierName = sup.name || "";
+                                                            const phone = sup.phone || "";
+                                                            const email = sup.email || "";
+                                                            const id = sup._id || "";
+
+                                                            return (
+                                                                <div
+                                                                    key={id}
+                                                                    onClick={() => handleSupplierSelect(sup)}
+                                                                    style={{
+                                                                        padding: "12px 16px",
+                                                                        borderBottom: "1px solid #f0f0f0",
+                                                                        cursor: "pointer",
+                                                                        display: "flex",
+                                                                        alignItems: "center",
+                                                                        gap: "12px",
+                                                                        transition: "background-color 0.2s",
+                                                                    }}
+                                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
+                                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
+                                                                >
+                                                                    <div style={{
+                                                                        width: "32px",
+                                                                        height: "32px",
+                                                                        borderRadius: "50%",
+                                                                        backgroundColor: "#e0f0ff",
+                                                                        display: "flex",
+                                                                        alignItems: "center",
+                                                                        justifyContent: "center",
+                                                                        fontWeight: "bold",
+                                                                        color: "#1F7FFF",
+                                                                        fontSize: "14px",
+                                                                    }}>
+                                                                        {supplierName.charAt(0).toUpperCase() || "S"}
+                                                                    </div>
+                                                                    <div style={{ flex: 1 }}>
+                                                                        <div style={{ fontWeight: "500" }}>{supplierName}</div>
+                                                                        <div style={{ fontSize: "12px", color: "#666" }}>
+                                                                            {phone} {email && `• ${email}`}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Supplier details when selected */}
+                                        {formData.supplierId && (
+                                            <div style={{
+                                                marginTop: "8px",
+                                                padding: "8px 12px",
+                                                backgroundColor: "#f0f8ff",
+                                                borderRadius: "6px",
+                                                border: "1px solid #d1e7ff",
+                                                fontSize: "12px",
+                                            }}>
+                                                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                                    <div>
+                                                        <span style={{ fontWeight: "500", color: "#1F7FFF" }}>
+                                                            📱 {formData.phone}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
@@ -1472,6 +1765,34 @@ const handleInvoiceSelect = async (invoice) => {
                         </div>
                     </div>
                 </div>
+                {/* Add Supplier Modal */}
+                {openAddModal && (
+                    <div style={{
+                        position: "fixed",
+                        top: 0,
+                        left: 0,
+                        width: "100vw",
+                        height: "100vh",
+                        backgroundColor: "rgba(0,0,0,0.27)",
+                        backdropFilter: "blur(1px)",
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        zIndex: 99999999,
+                    }}
+                        onClick={() => setOpenAddModal(false)}
+                    >
+                        <div onClick={(e) => e.stopPropagation()} className="">
+                            <AddSuppliers
+                                onClose={() => {
+                                    setOpenAddModal(false);
+                                    fetchSuppliers();
+                                }}
+                                onSuccess={handleNewSupplierCreated}
+                            />
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
