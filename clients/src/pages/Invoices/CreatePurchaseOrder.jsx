@@ -831,7 +831,7 @@ function CreatePurchaseOrder() {
                     navigate(`/skeleton?redirect=/show-purchase-orders/${response.data.invoice._id}`);
                 } else {
                     // Navigate to show invoice page with the invoice data
-                    navigate("/skeleton?redirect=/supplier-list");
+                    navigate("/skeleton?redirect=/purchase-list");
                 }
             } else {
                 toast.error(response.data.error || "Failed to create supplier invoice");

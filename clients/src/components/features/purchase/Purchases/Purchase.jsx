@@ -10,6 +10,8 @@ import Purchaseimg from "../../../../assets/images/purchaserupe.png";
 import Dueamountimg from "../../../../assets/images/dueamount.png";
 import { FaCheck } from "react-icons/fa6";
 import { RxCross2 } from "react-icons/rx";
+import PurchaseImg from "../../../../assets/images/purchase.png";
+import { MdOutlineAddShoppingCart } from 'react-icons/md';
 import ConfirmDeleteModal from "../../../../components/ConfirmDelete";
 import Convertpurchasepopupmodal from "./Convertpurchasepopupmodal";
 import DatePicker from "../../../DateFilterDropdown";
@@ -121,13 +123,13 @@ const menuItems = [
   //   ),
   //   action: "view",
   // },
-  // {
-  //   label: "Create Debit Notes",
-  //   icon: (
-  //     <img src={CreditNoteImg} alt="debit" style={{ width: 18, height: 18 }} />
-  //   ),
-  //   action: "debit_note",
-  // },
+  {
+    label: "Create Debit Notes",
+    icon: (
+      <img src={CreditNoteImg} alt="debit" style={{ width: 18, height: 18 }} />
+    ),
+    action: "debit_note",
+  },
   // {
   //   label: "Duplicate",
   //   icon: (
@@ -180,19 +182,24 @@ export default function Purchase() {
   const [selectedRowIds, setSelectedRowIds] = useState(new Set());
   const [allVisibleSelected, setAllVisibleSelected] = useState(false);
 
+  const isDataEmpty = purchaseOrders.length === 0 && !loading;
+  const hasDateFilter = selectedDateRange.startDate || selectedDateRange.endDate;
+  const hasSearchQuery = search.trim() !== "";
+  // determine what to show
+  const showEmptyCreatePurchasePage = isDataEmpty && !hasDateFilter && !hasSearchQuery;
+  const showNoResultsInTable = isDataEmpty && (hasDateFilter || hasSearchQuery)
+
+
   // Fetch purchase orders
   const fetchPurchaseOrders = async (page = 1, status = "") => {
     try {
       setLoading(true);
-      console.log("Fetching purchase orders...");
-
       const params = {
         page,
         limit: 10,
         ...(status && status !== "all" && { status }),
         ...(search && { search }),
       };
-
       // ONLY add dates if they are selected (not null)
       if (selectedDateRange.startDate) {
         params.startDate = format(selectedDateRange.startDate, "yyyy-MM-dd");
@@ -200,18 +207,8 @@ export default function Purchase() {
       if (selectedDateRange.endDate) {
         params.endDate = format(selectedDateRange.endDate, "yyyy-MM-dd");
       }
-
-      console.log("API Params:", params);
-      console.log("Calling endpoint: /api/purchase-orders");
-
       const response = await api.get("/api/purchase-orders", { params });
-
-      console.log("API Response:", response.data);
-
       if (response.data.success) {
-        console.log("Purchase orders data:", response.data.invoices);
-        console.log("Total count:", response.data.total);
-
         setPurchaseOrders(response.data.invoices || []);
         setTotalCount(response.data.total || 0);
         setTotalPages(response.data.pagination?.totalPages || 1);
@@ -305,7 +302,7 @@ export default function Purchase() {
         handleDuplicateInvoice(invoice);
         break;
       case "debit_note":
-        navigate(`/create-debitnote?invoiceId=${invoice._id}`);
+        navigate('/create-supplier-debitnote');
         break;
       default:
         break;
@@ -339,6 +336,12 @@ export default function Purchase() {
       );
       if (response.data.success) {
         toast.success("Purchase order deleted successfully");
+        // imediatley update local state
+        setPurchaseOrders((prev) => prev.filter((order) => order._id !== selectedInvoice._id))
+        // reset stats and tabs immediately
+        const updatedOrders = purchaseOrders.filter((order) => order._id !== selectedInvoice._id)
+        updateStats(updatedOrders);
+        updateTabCounts(updatedOrders)
         fetchPurchaseOrders();
         setShowDeleteModal(false);
         setSelectedInvoice(null);
@@ -545,11 +548,68 @@ export default function Purchase() {
   }, [selectedRowIds, purchaseOrders]);
 
   return (
-    <div className="px-4 py-4" style={{overflowY:"auto", height:"100vh"}}>
-      {/* Header: back + title + right-side controls */}
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <div className="d-flex align-items-center justify-content-center gap-3">
-          {/* <span
+    <div className="px-4 py-4" style={{ overflowY: "auto", height: "100vh" }}>
+      {showEmptyCreatePurchasePage ? (
+        // Show empty state component
+        <div className='px-4 py-2' style={{ maxHeight: "80vh", display: "flex", justifyContent: "center" }}>
+          <div
+            style={{
+              width: "100%",
+              maxWidth: "500px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "flex-start",
+              marginTop: "10vh",
+              textAlign: "center",
+              fontWeight: 400,
+              lineHeight: "120%",
+            }}
+          >
+            <p style={{ fontSize: '32px', color: "#000000", marginBottom: "20px" }}>
+              Purchase Order
+            </p>
+            <p style={{ width: "350px", marginBottom: "16px" }}>
+              <span style={{ fontSize: "16px", color: "#727681" }}>
+                👋 Looks like your Purchase list is empty.<br />
+                Add your first Purchase to create purchase order.
+              </span>
+            </p>
+            <img
+              src={PurchaseImg}
+              alt="purchase"
+              style={{ width: "240px", marginBottom: "20px" }}
+            />
+            <Link
+              to='/create-purchase-orders'
+              style={{ textDecoration: "none" }}
+            >
+              <button
+                style={{
+                  background: "#1F7FFF",
+                  border: "1px solid #1F7FFF",
+                  borderRadius: "8px",
+                  padding: "8px 16px",
+                  color: "#FFFFFF",
+                  fontWeight: 400,
+                  fontSize: "16px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px"
+                }}
+              >
+                <MdOutlineAddShoppingCart />
+                Create Purchase
+              </button>
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Header: back + title + right-side controls */}
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <div className="d-flex align-items-center justify-content-center gap-3">
+              {/* <span
             style={{
               backgroundColor: "white",
               width: "32px",
@@ -564,709 +624,711 @@ export default function Purchase() {
           >
             <img src={total_orders_icon} alt="total_orders_icon" />
           </span> */}
-          <h3
-            style={{
-              fontSize: "22px",
-              color: "#0E101A",
-              fontFamily: '"Inter", sans-serif',
-              fontWeight: 500,
-              lineHeight: "120%",
-            }}
-          >
-            All Purchase Orders
-          </h3>
-        </div>
-
-        <div className="d-flex align-items-center gap-3">
-          {/* <div className="d-flex align-items-center gap-4">
-            <DatePicker
-              selectedDateRange={selectedDateRange}
-              setSelectedDateRange={setSelectedDateRange}
-            />
-          </div> */}
-
-          {/* Create Purchase */}
-          {/* <Link style={{ textDecoration: "none" }} to="/create-purchase-order">
-            <button
-              className="btn d-flex align-items-center"
-              style={{
-                background: "#fff",
-                border: "1.5px solid #1F7FFF",
-                color: "#1F7FFF",
-                borderRadius: "8px",
-                padding: "8px 16px",
-                boxShadow: "-1px -1px 1.6px rgba(0,0,0,0.08) inset",
-                fontWeight: 500,
-                fontSize: "14px",
-                fontFamily: '"Inter", sans-serif',
-              }}
-            >
-              <MdAddShoppingCart style={{ marginRight: 8, fontSize: "16px" }} />
-              Create Purchase
-            </button>
-          </Link> */}
-        </div>
-      </div>
-
-      {/* Top stat cards */}
-      <div className="row g-3 mb-3">
-        {stats.map((s, idx) => (
-          <Link
-            to={s.link}
-            key={idx}
-            className="col-12 col-sm-6 col-lg-3"
-            style={{ textDecoration: "none" }}
-          >
-            <div
-              className="d-flex justify-content-between align-items-center bg-white position-relative"
-              style={{
-                width: "100%",
-                height: "86px",
-                padding: "16px 24px 16px 16px",
-                fontFamily: "Inter",
-                boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
-                border: "1px solid #E5F0FF",
-                borderRadius: "8px",
-                backgroundColor: "#FFFFFF",
-              }}
-            >
-              {/* Blue Left Accent Line */}
-              <span
+              <h3
                 style={{
-                  position: "absolute",
-                  left: 0,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  width: "4px",
-                  height: "70%",
-                  backgroundColor: "#1F7FFF",
-                  borderRadius: "1px 10px 1px 10px",
-                }}
-              ></span>
-
-              {/* Left Content */}
-              <div
-                className="d-flex align-items-center"
-                style={{ gap: "24px" }}
-              >
-                <div className="d-flex flex-column" style={{ gap: "11px" }}>
-                  <h6
-                    className="mb-0"
-                    style={{
-                      fontSize: "14px",
-                      color: "#727681",
-                      fontWeight: "500",
-                    }}
-                  >
-                    {s.title}
-                  </h6>
-                  <div className="d-flex align-items-end gap-2">
-                    <h5
-                      className="mb-0"
-                      style={{
-                        fontSize: "22px",
-                        color: "#0E101A",
-                        fontWeight: "600",
-                      }}
-                    >
-                      {s.value}
-                    </h5>
-                    {s.currency && (
-                      <span style={{ fontSize: "14px", color: "#0E101A" }}>
-                        {s.currency}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Icon Circle */}
-              <div
-                className="d-flex justify-content-center align-items-center rounded-circle"
-                style={{
-                  width: "50px",
-                  height: "50px",
-                  backgroundColor: "#FFFFFF",
-                  border: "1px solid #E5F0FF",
-                  flexShrink: 0,
+                  fontSize: "22px",
+                  color: "#0E101A",
+                  fontFamily: '"Inter", sans-serif',
+                  fontWeight: 500,
+                  lineHeight: "120%",
                 }}
               >
-                <img
-                  src={s.image}
-                  alt={s.title}
-                  style={{
-                    width: "36px",
-                    height: "36px",
-                    objectFit: "contain",
-                  }}
+                All Purchase Orders
+              </h3>
+            </div>
+
+            <div className="d-flex align-items-center gap-3">
+              <div className="d-flex align-items-center gap-4">
+                <DatePicker
+                  selectedDateRange={selectedDateRange}
+                  setSelectedDateRange={setSelectedDateRange}
                 />
               </div>
-            </div>
-          </Link>
-        ))}
-      </div>
 
-      {/* Search + Tabs */}
-      <div
-        style={{
-          backgroundColor: "white",
-          borderRadius: "16px",
-          padding: "20px",
-          overflowX:"auto"
-        }}
-      >
-        <div
-          className="d-flex"
-          style={{
-            gap: "20px",
-            justifyContent: "space-between",
-            marginBottom: "20px",
-          }}
-        >
-          <div className="col-md-6 d-flex align-items-center">
-            <div
-              style={{
-                background: "#F3F8FB",
-                padding: 2,
-                borderRadius: 8,
-                display: "flex",
-                gap: 8,
-                overflowX: "auto",
-              }}
-            >
-              {tabs.map((t) => {
-                const active = activeTab === t.label;
-                return (
-                  <div
-                    key={t.label}
-                    onClick={() => handleTabChange(t)}
-                    role="button"
+              {/* Create Purchase */}
+              <Link style={{ textDecoration: "none" }} to="/create-purchase-orders">
+                <button
+                  className="btn d-flex align-items-center"
+                  style={{
+                    background: "#fff",
+                    border: "1.5px solid #1F7FFF",
+                    color: "#1F7FFF",
+                    borderRadius: "8px",
+                    padding: "8px 16px",
+                    boxShadow: "-1px -1px 1.6px rgba(0,0,0,0.08) inset",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                    fontFamily: '"Inter", sans-serif',
+                  }}
+                >
+                  <MdAddShoppingCart style={{ marginRight: 8, fontSize: "16px" }} />
+                  Create Purchase
+                </button>
+              </Link>
+            </div>
+          </div>
+
+          {/* Top stat cards */}
+          <div className="row g-3 mb-3">
+            {stats.map((s, idx) => (
+              <Link
+                to={s.link}
+                key={idx}
+                className="col-12 col-sm-6 col-lg-3"
+                style={{ textDecoration: "none" }}
+              >
+                <div
+                  className="d-flex justify-content-between align-items-center bg-white position-relative"
+                  style={{
+                    width: "100%",
+                    height: "86px",
+                    padding: "16px 24px 16px 16px",
+                    fontFamily: "Inter",
+                    boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
+                    border: "1px solid #E5F0FF",
+                    borderRadius: "8px",
+                    backgroundColor: "#FFFFFF",
+                  }}
+                >
+                  {/* Blue Left Accent Line */}
+                  <span
                     style={{
-                      padding: "6px 12px",
-                      borderRadius: 8,
-                      background: active ? "#fff" : "transparent",
-                      boxShadow: active ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
-                      display: "flex",
-                      gap: 8,
-                      alignItems: "center",
-                      cursor: "pointer",
-                      minWidth: 90,
-                      whiteSpace: "nowrap",
-                      height: "33px",
+                      position: "absolute",
+                      left: 0,
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      width: "4px",
+                      height: "70%",
+                      backgroundColor: "#1F7FFF",
+                      borderRadius: "1px 10px 1px 10px",
                     }}
+                  ></span>
+
+                  {/* Left Content */}
+                  <div
+                    className="d-flex align-items-center"
+                    style={{ gap: "24px" }}
                   >
-                    <div style={{ fontSize: 14, color: "#0E101A" }}>
-                      {t.label}
-                    </div>
-                    <div style={{ color: "#727681", fontSize: 14 }}>
-                      {t.count}
+                    <div className="d-flex flex-column" style={{ gap: "11px" }}>
+                      <h6
+                        className="mb-0"
+                        style={{
+                          fontSize: "14px",
+                          color: "#727681",
+                          fontWeight: "500",
+                        }}
+                      >
+                        {s.title}
+                      </h6>
+                      <div className="d-flex align-items-end gap-2">
+                        <h5
+                          className="mb-0"
+                          style={{
+                            fontSize: "22px",
+                            color: "#0E101A",
+                            fontWeight: "600",
+                          }}
+                        >
+                          {s.value}
+                        </h5>
+                        {s.currency && (
+                          <span style={{ fontSize: "14px", color: "#0E101A" }}>
+                            {s.currency}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
-          <div className="d-flex align-items-center gap-4">
-            {/* Search Box */}
-            <div
-              className="d-flex align-items-center search-box"
-              style={{
-                background: "#FCFCFC",
-                padding: "5px 16px",
-                borderRadius: 8,
-                border: "1px solid #EAEAEA",
-                width: "465px",
-              }}
-            >
-              <FiSearch style={{ color: "#14193D66" }} />
-              <input
-                type="search"
-                placeholder="Search by supplier or invoice number"
-                value={search}
-                onChange={handleSearch}
-                style={{
-                  border: "none",
-                  outline: "none",
-                  width: "100%",
-                  backgroundColor: "transparent",
-                  fontSize: "15px",
-                }}
-              />
-            </div>
 
-            {/* Export Button */}
-            {/* Export Button */}
-            <button
-              style={{
-                background: "#FCFCFC",
-                border: "1px solid #EAEAEA",
-                borderRadius: 8,
-                padding: "4px 14px",
-                fontSize: "14px",
-                fontFamily: '"Inter", sans-serif',
-                color: "#0E101A",
-                height: "32px",
-                whiteSpace: "nowrap",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: 500,
-                cursor:
-                  selectedRowIds.size > 0 || purchaseOrders.length > 0
-                    ? "pointer"
-                    : "not-allowed",
-                opacity:
-                  selectedRowIds.size > 0 || purchaseOrders.length > 0
-                    ? 1
-                    : 0.5,
-              }}
-              onClick={handleExportPDF}
-              disabled={purchaseOrders.length === 0}
-              title={
-                selectedRowIds.size > 0
-                  ? `Export ${selectedRowIds.size} selected`
-                  : "Export all"
-              }
-            >
-              <TbFileExport
-                className="fs-5 text-secondary"
-                style={{ marginRight: "10px" }}
-              />
-              Export PDF
-            </button>
+                  {/* Right Icon Circle */}
+                  <div
+                    className="d-flex justify-content-center align-items-center rounded-circle"
+                    style={{
+                      width: "50px",
+                      height: "50px",
+                      backgroundColor: "#FFFFFF",
+                      border: "1px solid #E5F0FF",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <img
+                      src={s.image}
+                      alt={s.title}
+                      style={{
+                        width: "36px",
+                        height: "36px",
+                        objectFit: "contain",
+                      }}
+                    />
+                  </div>
+                </div>
+              </Link>
+            ))}
           </div>
-        </div>
 
-        {/* Table card */}
-        <div style={{ ...cardStyle }}>
+          {/* Search + Tabs */}
           <div
-            className="table-responsive"
             style={{
-              cursor: "pointer",
-              maxHeight:"calc(100vh - 410px)",
-              overflowY: "scroll",
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
+              backgroundColor: "white",
+              borderRadius: "16px",
+              padding: "20px",
+              overflowX: "auto"
             }}
           >
-            {/* wrapper for top + bottom spacing (important for sticky alignment) */}
-            <div>
-              <table
-                className="table align-middle"
+            <div
+              className="d-flex"
+              style={{
+                gap: "20px",
+                justifyContent: "space-between",
+                marginBottom: "20px",
+              }}
+            >
+              <div className="col-md-6 d-flex align-items-center">
+                <div
+                  style={{
+                    background: "#F3F8FB",
+                    padding: 2,
+                    borderRadius: 8,
+                    display: "flex",
+                    gap: 8,
+                    overflowX: "auto",
+                  }}
+                >
+                  {tabs.map((t) => {
+                    const active = activeTab === t.label;
+                    return (
+                      <div
+                        key={t.label}
+                        onClick={() => handleTabChange(t)}
+                        role="button"
+                        style={{
+                          padding: "6px 12px",
+                          borderRadius: 8,
+                          background: active ? "#fff" : "transparent",
+                          boxShadow: active ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+                          display: "flex",
+                          gap: 8,
+                          alignItems: "center",
+                          cursor: "pointer",
+                          minWidth: 90,
+                          whiteSpace: "nowrap",
+                          height: "33px",
+                        }}
+                      >
+                        <div style={{ fontSize: 14, color: "#0E101A" }}>
+                          {t.label}
+                        </div>
+                        <div style={{ color: "#727681", fontSize: 14 }}>
+                          {t.count}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="d-flex align-items-center gap-4">
+                {/* Search Box */}
+                <div
+                  className="d-flex align-items-center search-box"
+                  style={{
+                    background: "#FCFCFC",
+                    padding: "5px 16px",
+                    borderRadius: 8,
+                    border: "1px solid #EAEAEA",
+                    width: "465px",
+                  }}
+                >
+                  <FiSearch style={{ color: "#14193D66" }} />
+                  <input
+                    type="search"
+                    placeholder="Search by supplier or invoice number"
+                    value={search}
+                    onChange={handleSearch}
+                    style={{
+                      border: "none",
+                      outline: "none",
+                      width: "100%",
+                      backgroundColor: "transparent",
+                      fontSize: "15px",
+                    }}
+                  />
+                </div>
+
+                {/* Export Button */}
+                {/* Export Button */}
+                <button
+                  style={{
+                    background: "#FCFCFC",
+                    border: "1px solid #EAEAEA",
+                    borderRadius: 8,
+                    padding: "4px 14px",
+                    fontSize: "14px",
+                    fontFamily: '"Inter", sans-serif',
+                    color: "#0E101A",
+                    height: "32px",
+                    whiteSpace: "nowrap",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontWeight: 500,
+                    cursor:
+                      selectedRowIds.size > 0 || purchaseOrders.length > 0
+                        ? "pointer"
+                        : "not-allowed",
+                    opacity:
+                      selectedRowIds.size > 0 || purchaseOrders.length > 0
+                        ? 1
+                        : 0.5,
+                  }}
+                  onClick={handleExportPDF}
+                  disabled={purchaseOrders.length === 0}
+                  title={
+                    selectedRowIds.size > 0
+                      ? `Export ${selectedRowIds.size} selected`
+                      : "Export all"
+                  }
+                >
+                  <TbFileExport
+                    className="fs-5 text-secondary"
+                    style={{ marginRight: "10px" }}
+                  />
+                  Export PDF
+                </button>
+              </div>
+            </div>
+
+            {/* Table card */}
+            <div style={{ ...cardStyle }}>
+              <div
+                className="table-responsive"
                 style={{
-                  fontSize: 14,
-                  marginBottom: 0,
-                  borderCollapse: "separate",
-                  borderSpacing: 0,
+                  cursor: "pointer",
+                  maxHeight: "calc(100vh - 410px)",
+                  overflowY: "scroll",
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none",
                 }}
               >
-                <thead>
-                  <tr>
-                    {/* Checkbox */}
-                    <th
-                      style={{
-                        width: 0,
-                        backgroundColor: "#F3F8FB",
-                        position: "sticky",
-                        top: 0,
-                        zIndex: 10,
-                        fontWeight: 400,
-                        padding: "12px 16px",
-                        color: "#727681",
-                        fontSize: "14px",
-                        fontFamily: '"Inter", sans-serif',
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        aria-label="select all"
-                        checked={allVisibleSelected}
-                        onChange={(e) => {
-                          const next = new Set(selectedRowIds);
-                          if (e.target.checked) {
-                            // Add all current page orders
-                            purchaseOrders.forEach((order) => {
-                              if (order._id) next.add(order._id);
-                            });
-                          } else {
-                            // Remove all current page orders
-                            purchaseOrders.forEach((order) => {
-                              if (order._id) next.delete(order._id);
-                            });
-                          }
-                          setSelectedRowIds(next);
-                        }}
-                      />
-                    </th>
-
-                    {/* Supplier Name */}
-                    <th
-                      style={{
-                        backgroundColor: "#F3F8FB",
-                        position: "sticky",
-                        top: 0,
-                        zIndex: 10,
-                        fontWeight: 400,
-                        padding: "12px 16px",
-                        color: "#727681",
-                        fontSize: "14px",
-                        fontFamily: '"Inter", sans-serif',
-                      }}
-                    >
-                      Supplier Name
-                    </th>
-
-                    {/* Invoice */}
-                    <th
-                      style={{
-                        backgroundColor: "#F3F8FB",
-                        position: "sticky",
-                        top: 0,
-                        zIndex: 10,
-                        fontWeight: 400,
-                        padding: "12px 16px",
-                        color: "#727681",
-                        fontSize: "14px",
-                        fontFamily: '"Inter", sans-serif',
-                      }}
-                    >
-                      Invoice No.
-                    </th>
-
-                    {/* Items */}
-                    <th
-                      style={{
-                        backgroundColor: "#F3F8FB",
-                        position: "sticky",
-                        zIndex: 10,
-                        fontWeight: 400,
-                        padding: "12px 16px",
-                        color: "#727681",
-                        fontSize: "14px",
-                        fontFamily: '"Inter", sans-serif',
-                        top: 0,
-                      }}
-                    >
-                      No. Of Items
-                    </th>
-
-                    {/* Dates */}
-                    <th
-                      style={{
-                        backgroundColor: "#F3F8FB",
-                        position: "sticky",
-                        zIndex: 10,
-                        fontWeight: 400,
-                        padding: "12px 16px",
-                        color: "#727681",
-                        fontSize: "14px",
-                        fontFamily: '"Inter", sans-serif',
-                        top: 0,
-                      }}
-                    >
-                      Order Date & Arriving On
-                    </th>
-
-                    {/* Status */}
-                    <th
-                      style={{
-                        backgroundColor: "#F3F8FB",
-                        position: "sticky",
-                        zIndex: 10,
-                        fontWeight: 400,
-                        padding: "12px 16px",
-                        color: "#727681",
-                        fontSize: "14px",
-                        fontFamily: '"Inter", sans-serif',
-                        top: 0,
-                      }}
-                    >
-                      Status
-                    </th>
-
-                    {/* Total */}
-                    <th
-                      style={{
-                        backgroundColor: "#F3F8FB",
-                        position: "sticky",
-                        zIndex: 10,
-                        fontWeight: 400,
-                        padding: "12px 16px",
-                        color: "#727681",
-                        fontSize: "14px",
-                        fontFamily: '"Inter", sans-serif',
-                        top: 0,
-                      }}
-                    >
-                      Total Amount
-                    </th>
-
-                    {/* Actions */}
-                    <th
-                      className="text-center"
-                      style={{
-                        width: 60,
-                        backgroundColor: "#F3F8FB",
-                        position: "sticky",
-                        zIndex: 10,
-                        fontWeight: 400,
-                        padding: "12px 16px",
-                        color: "#727681",
-                        fontSize: "14px",
-                        fontFamily: '"Inter", sans-serif',
-                        top: 0,
-                      }}
-                    >
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan="8" className="text-center py-5">
-                        <div
-                          className="spinner-border text-primary"
-                          role="status"
+                {/* wrapper for top + bottom spacing (important for sticky alignment) */}
+                <div>
+                  <table
+                    className="table align-middle"
+                    style={{
+                      fontSize: 14,
+                      marginBottom: 0,
+                      borderCollapse: "separate",
+                      borderSpacing: 0,
+                    }}
+                  >
+                    <thead>
+                      <tr>
+                        {/* Checkbox */}
+                        <th
+                          style={{
+                            width: 0,
+                            backgroundColor: "#F3F8FB",
+                            position: "sticky",
+                            top: 0,
+                            zIndex: 10,
+                            fontWeight: 400,
+                            padding: "12px 16px",
+                            color: "#727681",
+                            fontSize: "14px",
+                            fontFamily: '"Inter", sans-serif',
+                          }}
                         >
-                          <span className="visually-hidden">Loading...</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ) : purchaseOrders.length === 0 ? (
-                    <tr>
-                      <td colSpan="8" className="text-center text-muted py-5">
-                        No purchase orders found
-                      </td>
-                    </tr>
-                  ) : (
-                    purchaseOrders.map((order, idx) => {
-                      const sty =
-                        statusStyles[order.status] || statusStyles.draft;
-                      const supplierName =
-                        order.supplierId?.supplierName || "Unknown Supplier";
-                      const itemsCount = order.items?.length || 0;
-
-                      return (
-                        <tr key={order._id} style={{ verticalAlign: "middle" }}>
-                          {/* Checkbox */}
-                          <td
-                            className="text-center"
-                            style={{ padding: "14px 16px" }}
-                          >
-                            <input
-                              type="checkbox"
-                              aria-label="select row"
-                              checked={selectedRowIds.has(order._id)}
-                              onChange={(e) => {
-                                const next = new Set(selectedRowIds);
-                                if (e.target.checked) {
+                          <input
+                            type="checkbox"
+                            aria-label="select all"
+                            checked={allVisibleSelected}
+                            onChange={(e) => {
+                              const next = new Set(selectedRowIds);
+                              if (e.target.checked) {
+                                // Add all current page orders
+                                purchaseOrders.forEach((order) => {
                                   if (order._id) next.add(order._id);
-                                } else {
+                                });
+                              } else {
+                                // Remove all current page orders
+                                purchaseOrders.forEach((order) => {
                                   if (order._id) next.delete(order._id);
-                                }
-                                setSelectedRowIds(next);
-                              }}
-                            />
-                          </td>
+                                });
+                              }
+                              setSelectedRowIds(next);
+                            }}
+                          />
+                        </th>
 
-                          {/* Supplier */}
-                          <td
-                            style={{ padding: "14px 16px", color: "#0E101A" }}
-                          >
-                            {supplierName} ({itemsCount} items)
-                          </td>
+                        {/* Supplier Name */}
+                        <th
+                          style={{
+                            backgroundColor: "#F3F8FB",
+                            position: "sticky",
+                            top: 0,
+                            zIndex: 10,
+                            fontWeight: 400,
+                            padding: "12px 16px",
+                            color: "#727681",
+                            fontSize: "14px",
+                            fontFamily: '"Inter", sans-serif',
+                          }}
+                        >
+                          Supplier Name
+                        </th>
 
-                          {/* Invoice */}
-                          <td style={{ padding: "14px 16px" }}>
-                            {order.invoiceNo}
-                          </td>
+                        {/* Invoice */}
+                        <th
+                          style={{
+                            backgroundColor: "#F3F8FB",
+                            position: "sticky",
+                            top: 0,
+                            zIndex: 10,
+                            fontWeight: 400,
+                            padding: "12px 16px",
+                            color: "#727681",
+                            fontSize: "14px",
+                            fontFamily: '"Inter", sans-serif',
+                          }}
+                        >
+                          Invoice No.
+                        </th>
 
-                          {/* Items */}
-                          <td style={{ padding: "14px 16px" }}>{itemsCount}</td>
+                        {/* Items */}
+                        <th
+                          style={{
+                            backgroundColor: "#F3F8FB",
+                            position: "sticky",
+                            zIndex: 10,
+                            fontWeight: 400,
+                            padding: "12px 16px",
+                            color: "#727681",
+                            fontSize: "14px",
+                            fontFamily: '"Inter", sans-serif',
+                            top: 0,
+                          }}
+                        >
+                          No. Of Items
+                        </th>
 
-                          {/* Dates */}
-                          <td style={{ padding: "14px 16px" }}>
+                        {/* Dates */}
+                        <th
+                          style={{
+                            backgroundColor: "#F3F8FB",
+                            position: "sticky",
+                            zIndex: 10,
+                            fontWeight: 400,
+                            padding: "12px 16px",
+                            color: "#727681",
+                            fontSize: "14px",
+                            fontFamily: '"Inter", sans-serif',
+                            top: 0,
+                          }}
+                        >
+                          Order Date & Arriving On
+                        </th>
+
+                        {/* Status */}
+                        <th
+                          style={{
+                            backgroundColor: "#F3F8FB",
+                            position: "sticky",
+                            zIndex: 10,
+                            fontWeight: 400,
+                            padding: "12px 16px",
+                            color: "#727681",
+                            fontSize: "14px",
+                            fontFamily: '"Inter", sans-serif',
+                            top: 0,
+                          }}
+                        >
+                          Status
+                        </th>
+
+                        {/* Total */}
+                        <th
+                          style={{
+                            backgroundColor: "#F3F8FB",
+                            position: "sticky",
+                            zIndex: 10,
+                            fontWeight: 400,
+                            padding: "12px 16px",
+                            color: "#727681",
+                            fontSize: "14px",
+                            fontFamily: '"Inter", sans-serif',
+                            top: 0,
+                          }}
+                        >
+                          Total Amount
+                        </th>
+
+                        {/* Actions */}
+                        <th
+                          className="text-center"
+                          style={{
+                            width: 60,
+                            backgroundColor: "#F3F8FB",
+                            position: "sticky",
+                            zIndex: 10,
+                            fontWeight: 400,
+                            padding: "12px 16px",
+                            color: "#727681",
+                            fontSize: "14px",
+                            fontFamily: '"Inter", sans-serif',
+                            top: 0,
+                          }}
+                        >
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {loading ? (
+                        <tr>
+                          <td colSpan="8" className="text-center py-5">
                             <div
-                              style={{
-                                display: "flex",
-                                gap: 6,
-                                flexWrap: "wrap",
-                              }}
+                              className="spinner-border text-primary"
+                              role="status"
                             >
-                              <span>{formatDate(order.invoiceDate)}</span>&
-                              <span>{getArrivingDate(order.invoiceDate)}</span>
+                              <span className="visually-hidden">Loading...</span>
                             </div>
                           </td>
+                        </tr>
+                      ) : purchaseOrders.length === 0 ? (
+                        <tr>
+                          <td colSpan="8" className="text-center text-muted py-5">
+                            No purchase orders found
+                          </td>
+                        </tr>
+                      ) : (
+                        purchaseOrders.map((order, idx) => {
+                          const sty =
+                            statusStyles[order.status] || statusStyles.draft;
+                          const supplierName =
+                            order.supplierId?.supplierName || "Unknown Supplier";
+                          const itemsCount = order.items?.length || 0;
 
-                          {/* Status chip */}
-                          <td style={{ padding: "14px 16px" }}>
-                            <div
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: 8,
-                                padding: "6px 10px",
-                                borderRadius: 50,
-                                background: sty.bg,
-                                color: sty.color,
-                                fontSize: 14,
-                                whiteSpace: "nowrap",
-                                minWidth: 120,
-                              }}
-                              onClick={() => {
-                                setSelectedInvoice(order);
-                                setShowModal(true);
-                              }}
-                            >
-                              {sty.dot ? (
-                                <span
-                                  style={{
-                                    width: 10,
-                                    height: 10,
-                                    borderRadius: 20,
-                                    background: sty.color,
-                                    display: "inline-block",
+                          return (
+                            <tr key={order._id} style={{ verticalAlign: "middle" }}>
+                              {/* Checkbox */}
+                              <td
+                                className="text-center"
+                                style={{ padding: "14px 16px" }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  aria-label="select row"
+                                  checked={selectedRowIds.has(order._id)}
+                                  onChange={(e) => {
+                                    const next = new Set(selectedRowIds);
+                                    if (e.target.checked) {
+                                      if (order._id) next.add(order._id);
+                                    } else {
+                                      if (order._id) next.delete(order._id);
+                                    }
+                                    setSelectedRowIds(next);
                                   }}
                                 />
-                              ) : (
-                                <span style={{ color: sty.color }}>
-                                  {sty.icon}
-                                </span>
-                              )}
-                              {sty.label}
-                            </div>
-                          </td>
+                              </td>
 
-                          {/* Amount */}
-                          <td style={{ padding: "14px 16px" }}>
-                            ₹ {order.grandTotal?.toLocaleString("en-IN")}/-
-                          </td>
+                              {/* Supplier */}
+                              <td
+                                style={{ padding: "14px 16px", color: "#0E101A" }}
+                              >
+                                {supplierName} ({itemsCount} items)
+                              </td>
 
-                          {/* Actions */}
-                          <td
-                            className="text-center"
-                            style={{
-                              padding: "14px 16px",
-                              position: "relative",
-                            }}
-                          >
-                            <button
-                              onClick={() =>
-                                setOpenMenu(openMenu === idx ? null : idx)
-                              }
-                              className="btn"
-                              style={{
-                                border: "none",
-                                background: "transparent",
-                                padding: 4,
-                                display: "flex",
-                                alignItems: "center",
-                              }}
-                              aria-label="actions"
-                            >
-                              <BsThreeDots style={{ color: "#6C748C" }} />
-                            </button>
+                              {/* Invoice */}
+                              <td style={{ padding: "14px 16px" }}>
+                                {order.invoiceNo}
+                              </td>
 
-                            {openMenu === idx && (
-                              <div
-                                ref={menuRef}
+                              {/* Items */}
+                              <td style={{ padding: "14px 16px" }}>{itemsCount}</td>
+
+                              {/* Dates */}
+                              <td style={{ padding: "14px 16px" }}>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    gap: 6,
+                                    flexWrap: "wrap",
+                                  }}
+                                >
+                                  <span>{formatDate(order.invoiceDate)}</span>&
+                                  <span>{getArrivingDate(order.invoiceDate)}</span>
+                                </div>
+                              </td>
+
+                              {/* Status chip */}
+                              <td style={{ padding: "14px 16px" }}>
+                                <div
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: 8,
+                                    padding: "6px 10px",
+                                    borderRadius: 50,
+                                    background: sty.bg,
+                                    color: sty.color,
+                                    fontSize: 14,
+                                    whiteSpace: "nowrap",
+                                    minWidth: 120,
+                                  }}
+                                  onClick={() => {
+                                    setSelectedInvoice(order);
+                                    setShowModal(true);
+                                  }}
+                                >
+                                  {sty.dot ? (
+                                    <span
+                                      style={{
+                                        width: 10,
+                                        height: 10,
+                                        borderRadius: 20,
+                                        background: sty.color,
+                                        display: "inline-block",
+                                      }}
+                                    />
+                                  ) : (
+                                    <span style={{ color: sty.color }}>
+                                      {sty.icon}
+                                    </span>
+                                  )}
+                                  {sty.label}
+                                </div>
+                              </td>
+
+                              {/* Amount */}
+                              <td style={{ padding: "14px 16px" }}>
+                                ₹ {order.grandTotal?.toLocaleString("en-IN")}/-
+                              </td>
+
+                              {/* Actions */}
+                              <td
+                                className="text-center"
                                 style={{
-                                  position: "absolute",
-                                  right: 140,
-                                  width: "210px",
-                                  backgroundColor: "#ffff",
-                                  borderRadius: "12px",
-                                  boxShadow: "0 8px 25px rgba(0, 0, 0, 0.15)",
-                                  border: "1px solid #E5E7EB",
-                                  overflow: "hidden",
-                                  animation: "fadeIn 0.2s ease-out",
-                                  zIndex: 1000,
+                                  padding: "14px 16px",
+                                  position: "relative",
                                 }}
                               >
-                                {menuItems.map((item) => (
+                                <button
+                                  onClick={() =>
+                                    setOpenMenu(openMenu === idx ? null : idx)
+                                  }
+                                  className="btn"
+                                  style={{
+                                    border: "none",
+                                    background: "transparent",
+                                    padding: 4,
+                                    display: "flex",
+                                    alignItems: "center",
+                                  }}
+                                  aria-label="actions"
+                                >
+                                  <BsThreeDots style={{ color: "#6C748C" }} />
+                                </button>
+
+                                {openMenu === idx && (
                                   <div
-                                    key={item.action}
-                                    onClick={() =>
-                                      handleMenuAction(order, item.action)
-                                    }
+                                    ref={menuRef}
                                     style={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: "12px",
-                                      padding: "8px 18px",
-                                      fontFamily: "Inter, sans-serif",
-                                      fontSize: "14px",
-                                      fontWeight: 500,
-                                      cursor: "pointer",
-                                      transition: "0.2s",
-                                      textDecoration: "none",
-                                      color: "#344054",
-                                    }}
-                                    onMouseEnter={(e) => {
-                                      e.currentTarget.style.backgroundColor =
-                                        "#e3f2fd";
-                                    }}
-                                    onMouseLeave={(e) => {
-                                      e.currentTarget.style.backgroundColor =
-                                        "transparent";
+                                      position: "absolute",
+                                      right: 140,
+                                      width: "210px",
+                                      backgroundColor: "#ffff",
+                                      borderRadius: "12px",
+                                      boxShadow: "0 8px 25px rgba(0, 0, 0, 0.15)",
+                                      border: "1px solid #E5E7EB",
+                                      overflow: "hidden",
+                                      animation: "fadeIn 0.2s ease-out",
+                                      zIndex: 1000,
                                     }}
                                   >
-                                    <span style={{ fontSize: "18px" }}>
-                                      {item.icon}
-                                    </span>
-                                    <span>{item.label}</span>
-                                  </div>
-                                ))}
-                                {/* animation */}
-                                <style>{`
+                                    {menuItems.map((item) => (
+                                      <div
+                                        key={item.action}
+                                        onClick={() =>
+                                          handleMenuAction(order, item.action)
+                                        }
+                                        style={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: "12px",
+                                          padding: "8px 18px",
+                                          fontFamily: "Inter, sans-serif",
+                                          fontSize: "14px",
+                                          fontWeight: 500,
+                                          cursor: "pointer",
+                                          transition: "0.2s",
+                                          textDecoration: "none",
+                                          color: "#344054",
+                                        }}
+                                        onMouseEnter={(e) => {
+                                          e.currentTarget.style.backgroundColor =
+                                            "#e3f2fd";
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          e.currentTarget.style.backgroundColor =
+                                            "transparent";
+                                        }}
+                                      >
+                                        <span style={{ fontSize: "18px" }}>
+                                          {item.icon}
+                                        </span>
+                                        <span>{item.label}</span>
+                                      </div>
+                                    ))}
+                                    {/* animation */}
+                                    <style>{`
                                     @keyframes fadeIn {
                                       from { opacity: 0; transform: translateY(-6px); }
                                       to { opacity: 1; transform: translateY(0); }
                                     }
                                   `}</style>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Pagination */}
+              {!loading && purchaseOrders.length > 0 && (
+                <Pagination
+                  currentPage={currentPage}
+                  itemsPerPage={10}
+                  total={totalCount}
+                  onPageChange={handlePageChange}
+                />
+              )}
+
+              <ConfirmDeleteModal
+                isOpen={showDeleteModal}
+                onCancel={() => {
+                  setShowDeleteModal(false);
+                  setSelectedInvoice(null);
+                }}
+                onConfirm={handleDeleteInvoice}
+                title="Delete Purchase Order"
+                message={`Are you sure you want to delete invoice ${selectedInvoice?.invoiceNo}? This action cannot be undone.`}
+              />
+
+              {/* Convert purchase modal */}
+              <Convertpurchasepopupmodal
+                isOpen={showModal}
+                onCancel={() => setShowModal(false)}
+                onConfirm={(status) => updateInvoiceStatus(status)}
+              />
             </div>
           </div>
-
-          {/* Pagination */}
-          {!loading && purchaseOrders.length > 0 && (
-            <Pagination
-              currentPage={currentPage}
-              itemsPerPage={10}
-              total={totalCount}
-              onPageChange={handlePageChange}
-            />
-          )}
-
-          <ConfirmDeleteModal
-            isOpen={showDeleteModal}
-            onCancel={() => {
-              setShowDeleteModal(false);
-              setSelectedInvoice(null);
-            }}
-            onConfirm={handleDeleteInvoice}
-            title="Delete Purchase Order"
-            message={`Are you sure you want to delete invoice ${selectedInvoice?.invoiceNo}? This action cannot be undone.`}
-          />
-
-          {/* Convert purchase modal */}
-          <Convertpurchasepopupmodal
-            isOpen={showModal}
-            onCancel={() => setShowModal(false)}
-            onConfirm={(status) => updateInvoiceStatus(status)}
-          />
-        </div>
-      </div>
+        </>
+      )};
     </div>
   );
 }
