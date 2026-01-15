@@ -10,6 +10,9 @@ const MainLayouts = () => {
 
   // check if current route is addproduct
   const hideSidebar =
+    location.pathname === "/createinvoice" ||
+    location.pathname === "/create-quotition" ||
+    location.pathname === "/create-supplier-debitnote" ||
     location.pathname === "/add-product" ||
     location.pathname === "/product/edit" ||
     location.pathname === "/viewproduct" ||
@@ -28,6 +31,7 @@ const MainLayouts = () => {
        location.pathname === "/credit-note" ||
        // for purchaseorder, debit note
        matchPath("/create-purchase-orders/:supplierId", location.pathname) ||
+        location.pathname === "/create-purchase-orders" ||
        matchPath("/create-supplier-debitnote/:supplierId", location.pathname)
 
     location.pathname === "/create-debitnote" ;

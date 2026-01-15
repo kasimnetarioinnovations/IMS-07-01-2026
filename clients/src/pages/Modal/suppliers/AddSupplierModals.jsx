@@ -191,10 +191,10 @@ const AddSupplier = ({ onClose, onSuccess }) => {
   return (
     <div
       className="modal fade show d-block"
-      style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
-      tabIndex="-1"
+      style={{    backgroundColor:" rgba(0, 0, 0, 0.27)",
+    backdropFilter: "blur(1px)"}}
     >
-      <div className="modal-dialog modal-lg" style={{ marginTop: "10%" }}>
+      <div className="modal-dialog modal-lg" style={{}}>
         <div className="modal-content">
           <div className="modal-header" style={{ borderBottom: "none", display: "flex", alignItems: "center", justifyContent: "end", borderRadius: "50%", padding: "15px 15px" }}>
             <button

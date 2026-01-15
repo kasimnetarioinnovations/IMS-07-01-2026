@@ -18,7 +18,7 @@ const Pagination = ({
       justifyContent: "space-between",
       alignItems: "center",
       width: "100%",
-      padding: "10px 0",
+      padding: "0px 0px",
       fontFamily: "Inter",
       color: "#6c6e75",
       fontSize: "14px",

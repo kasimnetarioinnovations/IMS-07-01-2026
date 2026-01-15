@@ -28,6 +28,7 @@ import { toast } from "react-toastify";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { HiOutlineDotsHorizontal } from "react-icons/hi";
 
 const statsTop = [
   {
@@ -178,6 +179,7 @@ export default function Purchase() {
   const [selectedOrdersForExport, setSelectedOrdersForExport] = useState([]);
   const [selectAllOrdersForExport, setSelectAllOrdersForExport] =
     useState(false);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [selectedRowIds, setSelectedRowIds] = useState(new Set());
   const [allVisibleSelected, setAllVisibleSelected] = useState(false);
@@ -191,12 +193,12 @@ export default function Purchase() {
 
 
   // Fetch purchase orders
-  const fetchPurchaseOrders = async (page = 1, status = "") => {
+  const fetchPurchaseOrders = async (page = 1, status = "", limitOverride) => {
     try {
       setLoading(true);
       const params = {
         page,
-        limit: 10,
+        limit: limitOverride ?? itemsPerPage,
         ...(status && status !== "all" && { status }),
         ...(search && { search }),
       };
@@ -740,7 +742,66 @@ export default function Purchase() {
                     </div>
                   </div>
 
-                  {/* Right Icon Circle */}
+              {/* Right Icon Circle */}
+              <div
+                className="d-flex justify-content-center align-items-center rounded-circle"
+                style={{
+                  width: "50px",
+                  height: "50px",
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #E5F0FF",
+                  flexShrink: 0,
+                }}
+              >
+                <img
+                  src={s.image}
+                  alt={s.title}
+                  style={{
+                    width: "36px",
+                    height: "36px",
+                    objectFit: "contain",
+                  }}
+                />
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+
+      {/* Search + Tabs + Table */}
+      <div
+        style={{
+          backgroundColor: "white",
+          borderRadius: "16px",
+          padding: "16px",
+          overflowX: "auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: 16,
+        }}
+      >
+        <div
+          className="d-flex"
+          style={{
+            gap: "20px",
+            justifyContent: "space-between",
+            width: "100%",
+          }}
+        >
+          <div className="col-md-6 d-flex align-items-center" style={{width: "50%"}}>
+            <div
+              style={{
+                background: "#F3F8FB",
+                padding: 2,
+                borderRadius: 8,
+                display: "flex",
+                gap: 8,
+                overflowX: "auto",
+              }}
+            >
+              {tabs.map((t) => {
+                const active = activeTab === t.label;
+                return (
                   <div
                     className="d-flex justify-content-center align-items-center rounded-circle"
                     style={{
@@ -765,327 +826,310 @@ export default function Purchase() {
               </Link>
             ))}
           </div>
-
-          {/* Search + Tabs */}
-          <div
-            style={{
-              backgroundColor: "white",
-              borderRadius: "16px",
-              padding: "20px",
-              overflowX: "auto"
-            }}
-          >
+          <div className="d-flex align-items-center gap-4" style={{
+            display: "flex",
+            justifyContent: "end",
+            gap: "24px",
+            height: "33px",
+            width: "50%",
+          }}>
+            {/* Search Box */}
             <div
-              className="d-flex"
               style={{
-                gap: "20px",
-                justifyContent: "space-between",
-                marginBottom: "20px",
+                width: "50%",
+                position: "relative",
+                padding: "4px 8px 4px 20px",
+                display: "flex",
+                borderRadius: 8,
+                alignItems: "center",
+                background: "#FCFCFC",
+                border: "1px solid #EAEAEA",
+                gap: "5px",
+                color: "rgba(19.75, 25.29, 61.30, 0.40)",
               }}
             >
-              <div className="col-md-6 d-flex align-items-center">
-                <div
-                  style={{
-                    background: "#F3F8FB",
-                    padding: 2,
-                    borderRadius: 8,
-                    display: "flex",
-                    gap: 8,
-                    overflowX: "auto",
-                  }}
-                >
-                  {tabs.map((t) => {
-                    const active = activeTab === t.label;
-                    return (
-                      <div
-                        key={t.label}
-                        onClick={() => handleTabChange(t)}
-                        role="button"
-                        style={{
-                          padding: "6px 12px",
-                          borderRadius: 8,
-                          background: active ? "#fff" : "transparent",
-                          boxShadow: active ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
-                          display: "flex",
-                          gap: 8,
-                          alignItems: "center",
-                          cursor: "pointer",
-                          minWidth: 90,
-                          whiteSpace: "nowrap",
-                          height: "33px",
-                        }}
-                      >
-                        <div style={{ fontSize: 14, color: "#0E101A" }}>
-                          {t.label}
-                        </div>
-                        <div style={{ color: "#727681", fontSize: 14 }}>
-                          {t.count}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="d-flex align-items-center gap-4">
-                {/* Search Box */}
-                <div
-                  className="d-flex align-items-center search-box"
-                  style={{
-                    background: "#FCFCFC",
-                    padding: "5px 16px",
-                    borderRadius: 8,
-                    border: "1px solid #EAEAEA",
-                    width: "465px",
-                  }}
-                >
-                  <FiSearch style={{ color: "#14193D66" }} />
-                  <input
-                    type="search"
-                    placeholder="Search by supplier or invoice number"
-                    value={search}
-                    onChange={handleSearch}
-                    style={{
-                      border: "none",
-                      outline: "none",
-                      width: "100%",
-                      backgroundColor: "transparent",
-                      fontSize: "15px",
-                    }}
-                  />
-                </div>
-
-                {/* Export Button */}
-                {/* Export Button */}
-                <button
-                  style={{
-                    background: "#FCFCFC",
-                    border: "1px solid #EAEAEA",
-                    borderRadius: 8,
-                    padding: "4px 14px",
-                    fontSize: "14px",
-                    fontFamily: '"Inter", sans-serif',
-                    color: "#0E101A",
-                    height: "32px",
-                    whiteSpace: "nowrap",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: 500,
-                    cursor:
-                      selectedRowIds.size > 0 || purchaseOrders.length > 0
-                        ? "pointer"
-                        : "not-allowed",
-                    opacity:
-                      selectedRowIds.size > 0 || purchaseOrders.length > 0
-                        ? 1
-                        : 0.5,
-                  }}
-                  onClick={handleExportPDF}
-                  disabled={purchaseOrders.length === 0}
-                  title={
-                    selectedRowIds.size > 0
-                      ? `Export ${selectedRowIds.size} selected`
-                      : "Export all"
-                  }
-                >
-                  <TbFileExport
-                    className="fs-5 text-secondary"
-                    style={{ marginRight: "10px" }}
-                  />
-                  Export PDF
-                </button>
-              </div>
+              <FiSearch style={{ color: "#14193D66" }} />
+              <input
+                type="search"
+                placeholder="Search by Supplier name, invoice no."
+                value={search}
+                onChange={handleSearch}
+                style={{
+                  width: "100%",
+                  border: "none",
+                  outline: "none",
+                  fontSize: 14,
+                  background: "#FCFCFC",
+                  color: "rgba(19.75, 25.29, 61.30, 0.40)",
+                }}
+              />
             </div>
 
-            {/* Table card */}
-            <div style={{ ...cardStyle }}>
-              <div
-                className="table-responsive"
+            {/* Export Button */}
+            {/* Export Button */}
+            <button
+              style={{
+                display: "flex",
+                justifyContent: "flex-start",
+                alignItems: "center",
+                gap: 9,
+                padding: "8px 16px",
+                background: "#FCFCFC",
+                borderRadius: 8,
+                outline: "1px solid #EAEAEA",
+                outlineOffset: "-1px",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "Inter, sans-serif",
+                fontSize: 14,
+                fontWeight: 400,
+                color: "#0E101A",
+                height: "33px",
+                cursor:
+                  selectedRowIds.size > 0 || purchaseOrders.length > 0
+                    ? "pointer"
+                    : "not-allowed",
+                opacity:
+                  selectedRowIds.size > 0 || purchaseOrders.length > 0
+                    ? 1
+                    : 0.5,
+              }}
+              onClick={handleExportPDF}
+              disabled={purchaseOrders.length === 0}
+              title={
+                selectedRowIds.size > 0
+                  ? `Export ${selectedRowIds.size} selected`
+                  : "Export all"
+              }
+            >
+              <TbFileExport className="fs-5 text-secondary" />
+              Export
+            </button>
+          </div>
+        </div>
+
+        {/* Table */}
+        <div style={{ ...cardStyle }}>
+          <div
+            className="table-responsive"
+            style={{
+              // cursor: "pointer",
+              maxHeight: "calc(100vh - 410px)",
+              overflowY: "scroll",
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+            }}
+          >
+            {/* wrapper for top + bottom spacing (important for sticky alignment) */}
+            <div style={{ maxHeight: "calc(100vh - 410px)", overflowY: 'auto' }}>
+              <table
                 style={{
-                  cursor: "pointer",
-                  maxHeight: "calc(100vh - 410px)",
-                  overflowY: "scroll",
-                  scrollbarWidth: "none",
-                  msOverflowStyle: "none",
+                  width: "100%",
+                  borderSpacing: "0 0px",
+                  fontFamily: "Inter",
                 }}
               >
-                {/* wrapper for top + bottom spacing (important for sticky alignment) */}
-                <div>
-                  <table
-                    className="table align-middle"
-                    style={{
-                      fontSize: 14,
-                      marginBottom: 0,
-                      borderCollapse: "separate",
-                      borderSpacing: 0,
-                    }}
-                  >
-                    <thead>
-                      <tr>
-                        {/* Checkbox */}
-                        <th
+                <thead style={{ position: "sticky", top: 0, zIndex: 9 }}>
+                  <tr style={{ backgroundColor: "#F3F8FB", textAlign: "left" }}>
+                    {/* Checkbox */}
+                    <th
+                      style={{
+                        padding: "0px 0px",
+                        color: "#727681",
+                        fontSize: "14px",
+                        fontWeight: 400,
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "0px", justifyContent: 'center' }}>
+                        <input
+                          type="checkbox"
+                          aria-label="select all"
+                          checked={allVisibleSelected}
+                          onChange={(e) => {
+                            const next = new Set(selectedRowIds);
+                            if (e.target.checked) {
+                              // Add all current page orders
+                              purchaseOrders.forEach((order) => {
+                                if (order._id) next.add(order._id);
+                              });
+                            } else {
+                              // Remove all current page orders
+                              purchaseOrders.forEach((order) => {
+                                if (order._id) next.delete(order._id);
+                              });
+                            }
+                            setSelectedRowIds(next);
+                          }}
+                        />
+                      </div>
+                    </th>
+
+                    {/* Supplier Name */}
+                    <th
+                      style={{
+                        padding: "12px 16px",
+                        color: "#727681",
+                        fontSize: "14px",
+                        fontWeight: 400,
+                      }}
+                    >
+                      Supplier Name
+                    </th>
+
+                    {/* Invoice */}
+                    <th
+                      style={{
+                        padding: "12px 16px",
+                        color: "#727681",
+                        fontSize: "14px",
+                        fontWeight: 400,
+                      }}
+                    >
+                      Invoice No.
+                    </th>
+
+                    {/* Items */}
+                    <th
+                      style={{
+                        padding: "12px 16px",
+                        color: "#727681",
+                        fontSize: "14px",
+                        fontWeight: 400,
+                      }}
+                    >
+                      No. Of Items
+                    </th>
+
+                    {/* Dates */}
+                    <th
+                      style={{
+                        padding: "12px 16px",
+                        color: "#727681",
+                        fontSize: "14px",
+                        fontWeight: 400,
+                        fontFamily: '"Inter", sans-serif',
+                      }}
+                    >
+                      Order Date & Arriving On
+                    </th>
+
+                    {/* Status */}
+                    <th
+                      style={{
+                        padding: "12px 16px",
+                        color: "#727681",
+                        fontSize: "14px",
+                        fontWeight: 400,
+                        fontFamily: '"Inter", sans-serif',
+                      }}
+                    >
+                      Status
+                    </th>
+
+                    {/* Total */}
+                    <th
+                      style={{
+                        padding: "12px 16px",
+                        color: "#727681",
+                        fontSize: "14px",
+                        fontWeight: 400,
+                        fontFamily: '"Inter", sans-serif',
+                      }}
+                    >
+                      Total Amount
+                    </th>
+
+                    {/* Actions */}
+                    <th
+                      className="text-center"
+                      style={{
+                        padding: "12px 16px",
+                        color: "#727681",
+                        fontSize: "14px",
+                        fontWeight: 400,
+                        fontFamily: '"Inter", sans-serif',
+                      }}
+                    >
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan="8" className="text-center py-4">
+                        <div
+                          className="spinner-border text-primary"
+                          role="status"
+                        >
+                          <span className="visually-hidden">Loading...</span>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : purchaseOrders.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" className="text-center py-4">
+                        No purchase orders found
+                      </td>
+                    </tr>
+                  ) : (
+                    purchaseOrders.map((order, idx) => {
+                      const sty =
+                        statusStyles[order.status] || statusStyles.draft;
+                      const supplierName =
+                        order.supplierId?.supplierName || "Unknown Supplier";
+                      const itemsCount = order.items?.length || 0;
+
+                      return (
+                        <tr
+                          key={order._id}
+                          className={`table-hover ${activeRow === idx ? "active-row" : ""}`}
                           style={{
-                            width: 0,
-                            backgroundColor: "#F3F8FB",
-                            position: "sticky",
-                            top: 0,
-                            zIndex: 10,
-                            fontWeight: 400,
-                            padding: "12px 16px",
-                            color: "#727681",
-                            fontSize: "14px",
-                            fontFamily: '"Inter", sans-serif',
+                            borderBottom: "1px solid #EAEAEA",
+                            cursor: 'pointer',
                           }}
                         >
-                          <input
-                            type="checkbox"
-                            aria-label="select all"
-                            checked={allVisibleSelected}
-                            onChange={(e) => {
-                              const next = new Set(selectedRowIds);
-                              if (e.target.checked) {
-                                // Add all current page orders
-                                purchaseOrders.forEach((order) => {
-                                  if (order._id) next.add(order._id);
-                                });
-                              } else {
-                                // Remove all current page orders
-                                purchaseOrders.forEach((order) => {
-                                  if (order._id) next.delete(order._id);
-                                });
-                              }
-                              setSelectedRowIds(next);
-                            }}
-                          />
-                        </th>
+                          {/* Checkbox */}
+                          <td
+                            className="text-center"
+                            style={{ padding: "4px 16px" }}
+                          >
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: 'center' }}>
+                              <input
+                                type="checkbox"
+                                aria-label="select row"
+                                checked={selectedRowIds.has(order._id)}
+                                onChange={(e) => {
+                                  const next = new Set(selectedRowIds);
+                                  if (e.target.checked) {
+                                    if (order._id) next.add(order._id);
+                                  } else {
+                                    if (order._id) next.delete(order._id);
+                                  }
+                                  setSelectedRowIds(next);
+                                }}
+                              />
+                            </div>
+                          </td>
 
-                        {/* Supplier Name */}
-                        <th
-                          style={{
-                            backgroundColor: "#F3F8FB",
-                            position: "sticky",
-                            top: 0,
-                            zIndex: 10,
-                            fontWeight: 400,
-                            padding: "12px 16px",
-                            color: "#727681",
-                            fontSize: "14px",
-                            fontFamily: '"Inter", sans-serif',
-                          }}
-                        >
-                          Supplier Name
-                        </th>
+                          {/* Supplier */}
+                          <td
+                            style={{ padding: "4px 16px", color: "#0E101A" }}
+                          >
+                            {supplierName} ({itemsCount} items)
+                          </td>
 
-                        {/* Invoice */}
-                        <th
-                          style={{
-                            backgroundColor: "#F3F8FB",
-                            position: "sticky",
-                            top: 0,
-                            zIndex: 10,
-                            fontWeight: 400,
-                            padding: "12px 16px",
-                            color: "#727681",
-                            fontSize: "14px",
-                            fontFamily: '"Inter", sans-serif',
-                          }}
-                        >
-                          Invoice No.
-                        </th>
+                          {/* Invoice */}
+                          <td style={{ padding: "4px 16px" }}>
+                            {order.invoiceNo}
+                          </td>
 
-                        {/* Items */}
-                        <th
-                          style={{
-                            backgroundColor: "#F3F8FB",
-                            position: "sticky",
-                            zIndex: 10,
-                            fontWeight: 400,
-                            padding: "12px 16px",
-                            color: "#727681",
-                            fontSize: "14px",
-                            fontFamily: '"Inter", sans-serif',
-                            top: 0,
-                          }}
-                        >
-                          No. Of Items
-                        </th>
+                          {/* Items */}
+                          <td style={{ padding: "4px 16px" }}>{itemsCount}</td>
 
-                        {/* Dates */}
-                        <th
-                          style={{
-                            backgroundColor: "#F3F8FB",
-                            position: "sticky",
-                            zIndex: 10,
-                            fontWeight: 400,
-                            padding: "12px 16px",
-                            color: "#727681",
-                            fontSize: "14px",
-                            fontFamily: '"Inter", sans-serif',
-                            top: 0,
-                          }}
-                        >
-                          Order Date & Arriving On
-                        </th>
-
-                        {/* Status */}
-                        <th
-                          style={{
-                            backgroundColor: "#F3F8FB",
-                            position: "sticky",
-                            zIndex: 10,
-                            fontWeight: 400,
-                            padding: "12px 16px",
-                            color: "#727681",
-                            fontSize: "14px",
-                            fontFamily: '"Inter", sans-serif',
-                            top: 0,
-                          }}
-                        >
-                          Status
-                        </th>
-
-                        {/* Total */}
-                        <th
-                          style={{
-                            backgroundColor: "#F3F8FB",
-                            position: "sticky",
-                            zIndex: 10,
-                            fontWeight: 400,
-                            padding: "12px 16px",
-                            color: "#727681",
-                            fontSize: "14px",
-                            fontFamily: '"Inter", sans-serif',
-                            top: 0,
-                          }}
-                        >
-                          Total Amount
-                        </th>
-
-                        {/* Actions */}
-                        <th
-                          className="text-center"
-                          style={{
-                            width: 60,
-                            backgroundColor: "#F3F8FB",
-                            position: "sticky",
-                            zIndex: 10,
-                            fontWeight: 400,
-                            padding: "12px 16px",
-                            color: "#727681",
-                            fontSize: "14px",
-                            fontFamily: '"Inter", sans-serif',
-                            top: 0,
-                          }}
-                        >
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {loading ? (
-                        <tr>
-                          <td colSpan="8" className="text-center py-5">
+                          {/* Dates */}
+                          <td style={{ padding: "4px 16px" }}>
                             <div
                               className="spinner-border text-primary"
                               role="status"
@@ -1093,194 +1137,160 @@ export default function Purchase() {
                               <span className="visually-hidden">Loading...</span>
                             </div>
                           </td>
-                        </tr>
-                      ) : purchaseOrders.length === 0 ? (
-                        <tr>
-                          <td colSpan="8" className="text-center text-muted py-5">
-                            No purchase orders found
-                          </td>
-                        </tr>
-                      ) : (
-                        purchaseOrders.map((order, idx) => {
-                          const sty =
-                            statusStyles[order.status] || statusStyles.draft;
-                          const supplierName =
-                            order.supplierId?.supplierName || "Unknown Supplier";
-                          const itemsCount = order.items?.length || 0;
 
-                          return (
-                            <tr key={order._id} style={{ verticalAlign: "middle" }}>
-                              {/* Checkbox */}
-                              <td
-                                className="text-center"
-                                style={{ padding: "14px 16px" }}
-                              >
-                                <input
-                                  type="checkbox"
-                                  aria-label="select row"
-                                  checked={selectedRowIds.has(order._id)}
-                                  onChange={(e) => {
-                                    const next = new Set(selectedRowIds);
-                                    if (e.target.checked) {
-                                      if (order._id) next.add(order._id);
-                                    } else {
-                                      if (order._id) next.delete(order._id);
-                                    }
-                                    setSelectedRowIds(next);
+                          {/* Status chip */}
+                          <td style={{ padding: "4px 16px" }}>
+                            <div
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: 8,
+                                padding: "2px 5px",
+                                borderRadius: 50,
+                                background: sty.bg,
+                                color: sty.color,
+                                fontSize: 14,
+                                whiteSpace: "nowrap",
+                                minWidth: 120,
+                              }}
+                              onClick={() => {
+                                setSelectedInvoice(order);
+                                setShowModal(true);
+                              }}
+                            >
+                              {sty.dot ? (
+                                <span
+                                  style={{
+                                    width: 10,
+                                    height: 10,
+                                    borderRadius: 20,
+                                    background: sty.color,
+                                    display: "inline-block",
                                   }}
                                 />
                               </td>
 
-                              {/* Supplier */}
-                              <td
-                                style={{ padding: "14px 16px", color: "#0E101A" }}
-                              >
-                                {supplierName} ({itemsCount} items)
-                              </td>
+                          {/* Amount */}
+                          <td style={{ padding: "4px 16px" }}>
+                            ₹ {order.grandTotal?.toLocaleString("en-IN")}/-
+                          </td>
 
-                              {/* Invoice */}
-                              <td style={{ padding: "14px 16px" }}>
-                                {order.invoiceNo}
-                              </td>
+                          {/* Actions */}
+                          <td
+                            style={{
+                              padding: "4px 16px",
+                              position: "relative",
+                              overflow: "visible",
+                              display: "flex",
+                              justifyContent: "center",
+                              alignItems: "center",
+                            }}
+                          >
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
 
-                              {/* Items */}
-                              <td style={{ padding: "14px 16px" }}>{itemsCount}</td>
+                                const rect =
+                                  e.currentTarget.getBoundingClientRect();
+                                setOpenMenu(openMenu === idx ? null : idx)
 
-                              {/* Dates */}
-                              <td style={{ padding: "14px 16px" }}>
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    gap: 6,
-                                    flexWrap: "wrap",
-                                  }}
-                                >
-                                  <span>{formatDate(order.invoiceDate)}</span>&
-                                  <span>{getArrivingDate(order.invoiceDate)}</span>
-                                </div>
-                              </td>
+                                const dropdownHeight = 160; // your menu height
+                                const spaceBelow =
+                                  window.innerHeight - rect.bottom;
+                                const spaceAbove = rect.top;
 
-                              {/* Status chip */}
-                              <td style={{ padding: "14px 16px" }}>
-                                <div
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: 8,
-                                    padding: "6px 10px",
-                                    borderRadius: 50,
-                                    background: sty.bg,
-                                    color: sty.color,
-                                    fontSize: 14,
-                                    whiteSpace: "nowrap",
-                                    minWidth: 120,
-                                  }}
-                                  onClick={() => {
-                                    setSelectedInvoice(order);
-                                    setShowModal(true);
-                                  }}
-                                >
-                                  {sty.dot ? (
-                                    <span
-                                      style={{
-                                        width: 10,
-                                        height: 10,
-                                        borderRadius: 20,
-                                        background: sty.color,
-                                        display: "inline-block",
-                                      }}
-                                    />
-                                  ) : (
-                                    <span style={{ color: sty.color }}>
-                                      {sty.icon}
-                                    </span>
-                                  )}
-                                  {sty.label}
-                                </div>
-                              </td>
+                                // decide direction
+                                if (
+                                  spaceBelow < dropdownHeight &&
+                                  spaceAbove > dropdownHeight
+                                ) {
+                                  setOpenUpwards(true);
+                                  setDropdownPos({
+                                    x: rect.left,
+                                    y: rect.top - 6, // position above button
+                                  });
+                                } else {
+                                  setOpenUpwards(false);
+                                  setDropdownPos({
+                                    x: rect.left,
+                                    y: rect.bottom + 6, // position below button
+                                  });
+                                }
+                              }}
+                              className="btn"
+                              style={{
+                                border: "none",
+                                background: "transparent",
+                                padding: 4,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                position: "relative",
+                              }}
+                              aria-label="actions"
+                            >
+                              <HiOutlineDotsHorizontal size={20} color="grey" />
+                            </button>
 
-                              {/* Amount */}
-                              <td style={{ padding: "14px 16px" }}>
-                                ₹ {order.grandTotal?.toLocaleString("en-IN")}/-
-                              </td>
-
-                              {/* Actions */}
-                              <td
-                                className="text-center"
+                            {openMenu === idx && (
+                              <div
                                 style={{
-                                  padding: "14px 16px",
-                                  position: "relative",
+                                  position: "fixed",
+                                  top: openUpwards
+                                    ? dropdownPos.y - 60
+                                    : dropdownPos.y,
+                                  left: dropdownPos.x - 80,
+                                  zIndex: 999999,
                                 }}
                               >
-                                <button
-                                  onClick={() =>
-                                    setOpenMenu(openMenu === idx ? null : idx)
-                                  }
-                                  className="btn"
+                                <div
+                                  ref={menuRef}
                                   style={{
-                                    border: "none",
-                                    background: "transparent",
-                                    padding: 4,
+                                    background: "white",
+                                    padding: 8,
+                                    borderRadius: 12,
+                                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                                    minWidth: 170,
+                                    height: "auto", // height must match dropdownHeight above
                                     display: "flex",
-                                    alignItems: "center",
+                                    flexDirection: "column",
+                                    gap: 4,
                                   }}
-                                  aria-label="actions"
                                 >
-                                  <BsThreeDots style={{ color: "#6C748C" }} />
-                                </button>
-
-                                {openMenu === idx && (
-                                  <div
-                                    ref={menuRef}
-                                    style={{
-                                      position: "absolute",
-                                      right: 140,
-                                      width: "210px",
-                                      backgroundColor: "#ffff",
-                                      borderRadius: "12px",
-                                      boxShadow: "0 8px 25px rgba(0, 0, 0, 0.15)",
-                                      border: "1px solid #E5E7EB",
-                                      overflow: "hidden",
-                                      animation: "fadeIn 0.2s ease-out",
-                                      zIndex: 1000,
-                                    }}
-                                  >
-                                    {menuItems.map((item) => (
-                                      <div
-                                        key={item.action}
-                                        onClick={() =>
-                                          handleMenuAction(order, item.action)
-                                        }
-                                        style={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          gap: "12px",
-                                          padding: "8px 18px",
-                                          fontFamily: "Inter, sans-serif",
-                                          fontSize: "14px",
-                                          fontWeight: 500,
-                                          cursor: "pointer",
-                                          transition: "0.2s",
-                                          textDecoration: "none",
-                                          color: "#344054",
-                                        }}
-                                        onMouseEnter={(e) => {
-                                          e.currentTarget.style.backgroundColor =
-                                            "#e3f2fd";
-                                        }}
-                                        onMouseLeave={(e) => {
-                                          e.currentTarget.style.backgroundColor =
-                                            "transparent";
-                                        }}
-                                      >
-                                        <span style={{ fontSize: "18px" }}>
-                                          {item.icon}
-                                        </span>
-                                        <span>{item.label}</span>
-                                      </div>
-                                    ))}
-                                    {/* animation */}
-                                    <style>{`
+                                  {menuItems.map((item) => (
+                                    <div
+                                      key={item.action}
+                                      onClick={() =>
+                                        handleMenuAction(order, item.action)
+                                      }
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 12,
+                                        padding: "8px 12px",
+                                        fontFamily: "Inter, sans-serif",
+                                        fontSize: 16,
+                                        fontWeight: 400,
+                                        cursor: "pointer",
+                                        borderRadius: 8,
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        e.currentTarget.style.backgroundColor =
+                                          "#e3f2fd";
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        e.currentTarget.style.backgroundColor =
+                                          "transparent";
+                                      }}
+                                    >
+                                      <span style={{ fontSize: "20px" }}>
+                                        {item.icon}
+                                      </span>
+                                      <span>{item.label}</span>
+                                    </div>
+                                  ))}
+                                  {/* animation */}
+                                  <style>{`
                                     @keyframes fadeIn {
                                       from { opacity: 0; transform: translateY(-6px); }
                                       to { opacity: 1; transform: translateY(0); }
