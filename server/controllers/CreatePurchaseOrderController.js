@@ -274,22 +274,54 @@ exports.createInvoice = async (req, res) => {
       createdBy: req.user?._id,
     });
 
+    // // Calculate round off value if needed
+    // if (autoRoundOff) {
+    //   const itemsDiscount = validatedItems.reduce(
+    //     (sum, item) => sum + (item.discountAmt || 0),
+    //     0
+    //   );
+    //   const additionalDiscountValue =
+    //     additionalDiscount.amt +
+    //     (subtotal * (additionalDiscount.pct || 0)) / 100;
+    //   const totalDiscountCalc = itemsDiscount + additionalDiscountValue;
+
+    //   const totalBeforeRound =
+    //     subtotal + totalTax + additionalCharges - totalDiscountCalc;
+
+    //   invoice.roundOffValue = Math.round(totalBeforeRound) - totalBeforeRound;
+    // }
     // Calculate round off value if needed
-    if (autoRoundOff) {
-      const itemsDiscount = validatedItems.reduce(
-        (sum, item) => sum + (item.discountAmt || 0),
-        0
-      );
-      const additionalDiscountValue =
-        additionalDiscount.amt +
-        (subtotal * (additionalDiscount.pct || 0)) / 100;
-      const totalDiscountCalc = itemsDiscount + additionalDiscountValue;
+if (autoRoundOff) {
+  // Ensure all values are numbers, default to 0 if undefined/NaN
+  const itemsDiscount = validatedItems.reduce(
+    (sum, item) => sum + (parseFloat(item.discountAmt) || 0),
+    0
+  );
+  
+  const additionalDiscountValue = 
+    (parseFloat(additionalDiscount.amt) || 0) + 
+    ((parseFloat(subtotal) || 0) * ((parseFloat(additionalDiscount.pct) || 0)) / 100);
+  
+  const totalDiscountCalc = itemsDiscount + additionalDiscountValue;
 
-      const totalBeforeRound =
-        subtotal + totalTax + additionalCharges - totalDiscountCalc;
-
-      invoice.roundOffValue = Math.round(totalBeforeRound) - totalBeforeRound;
-    }
+  // Convert all values to numbers with fallback to 0
+  const subTotalNum = parseFloat(subtotal) || 0;
+  const totalTaxNum = parseFloat(totalTax) || 0;
+  const additionalChargesNum = parseFloat(additionalCharges) || 0;
+  
+  const totalBeforeRound = 
+    subTotalNum + 
+    totalTaxNum + 
+    additionalChargesNum - 
+    totalDiscountCalc;
+  
+  // Check if totalBeforeRound is a valid number before calculating roundOffValue
+  if (!isNaN(totalBeforeRound)) {
+    invoice.roundOffValue = Math.round(totalBeforeRound) - totalBeforeRound;
+  } else {
+    invoice.roundOffValue = 0; // Default to 0 if calculation fails
+  }
+}
 
     // Save invoice
     await invoice.save();
