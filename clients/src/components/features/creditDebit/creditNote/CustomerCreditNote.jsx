@@ -7,10 +7,20 @@ import total_orders_icon from "../../../../assets/images/totalorders-icon.png";
 import api from "../../../../pages/config/axiosInstance";
 import { toast } from "react-toastify";
 import { IoChevronDownOutline } from "react-icons/io5";
+import AddCustomers from "../../../../pages/Modal/customerModals/AddCustomerModal";
+import { FiSearch } from "react-icons/fi";
 
 const CustomerCreditNote = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // State for customer selection/selection
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [allCustomers, setAllCustomers] = useState([]);
+  const [filteredCustomers, setFilteredCustomers] = useState([]);
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  // modal state
+  const [openAddModal, setOpenAddModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [loading, setLoading] = useState(false);
   const [customers, setCustomers] = useState([]);
@@ -20,6 +30,8 @@ const CustomerCreditNote = () => {
   const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
   const dropdownRef = useRef(null);
 
+  // Check if we're in "create from navbar" mode
+  const isFromNavbar = !location.state?.customer;
 
   // Form state
   const [formData, setFormData] = useState({
@@ -70,6 +82,12 @@ const CustomerCreditNote = () => {
   useEffect(() => {
     calculateTotals();
   }, [formData.items, formData.shippingCharges, formData.autoRoundOff]);
+  // fetch customers for search (when in navbar mode)
+  useEffect(() => {
+    if (isFromNavbar) {
+      fetchCustomers();
+    }
+  }, [isFromNavbar]);
 
   const fetchCustomers = async () => {
     try {
@@ -82,11 +100,24 @@ const CustomerCreditNote = () => {
         customersData = response.data.data;
       }
       setCustomers(customersData);
+      setAllCustomers(customersData);
+      setFilteredCustomers(customersData);
     } catch (error) {
       console.error("Failed to load customers:", error);
       toast.error("Failed to load customers");
     }
   };
+
+  // Handle customer search
+  useEffect(() => {
+    if (!customerSearch.trim()) {
+      setFilteredCustomers(allCustomers);
+      return;
+    }
+    const searchTerm = customerSearch.toLowerCase();
+    const filtered = allCustomers.filter((cust) => cust.name?.toLowerCase().includes(searchTerm) || cust.phone?.includes(customerSearch) || cust.email?.toLowerCase().includes(searchTerm));
+    setFilteredCustomers(filtered);
+  }, [customerSearch, allCustomers]);
 
   const fetchProducts = async () => {
     try {
@@ -140,17 +171,17 @@ const CustomerCreditNote = () => {
         invoicesData = response.data.data;
       }
 
-       const validInvoices = invoicesData.filter(
-      (invoice) => 
-        invoice.status !== 'cancelled' && 
-        invoice.status !== 'draft' &&
-        invoice.status !== 'void'
-    );
+      const validInvoices = invoicesData.filter(
+        (invoice) =>
+          invoice.status !== 'cancelled' &&
+          invoice.status !== 'draft' &&
+          invoice.status !== 'void'
+      );
 
-    // Sort by date (newest first)
-    const sortedInvoices = validInvoices.sort((a, b) => 
-      new Date(b.invoiceDate || b.createdAt) - new Date(a.invoiceDate || a.createdAt)
-    );
+      // Sort by date (newest first)
+      const sortedInvoices = validInvoices.sort((a, b) =>
+        new Date(b.invoiceDate || b.createdAt) - new Date(a.invoiceDate || a.createdAt)
+      );
       // Filter for unpaid invoices
       const unpaidInvoices = invoicesData.filter(
         (invoice) =>
@@ -158,10 +189,10 @@ const CustomerCreditNote = () => {
       );
 
       setCustomerInvoices(sortedInvoices);
-       // Show info if no invoices found
-    if (sortedInvoices.length === 0) {
-      toast.info("No invoices found for this customer");
-    }
+      // Show info if no invoices found
+      if (sortedInvoices.length === 0) {
+        toast.info("No invoices found for this customer");
+      }
     } catch (error) {
       console.error("Failed to load customer invoices:", error);
       setCustomerInvoices([]);
@@ -180,6 +211,27 @@ const CustomerCreditNote = () => {
       invoiceNumber: "",
       items: [],
     }));
+    setCustomerSearch(customer.name);
+    setShowCustomerDropdown(false);
+  };
+
+  const handleClearCustomer = () => {
+    setFormData((prev) => ({
+      ...prev,
+      customerId: "",
+      customerName: "",
+      phone: "",
+      invoiceId: "",
+      invoiceNumber: "",
+      items: [],
+    }));
+    setCustomerSearch("");
+  };
+  const handleNewCustomerCreated = (newCustomer) => {
+    fetchCustomers();
+    // Auto select the newly created customer
+    handleCustomerSelect(newCustomer);
+    toast.success('Customer created successfully!');
   };
 
   const handleInvoiceSelect = async (invoice) => {
@@ -203,7 +255,7 @@ const CustomerCreditNote = () => {
           item.name ||
           item.productId?.productName ||
           "Product",
-           description: item.description || "", 
+        description: item.description || "",
         quantity: item.qty || item.quantity || 1,
         originalQuantity: item.qty || item.quantity || 1, // Store original for max
         unit: item.unit || "Pcs",
@@ -346,111 +398,120 @@ const CustomerCreditNote = () => {
     }));
   };
 
- const handleSubmit = async (action) => {
-  try {
-    // Filter selected items with quantity > 0
-    const selectedItems = formData.items.filter(
-      (item) => item.isSelected && item.quantity > 0 && item.productId
-    );
+  const handleSubmit = async (action) => {
+    try {
+      // check if customer is selected
+      if (!formData.customerId) {
+        toast.error("Please select a customer");
+        return;
+      }
+      // Filter selected items with quantity > 0
+      const selectedItems = formData.items.filter(
+        (item) => item.isSelected && item.quantity > 0 && item.productId
+      );
 
-    if (selectedItems.length === 0) {
-      toast.error("Please select at least one item to return");
-      return;
+      if (selectedItems.length === 0) {
+        toast.error("Please select at least one item to return");
+        return;
+      }
+
+      if (!formData.customerId) {
+        toast.error("Please select a customer");
+        return;
+      }
+
+      if (!formData.invoiceId) {
+        toast.error("Please select an invoice");
+        return;
+      }
+
+      setLoading(true);
+
+      // ✅ FIX: Calculate total tax from selected items
+      const calculatedTotalTax = selectedItems.reduce(
+        (sum, item) => sum + (item.taxAmount || 0),
+        0
+      );
+
+      // ✅ FIX: Calculate total discount from selected items
+      const calculatedTotalDiscount = selectedItems.reduce(
+        (sum, item) => sum + (item.discountAmount || 0),
+        0
+      );
+
+      // ✅ FIX: Change invoiceNumber to supplierInvoiceNo to match model
+      const creditNoteData = {
+        customerId: formData.customerId,
+        customerName: formData.customerName,
+        phone: formData.phone || "",
+        invoiceId: formData.invoiceId,
+        invoiceNumber: formData.invoiceNumber, // ✅ Changed to match model
+        date: formData.date,
+        reason: "returned_goods", // Default reason
+        items: selectedItems.map((item) => ({
+          productId: item.productId,
+          name: item.name,
+          description: item.description || "",
+          quantity: item.quantity,
+          unit: item.unit,
+          unitPrice: item.unitPrice,
+          taxRate: item.taxRate,
+          taxAmount: item.taxAmount,
+          discountPercent: item.discountPercent,
+          discountAmount: item.discountAmount,
+          total: item.amount,
+        })),
+        subtotal: formData.subtotal,
+        totalTax: calculatedTotalTax, // ✅ Use calculated value
+        totalDiscount: calculatedTotalDiscount, // ✅ Use calculated value
+        shippingCharges: formData.shippingCharges,
+        roundOff: formData.roundOff,
+        totalAmount: formData.totalAmount,
+        status: action === "save" ? "draft" : "issued",
+        notes: formData.notes || "",
+      };
+
+      // Debug log to see what's being sent
+      console.log("📤 Submitting credit note data:", creditNoteData);
+
+      const response = await api.post("/api/credit-notes", creditNoteData);
+
+      console.log("✅ Server response:", response.data);
+
+      toast.success(
+        `Credit note ${action === "save" ? "saved as draft" : "issued successfully"}`
+      );
+
+      if (action === "saveAndPrint") {
+        navigate("/skeleton?redirect=/customers");
+      } else if (action === "issued") {
+        navigate("/customers");
+      }
+    } catch (error) {
+      console.error("❌ Submit error:", error);
+      console.error("Error response:", error.response?.data);
+
+      let errorMessage = "Failed to save credit note";
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
-
-    if (!formData.customerId) {
-      toast.error("Please select a customer");
-      return;
-    }
-
-    if (!formData.invoiceId) {
-      toast.error("Please select an invoice");
-      return;
-    }
-
-    setLoading(true);
-
-    // ✅ FIX: Calculate total tax from selected items
-    const calculatedTotalTax = selectedItems.reduce(
-      (sum, item) => sum + (item.taxAmount || 0),
-      0
-    );
-
-    // ✅ FIX: Calculate total discount from selected items
-    const calculatedTotalDiscount = selectedItems.reduce(
-      (sum, item) => sum + (item.discountAmount || 0),
-      0
-    );
-
-    // ✅ FIX: Change invoiceNumber to supplierInvoiceNo to match model
-    const creditNoteData = {
-      customerId: formData.customerId,
-      customerName: formData.customerName,
-      phone: formData.phone || "",
-      invoiceId: formData.invoiceId,
-      invoiceNumber: formData.invoiceNumber, // ✅ Changed to match model
-      date: formData.date,
-      reason: "returned_goods", // Default reason
-      items: selectedItems.map((item) => ({
-        productId: item.productId,
-        name: item.name,
-        description: item.description || "",
-        quantity: item.quantity,
-        unit: item.unit,
-        unitPrice: item.unitPrice,
-        taxRate: item.taxRate,
-        taxAmount: item.taxAmount,
-        discountPercent: item.discountPercent,
-        discountAmount: item.discountAmount,
-        total: item.amount,
-      })),
-      subtotal: formData.subtotal,
-      totalTax: calculatedTotalTax, // ✅ Use calculated value
-      totalDiscount: calculatedTotalDiscount, // ✅ Use calculated value
-      shippingCharges: formData.shippingCharges,
-      roundOff: formData.roundOff,
-      totalAmount: formData.totalAmount,
-      status: action === "save" ? "draft" : "issued",
-      notes: formData.notes || "",
-    };
-
-    // Debug log to see what's being sent
-    console.log("📤 Submitting credit note data:", creditNoteData);
-
-    const response = await api.post("/api/credit-notes", creditNoteData);
-
-    console.log("✅ Server response:", response.data);
-
-    toast.success(
-      `Credit note ${action === "save" ? "saved as draft" : "issued successfully"}`
-    );
-
-    if (action === "saveAndPrint") {
-      navigate("/skeleton?redirect=/customers");
-    } else if (action === "issued") {
-      navigate("/customers");
-    }
-  } catch (error) {
-    console.error("❌ Submit error:", error);
-    console.error("Error response:", error.response?.data);
-    
-    let errorMessage = "Failed to save credit note";
-    if (error.response?.data?.error) {
-      errorMessage = error.response.data.error;
-    } else if (error.response?.data?.message) {
-      errorMessage = error.response.data.message;
-    }
-    
-    toast.error(errorMessage);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsInvoiceOpen(false);
+      }
+      // for customer dropdown (close when clicking outside)
+      if (!event.target.closest('.customer-search-container')) {
+        setShowCustomerDropdown(false)
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -518,7 +579,7 @@ const CustomerCreditNote = () => {
           {/* Customer Section */}
           <div
             className="section-card"
-            style={{ padding: "20px", height: "auto" }}
+            style={{ padding: "20px", height: "630px", overflowX: "scroll", scrollbarWidth: "none" }}
           >
             <h6 className="section-title">Customer Details</h6>
 
@@ -529,7 +590,7 @@ const CustomerCreditNote = () => {
                 style={{ display: "flex", alignItems: "center", gap: "20px" }}
               >
                 {/* Customer Name */}
-                <div className="col-md-7">
+                {/* <div className="col-md-7">
                   <label className="form-label supplierlabel">
                     Customer Name <span className="text-danger">*</span>
                   </label>
@@ -546,6 +607,222 @@ const CustomerCreditNote = () => {
                       value={formData.customerName}
                       readOnly
                     />
+                  </div>
+                </div> */}
+                {/* Customer Name */}
+                <div className="col-md-7">
+                  <label className="form-label supplierlabel">
+                    Customer Name <span className="text-danger">*</span>
+                  </label>
+                  <div className="customer-search-container" style={{ position: "relative" }}>
+                    <div
+                      style={{
+                        borderRadius: "8px",
+                        border: "1px solid #EAEAEA",
+                        padding: "6px 8px",
+                        display: "flex",
+                        gap: "4px",
+                        alignItems: "center",
+                      }}
+                    >
+                      {/* Input field */}
+                      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "8px" }}>
+                        <FiSearch
+                          style={{
+                            color: "#666",
+                            cursor: "pointer",
+                            fontSize: "16px"
+                          }}
+                          onClick={() => setShowCustomerDropdown(true)}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Search or select customer..."
+                          style={{
+                            width: "100%",
+                            border: "none",
+                            outline: "none",
+                            fontSize: "14px",
+                            cursor: "pointer",
+                          }}
+                          value={customerSearch}
+                          onChange={(e) => {
+                            setCustomerSearch(e.target.value);
+                            setShowCustomerDropdown(true);
+                          }}
+                          onFocus={() => setShowCustomerDropdown(true)}
+                          readOnly={formData.customerId} // Read-only when customer is selected
+                        />
+                      </div>
+
+                      {/* Action buttons */}
+                      <div style={{ display: "flex", gap: "4px" }}>
+                        {formData.customerId ? (
+                          // When customer is selected - show clear button
+                          <button
+                            onClick={handleClearCustomer}
+                            style={{
+                              background: "transparent",
+                              border: "none",
+                              color: "#dc3545",
+                              cursor: "pointer",
+                              fontSize: "12px",
+                              padding: "2px 6px",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            Change
+                          </button>
+                        ) : (
+                          // When no customer - show add button
+                          <button
+                            onClick={() => setOpenAddModal(true)}
+                            style={{
+                              background: "#1F7FFF",
+                              color: "white",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              fontSize: "12px",
+                              padding: "4px 8px",
+                              whiteSpace: "nowrap",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px",
+                            }}
+                          >
+                            + Add
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Customer Dropdown */}
+                    {showCustomerDropdown && (
+                      <div style={{
+                        position: "absolute",
+                        top: "100%",
+                        left: 0,
+                        right: 0,
+                        backgroundColor: "white",
+                        border: "1px solid #EAEAEA",
+                        borderRadius: "8px",
+                        maxHeight: "300px",
+                        overflowY: "auto",
+                        zIndex: 1000,
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                        marginTop: "4px",
+                      }}>
+                        {filteredCustomers.length === 0 ? (
+                          <div style={{ padding: "12px", color: "#666", textAlign: "center" }}>
+                            No customers found
+                            <div style={{ marginTop: "8px" }}>
+                              <button
+                                onClick={() => {
+                                  setOpenAddModal(true);
+                                  setShowCustomerDropdown(false);
+                                }}
+                                style={{
+                                  padding: "6px 12px",
+                                  backgroundColor: "#1F7FFF",
+                                  color: "white",
+                                  border: "none",
+                                  borderRadius: "4px",
+                                  cursor: "pointer",
+                                  fontSize: "12px",
+                                }}
+                              >
+                                + Add New Customer
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div style={{
+                              padding: "8px 12px",
+                              borderBottom: "1px solid #f0f0f0",
+                              backgroundColor: "#f8f9fa",
+                              fontSize: "12px",
+                              color: "#666",
+                            }}>
+                              Select customer or <button
+                                onClick={() => {
+                                  setOpenAddModal(true);
+                                  setShowCustomerDropdown(false);
+                                }}
+                                style={{
+                                  background: "transparent",
+                                  border: "none",
+                                  color: "#1F7FFF",
+                                  cursor: "pointer",
+                                  fontWeight: "500",
+                                }}
+                              >
+                                add new
+                              </button>
+                            </div>
+                            {filteredCustomers.map((cust) => (
+                              <div
+                                key={cust._id}
+                                onClick={() => handleCustomerSelect(cust)}
+                                style={{
+                                  padding: "12px 16px",
+                                  borderBottom: "1px solid #f0f0f0",
+                                  cursor: "pointer",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "12px",
+                                  transition: "background-color 0.2s",
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
+                              >
+                                <div style={{
+                                  width: "32px",
+                                  height: "32px",
+                                  borderRadius: "50%",
+                                  backgroundColor: "#e0f0ff",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  fontWeight: "bold",
+                                  color: "#1F7FFF",
+                                  fontSize: "14px",
+                                }}>
+                                  {cust.name?.charAt(0).toUpperCase() || "C"}
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontWeight: "500" }}>{cust.name}</div>
+                                  <div style={{ fontSize: "12px", color: "#666" }}>
+                                    {cust.phone} {cust.email && `• ${cust.email}`}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Customer details when selected */}
+                    {formData.customerId && (
+                      <div style={{
+                        marginTop: "8px",
+                        padding: "8px 12px",
+                        backgroundColor: "#f0f8ff",
+                        borderRadius: "6px",
+                        border: "1px solid #d1e7ff",
+                        fontSize: "12px",
+                      }}>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                          <div>
+                            <span style={{ fontWeight: "500", color: "#1F7FFF" }}>
+                              📱 {formData.phone}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1480,7 +1757,29 @@ const CustomerCreditNote = () => {
               </div>
             </div>
           </div>
-
+          {/* Add Customer Modal */}
+          {openAddModal && (
+            <div style={{
+              position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
+              backgroundColor: "rgba(0,0,0,0.27)", backdropFilter: "blur(1px)",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              zIndex: 99999999,
+            }}
+              onClick={() => setOpenAddModal(false)}
+            >
+              <div onClick={(e) => e.stopPropagation()} className="">
+                <AddCustomers
+                  onClose={() => {
+                    setOpenAddModal(false);
+                    fetchCustomers();
+                  }}
+                  onSuccess={handleNewCustomerCreated} //Auto selected new customer
+                />
+              </div>
+            </div>
+          )}
           <InvoicePreviewModal
             isOpen={showPreview}
             onClose={() => setShowPreview(false)}

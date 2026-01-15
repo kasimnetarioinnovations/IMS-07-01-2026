@@ -393,6 +393,7 @@ const AppRoutes = () => {
          <Route path="/create-purchase-orders" element={<CreatePurchaseOrder />} />
         <Route path="/show-purchase-orders/:invoiceId" element={<ShowPurchaseOrderInvoice />} />
         <Route path="/create-supplier-debitnote/:supplierId" element={<SupplierDebitNote />} />
+        <Route path="/create-supplier-debitnote" element={<SupplierDebitNote />} />
         <Route path="/empty-debitnote" element={<EmptyDebitNote />} />
         <Route path="/edit-debitnote/:id" element={<DebitNoteViewEdit />} />
         <Route path="/debitnote-details/:id" element={<DebitNoteViewEdit />} />
