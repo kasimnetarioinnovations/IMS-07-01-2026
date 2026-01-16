@@ -14,10 +14,10 @@ const dateOptions = [
   { value: "custom", label: "Custom" },
 ];
 
-export default function DateFilterDropdown({ 
-  padding = "8px 14px", 
+export default function DateFilterDropdown({
+  padding = "8px 14px",
   selectedDateRange,
-  setSelectedDateRange 
+  setSelectedDateRange
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState(null);
@@ -49,18 +49,18 @@ export default function DateFilterDropdown({
     if (selectedOption) {
       return selectedOption.label;
     }
-    
+
     if (selectedDateRange.startDate && selectedDateRange.endDate) {
       return `${format(selectedDateRange.startDate, 'dd/MM/yyyy')} - ${format(selectedDateRange.endDate, 'dd/MM/yyyy')}`;
     }
-    
+
     return "Select Date Range";
   };
 
   const handleSelect = (option) => {
     setSelectedOption(option);
     setIsOpen(false);
-    
+
     if (option.value === "custom") {
       setShowCalendar(true);
       // Reset temp dates to current selected dates or null
@@ -131,7 +131,7 @@ export default function DateFilterDropdown({
       startDate,
       endDate
     });
-    
+
     // Reset temp range
     setTempDateRange([null, null]);
   };
@@ -141,25 +141,25 @@ export default function DateFilterDropdown({
       alert("Please select both start and end dates");
       return;
     }
-    
+
     const startDateWithTime = new Date(startDate);
     startDateWithTime.setHours(0, 0, 0, 0);
-    
+
     const endDateWithTime = new Date(endDate);
     endDateWithTime.setHours(23, 59, 59, 999);
-    
+
     // Update parent state
     setSelectedDateRange({
       startDate: startDateWithTime,
       endDate: endDateWithTime
     });
-    
+
     // Update selected option
     setSelectedOption({
       value: "custom",
       label: `${format(startDateWithTime, 'dd/MM/yyyy')} - ${format(endDateWithTime, 'dd/MM/yyyy')}`
     });
-    
+
     // Close dropdowns
     setShowCalendar(false);
     setIsOpen(false);
@@ -249,7 +249,7 @@ export default function DateFilterDropdown({
               e.currentTarget.style.color = "#374151";
             }}
           >
-            Clear Filter
+            All
           </div>
 
           {dateOptions.map((option) => (
@@ -311,7 +311,7 @@ export default function DateFilterDropdown({
             }}
             monthsShown={2}
           />
-          
+
           <div style={{ marginTop: "10px", display: "flex", gap: "8px", justifyContent: "center" }}>
             <button
               onClick={handleApplyCustomRange}
@@ -329,7 +329,7 @@ export default function DateFilterDropdown({
             >
               Apply Date Range
             </button>
-            
+
             <button
               onClick={() => {
                 setShowCalendar(false);
@@ -348,7 +348,7 @@ export default function DateFilterDropdown({
               Cancel
             </button>
           </div>
-          
+
           {startDate && !endDate && (
             <div style={{ fontSize: "12px", color: "#666", marginTop: "8px", textAlign: "center" }}>
               Select end date to complete the range

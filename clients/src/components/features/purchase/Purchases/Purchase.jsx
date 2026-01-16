@@ -28,7 +28,7 @@ import { toast } from "react-toastify";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { HiOutlineDotsHorizontal } from "react-icons/hi";
+import EmptyPurchase from "./EmptyPurchase"
 
 const statsTop = [
   {
@@ -179,26 +179,20 @@ export default function Purchase() {
   const [selectedOrdersForExport, setSelectedOrdersForExport] = useState([]);
   const [selectAllOrdersForExport, setSelectAllOrdersForExport] =
     useState(false);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const [selectedRowIds, setSelectedRowIds] = useState(new Set());
   const [allVisibleSelected, setAllVisibleSelected] = useState(false);
 
-  const isDataEmpty = purchaseOrders.length === 0 && !loading;
-  const hasDateFilter = selectedDateRange.startDate || selectedDateRange.endDate;
-  const hasSearchQuery = search.trim() !== "";
-  // determine what to show
-  const showEmptyCreatePurchasePage = isDataEmpty && !hasDateFilter && !hasSearchQuery;
-  const showNoResultsInTable = isDataEmpty && (hasDateFilter || hasSearchQuery)
-
+  // ADD THIS: Track if system has ANY orders
+  const [hasAnyOrdersInSystem, setHasAnyOrdersInSystem] = useState(null);
 
   // Fetch purchase orders
-  const fetchPurchaseOrders = async (page = 1, status = "", limitOverride) => {
+  const fetchPurchaseOrders = async (page = 1, status = "") => {
     try {
       setLoading(true);
       const params = {
         page,
-        limit: limitOverride ?? itemsPerPage,
+        limit: 10,
         ...(status && status !== "all" && { status }),
         ...(search && { search }),
       };
@@ -220,6 +214,11 @@ export default function Purchase() {
 
         // Update stats
         updateStats(response.data.invoices || []);
+        // KEY FIX: Check if this is the initial "All Orders" fetch without filters
+        if (page === 1 && !status && !search &&
+          !selectedDateRange.startDate && !selectedDateRange.endDate) {
+          setHasAnyOrdersInSystem(response.data.total > 0);
+        }
       } else {
         toast.error(response.data.error || "Failed to load purchase orders");
       }
@@ -549,69 +548,20 @@ export default function Purchase() {
     setAllVisibleSelected(allSelected);
   }, [selectedRowIds, purchaseOrders]);
 
+  useEffect(() => {
+    if (!loading && hasAnyOrdersInSystem === false && !selectedDateRange.startDate && !selectedDateRange.endDate && search === "" && activeTab === "All Orders") {
+      navigate("/empty-purchase", { replace: true })
+    }
+  }, [loading, hasAnyOrdersInSystem, selectedDateRange, search, activeTab, navigate])
+
+
+
   return (
     <div className="px-4 py-4" style={{ overflowY: "auto", height: "100vh" }}>
-      {showEmptyCreatePurchasePage ? (
-        // Show empty state component
-        <div className='px-4 py-2' style={{ maxHeight: "80vh", display: "flex", justifyContent: "center" }}>
-          <div
-            style={{
-              width: "100%",
-              maxWidth: "500px",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "flex-start",
-              marginTop: "10vh",
-              textAlign: "center",
-              fontWeight: 400,
-              lineHeight: "120%",
-            }}
-          >
-            <p style={{ fontSize: '32px', color: "#000000", marginBottom: "20px" }}>
-              Purchase Order
-            </p>
-            <p style={{ width: "350px", marginBottom: "16px" }}>
-              <span style={{ fontSize: "16px", color: "#727681" }}>
-                👋 Looks like your Purchase list is empty.<br />
-                Add your first Purchase to create purchase order.
-              </span>
-            </p>
-            <img
-              src={PurchaseImg}
-              alt="purchase"
-              style={{ width: "240px", marginBottom: "20px" }}
-            />
-            <Link
-              to='/create-purchase-orders'
-              style={{ textDecoration: "none" }}
-            >
-              <button
-                style={{
-                  background: "#1F7FFF",
-                  border: "1px solid #1F7FFF",
-                  borderRadius: "8px",
-                  padding: "8px 16px",
-                  color: "#FFFFFF",
-                  fontWeight: 400,
-                  fontSize: "16px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px"
-                }}
-              >
-                <MdOutlineAddShoppingCart />
-                Create Purchase
-              </button>
-            </Link>
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Header: back + title + right-side controls */}
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <div className="d-flex align-items-center justify-content-center gap-3">
-              {/* <span
+      {/* Header: back + title + right-side controls */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <div className="d-flex align-items-center justify-content-center gap-3">
+          {/* <span
             style={{
               backgroundColor: "white",
               width: "32px",
@@ -626,121 +576,121 @@ export default function Purchase() {
           >
             <img src={total_orders_icon} alt="total_orders_icon" />
           </span> */}
-              <h3
-                style={{
-                  fontSize: "22px",
-                  color: "#0E101A",
-                  fontFamily: '"Inter", sans-serif',
-                  fontWeight: 500,
-                  lineHeight: "120%",
-                }}
-              >
-                All Purchase Orders
-              </h3>
-            </div>
+          <h3
+            style={{
+              fontSize: "22px",
+              color: "#0E101A",
+              fontFamily: '"Inter", sans-serif',
+              fontWeight: 500,
+              lineHeight: "120%",
+            }}
+          >
+            All Purchase Orders
+          </h3>
+        </div>
 
-            <div className="d-flex align-items-center gap-3">
-              <div className="d-flex align-items-center gap-4">
-                <DatePicker
-                  selectedDateRange={selectedDateRange}
-                  setSelectedDateRange={setSelectedDateRange}
-                />
-              </div>
-
-              {/* Create Purchase */}
-              <Link style={{ textDecoration: "none" }} to="/create-purchase-orders">
-                <button
-                  className="btn d-flex align-items-center"
-                  style={{
-                    background: "#fff",
-                    border: "1.5px solid #1F7FFF",
-                    color: "#1F7FFF",
-                    borderRadius: "8px",
-                    padding: "8px 16px",
-                    boxShadow: "-1px -1px 1.6px rgba(0,0,0,0.08) inset",
-                    fontWeight: 500,
-                    fontSize: "14px",
-                    fontFamily: '"Inter", sans-serif',
-                  }}
-                >
-                  <MdAddShoppingCart style={{ marginRight: 8, fontSize: "16px" }} />
-                  Create Purchase
-                </button>
-              </Link>
-            </div>
+        <div className="d-flex align-items-center gap-3">
+          <div className="d-flex align-items-center gap-4">
+            <DatePicker
+              selectedDateRange={selectedDateRange}
+              setSelectedDateRange={setSelectedDateRange}
+            />
           </div>
 
-          {/* Top stat cards */}
-          <div className="row g-3 mb-3">
-            {stats.map((s, idx) => (
-              <Link
-                to={s.link}
-                key={idx}
-                className="col-12 col-sm-6 col-lg-3"
-                style={{ textDecoration: "none" }}
-              >
-                <div
-                  className="d-flex justify-content-between align-items-center bg-white position-relative"
-                  style={{
-                    width: "100%",
-                    height: "86px",
-                    padding: "16px 24px 16px 16px",
-                    fontFamily: "Inter",
-                    boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
-                    border: "1px solid #E5F0FF",
-                    borderRadius: "8px",
-                    backgroundColor: "#FFFFFF",
-                  }}
-                >
-                  {/* Blue Left Accent Line */}
-                  <span
-                    style={{
-                      position: "absolute",
-                      left: 0,
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                      width: "4px",
-                      height: "70%",
-                      backgroundColor: "#1F7FFF",
-                      borderRadius: "1px 10px 1px 10px",
-                    }}
-                  ></span>
+          {/* Create Purchase */}
+          <Link style={{ textDecoration: "none" }} to="/create-purchase-orders">
+            <button
+              className="btn d-flex align-items-center"
+              style={{
+                background: "#fff",
+                border: "1.5px solid #1F7FFF",
+                color: "#1F7FFF",
+                borderRadius: "8px",
+                padding: "8px 16px",
+                boxShadow: "-1px -1px 1.6px rgba(0,0,0,0.08) inset",
+                fontWeight: 500,
+                fontSize: "14px",
+                fontFamily: '"Inter", sans-serif',
+              }}
+            >
+              <MdAddShoppingCart style={{ marginRight: 8, fontSize: "16px" }} />
+              Create Purchase
+            </button>
+          </Link>
+        </div>
+      </div>
 
-                  {/* Left Content */}
-                  <div
-                    className="d-flex align-items-center"
-                    style={{ gap: "24px" }}
+      {/* Top stat cards */}
+      <div className="row g-3 mb-3">
+        {stats.map((s, idx) => (
+          <Link
+            to={s.link}
+            key={idx}
+            className="col-12 col-sm-6 col-lg-3"
+            style={{ textDecoration: "none" }}
+          >
+            <div
+              className="d-flex justify-content-between align-items-center bg-white position-relative"
+              style={{
+                width: "100%",
+                height: "86px",
+                padding: "16px 24px 16px 16px",
+                fontFamily: "Inter",
+                boxShadow: "0px 1px 4px 0px rgba(0, 0, 0, 0.10)",
+                border: "1px solid #E5F0FF",
+                borderRadius: "8px",
+                backgroundColor: "#FFFFFF",
+              }}
+            >
+              {/* Blue Left Accent Line */}
+              <span
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  width: "4px",
+                  height: "70%",
+                  backgroundColor: "#1F7FFF",
+                  borderRadius: "1px 10px 1px 10px",
+                }}
+              ></span>
+
+              {/* Left Content */}
+              <div
+                className="d-flex align-items-center"
+                style={{ gap: "24px" }}
+              >
+                <div className="d-flex flex-column" style={{ gap: "11px" }}>
+                  <h6
+                    className="mb-0"
+                    style={{
+                      fontSize: "14px",
+                      color: "#727681",
+                      fontWeight: "500",
+                    }}
                   >
-                    <div className="d-flex flex-column" style={{ gap: "11px" }}>
-                      <h6
-                        className="mb-0"
-                        style={{
-                          fontSize: "14px",
-                          color: "#727681",
-                          fontWeight: "500",
-                        }}
-                      >
-                        {s.title}
-                      </h6>
-                      <div className="d-flex align-items-end gap-2">
-                        <h5
-                          className="mb-0"
-                          style={{
-                            fontSize: "22px",
-                            color: "#0E101A",
-                            fontWeight: "600",
-                          }}
-                        >
-                          {s.value}
-                        </h5>
-                        {s.currency && (
-                          <span style={{ fontSize: "14px", color: "#0E101A" }}>
-                            {s.currency}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                    {s.title}
+                  </h6>
+                  <div className="d-flex align-items-end gap-2">
+                    <h5
+                      className="mb-0"
+                      style={{
+                        fontSize: "22px",
+                        color: "#0E101A",
+                        fontWeight: "600",
+                      }}
+                    >
+                      {s.value}
+                    </h5>
+                    {s.currency && (
+                      <span style={{ fontSize: "14px", color: "#0E101A" }}>
+                        {s.currency}
+                      </span>
+                    )}
                   </div>
+                </div>
+              </div>
 
               {/* Right Icon Circle */}
               <div
@@ -768,16 +718,13 @@ export default function Purchase() {
         ))}
       </div>
 
-      {/* Search + Tabs + Table */}
+      {/* Search + Tabs */}
       <div
         style={{
           backgroundColor: "white",
           borderRadius: "16px",
-          padding: "16px",
-          overflowX: "auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: 16,
+          padding: "20px",
+          overflowX: "auto"
         }}
       >
         <div
@@ -785,10 +732,10 @@ export default function Purchase() {
           style={{
             gap: "20px",
             justifyContent: "space-between",
-            width: "100%",
+            marginBottom: "20px",
           }}
         >
-          <div className="col-md-6 d-flex align-items-center" style={{width: "50%"}}>
+          <div className="col-md-6 d-flex align-items-center">
             <div
               style={{
                 background: "#F3F8FB",
@@ -803,64 +750,58 @@ export default function Purchase() {
                 const active = activeTab === t.label;
                 return (
                   <div
-                    className="d-flex justify-content-center align-items-center rounded-circle"
+                    key={t.label}
+                    onClick={() => handleTabChange(t)}
+                    role="button"
                     style={{
-                      width: "50px",
-                      height: "50px",
-                      backgroundColor: "#FFFFFF",
-                      border: "1px solid #E5F0FF",
-                      flexShrink: 0,
+                      padding: "6px 12px",
+                      borderRadius: 8,
+                      background: active ? "#fff" : "transparent",
+                      boxShadow: active ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+                      display: "flex",
+                      gap: 8,
+                      alignItems: "center",
+                      cursor: "pointer",
+                      minWidth: 90,
+                      whiteSpace: "nowrap",
+                      height: "33px",
                     }}
                   >
-                    <img
-                      src={s.image}
-                      alt={s.title}
-                      style={{
-                        width: "36px",
-                        height: "36px",
-                        objectFit: "contain",
-                      }}
-                    />
+                    <div style={{ fontSize: 14, color: "#0E101A" }}>
+                      {t.label}
+                    </div>
+                    <div style={{ color: "#727681", fontSize: 14 }}>
+                      {t.count}
+                    </div>
                   </div>
-                </div>
-              </Link>
-            ))}
+                );
+              })}
+            </div>
           </div>
-          <div className="d-flex align-items-center gap-4" style={{
-            display: "flex",
-            justifyContent: "end",
-            gap: "24px",
-            height: "33px",
-            width: "50%",
-          }}>
+          <div className="d-flex align-items-center gap-4">
             {/* Search Box */}
             <div
+              className="d-flex align-items-center search-box"
               style={{
-                width: "50%",
-                position: "relative",
-                padding: "4px 8px 4px 20px",
-                display: "flex",
-                borderRadius: 8,
-                alignItems: "center",
                 background: "#FCFCFC",
+                padding: "5px 16px",
+                borderRadius: 8,
                 border: "1px solid #EAEAEA",
-                gap: "5px",
-                color: "rgba(19.75, 25.29, 61.30, 0.40)",
+                width: "465px",
               }}
             >
               <FiSearch style={{ color: "#14193D66" }} />
               <input
                 type="search"
-                placeholder="Search by Supplier name, invoice no."
+                placeholder="Search by supplier or invoice number"
                 value={search}
                 onChange={handleSearch}
                 style={{
-                  width: "100%",
                   border: "none",
                   outline: "none",
-                  fontSize: 14,
-                  background: "#FCFCFC",
-                  color: "rgba(19.75, 25.29, 61.30, 0.40)",
+                  width: "100%",
+                  backgroundColor: "transparent",
+                  fontSize: "15px",
                 }}
               />
             </div>
@@ -869,22 +810,19 @@ export default function Purchase() {
             {/* Export Button */}
             <button
               style={{
-                display: "flex",
-                justifyContent: "flex-start",
-                alignItems: "center",
-                gap: 9,
-                padding: "8px 16px",
                 background: "#FCFCFC",
+                border: "1px solid #EAEAEA",
                 borderRadius: 8,
-                outline: "1px solid #EAEAEA",
-                outlineOffset: "-1px",
-                border: "none",
-                cursor: "pointer",
-                fontFamily: "Inter, sans-serif",
-                fontSize: 14,
-                fontWeight: 400,
+                padding: "4px 14px",
+                fontSize: "14px",
+                fontFamily: '"Inter", sans-serif',
                 color: "#0E101A",
-                height: "33px",
+                height: "32px",
+                whiteSpace: "nowrap",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 500,
                 cursor:
                   selectedRowIds.size > 0 || purchaseOrders.length > 0
                     ? "pointer"
@@ -902,18 +840,21 @@ export default function Purchase() {
                   : "Export all"
               }
             >
-              <TbFileExport className="fs-5 text-secondary" />
-              Export
+              <TbFileExport
+                className="fs-5 text-secondary"
+                style={{ marginRight: "10px" }}
+              />
+              Export PDF
             </button>
           </div>
         </div>
 
-        {/* Table */}
+        {/* Table card */}
         <div style={{ ...cardStyle }}>
           <div
             className="table-responsive"
             style={{
-              // cursor: "pointer",
+              cursor: "pointer",
               maxHeight: "calc(100vh - 410px)",
               overflowY: "scroll",
               scrollbarWidth: "none",
@@ -921,56 +862,67 @@ export default function Purchase() {
             }}
           >
             {/* wrapper for top + bottom spacing (important for sticky alignment) */}
-            <div style={{ maxHeight: "calc(100vh - 410px)", overflowY: 'auto' }}>
+            <div>
               <table
+                className="table align-middle"
                 style={{
-                  width: "100%",
-                  borderSpacing: "0 0px",
-                  fontFamily: "Inter",
+                  fontSize: 14,
+                  marginBottom: 0,
+                  borderCollapse: "separate",
+                  borderSpacing: 0,
                 }}
               >
-                <thead style={{ position: "sticky", top: 0, zIndex: 9 }}>
-                  <tr style={{ backgroundColor: "#F3F8FB", textAlign: "left" }}>
+                <thead>
+                  <tr>
                     {/* Checkbox */}
                     <th
                       style={{
-                        padding: "0px 0px",
+                        width: 0,
+                        backgroundColor: "#F3F8FB",
+                        position: "sticky",
+                        top: 0,
+                        zIndex: 10,
+                        fontWeight: 400,
+                        padding: "12px 16px",
                         color: "#727681",
                         fontSize: "14px",
-                        fontWeight: 400,
+                        fontFamily: '"Inter", sans-serif',
                       }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", gap: "0px", justifyContent: 'center' }}>
-                        <input
-                          type="checkbox"
-                          aria-label="select all"
-                          checked={allVisibleSelected}
-                          onChange={(e) => {
-                            const next = new Set(selectedRowIds);
-                            if (e.target.checked) {
-                              // Add all current page orders
-                              purchaseOrders.forEach((order) => {
-                                if (order._id) next.add(order._id);
-                              });
-                            } else {
-                              // Remove all current page orders
-                              purchaseOrders.forEach((order) => {
-                                if (order._id) next.delete(order._id);
-                              });
-                            }
-                            setSelectedRowIds(next);
-                          }}
-                        />
-                      </div>
+                      <input
+                        type="checkbox"
+                        aria-label="select all"
+                        checked={allVisibleSelected}
+                        onChange={(e) => {
+                          const next = new Set(selectedRowIds);
+                          if (e.target.checked) {
+                            // Add all current page orders
+                            purchaseOrders.forEach((order) => {
+                              if (order._id) next.add(order._id);
+                            });
+                          } else {
+                            // Remove all current page orders
+                            purchaseOrders.forEach((order) => {
+                              if (order._id) next.delete(order._id);
+                            });
+                          }
+                          setSelectedRowIds(next);
+                        }}
+                      />
                     </th>
 
                     {/* Supplier Name */}
                     <th
                       style={{
+                        backgroundColor: "#F3F8FB",
+                        position: "sticky",
+                        top: 0,
+                        zIndex: 10,
+                        fontWeight: 400,
                         padding: "12px 16px",
                         color: "#727681",
                         fontSize: "14px",
-                        fontWeight: 400,
+                        fontFamily: '"Inter", sans-serif',
                       }}
                     >
                       Supplier Name
@@ -979,10 +931,15 @@ export default function Purchase() {
                     {/* Invoice */}
                     <th
                       style={{
+                        backgroundColor: "#F3F8FB",
+                        position: "sticky",
+                        top: 0,
+                        zIndex: 10,
+                        fontWeight: 400,
                         padding: "12px 16px",
                         color: "#727681",
                         fontSize: "14px",
-                        fontWeight: 400,
+                        fontFamily: '"Inter", sans-serif',
                       }}
                     >
                       Invoice No.
@@ -991,10 +948,15 @@ export default function Purchase() {
                     {/* Items */}
                     <th
                       style={{
+                        backgroundColor: "#F3F8FB",
+                        position: "sticky",
+                        zIndex: 10,
+                        fontWeight: 400,
                         padding: "12px 16px",
                         color: "#727681",
                         fontSize: "14px",
-                        fontWeight: 400,
+                        fontFamily: '"Inter", sans-serif',
+                        top: 0,
                       }}
                     >
                       No. Of Items
@@ -1003,11 +965,15 @@ export default function Purchase() {
                     {/* Dates */}
                     <th
                       style={{
+                        backgroundColor: "#F3F8FB",
+                        position: "sticky",
+                        zIndex: 10,
+                        fontWeight: 400,
                         padding: "12px 16px",
                         color: "#727681",
                         fontSize: "14px",
-                        fontWeight: 400,
                         fontFamily: '"Inter", sans-serif',
+                        top: 0,
                       }}
                     >
                       Order Date & Arriving On
@@ -1016,11 +982,15 @@ export default function Purchase() {
                     {/* Status */}
                     <th
                       style={{
+                        backgroundColor: "#F3F8FB",
+                        position: "sticky",
+                        zIndex: 10,
+                        fontWeight: 400,
                         padding: "12px 16px",
                         color: "#727681",
                         fontSize: "14px",
-                        fontWeight: 400,
                         fontFamily: '"Inter", sans-serif',
+                        top: 0,
                       }}
                     >
                       Status
@@ -1029,11 +999,15 @@ export default function Purchase() {
                     {/* Total */}
                     <th
                       style={{
+                        backgroundColor: "#F3F8FB",
+                        position: "sticky",
+                        zIndex: 10,
+                        fontWeight: 400,
                         padding: "12px 16px",
                         color: "#727681",
                         fontSize: "14px",
-                        fontWeight: 400,
                         fontFamily: '"Inter", sans-serif',
+                        top: 0,
                       }}
                     >
                       Total Amount
@@ -1043,11 +1017,16 @@ export default function Purchase() {
                     <th
                       className="text-center"
                       style={{
+                        width: 60,
+                        backgroundColor: "#F3F8FB",
+                        position: "sticky",
+                        zIndex: 10,
+                        fontWeight: 400,
                         padding: "12px 16px",
                         color: "#727681",
                         fontSize: "14px",
-                        fontWeight: 400,
                         fontFamily: '"Inter", sans-serif',
+                        top: 0,
                       }}
                     >
                       Actions
@@ -1058,7 +1037,7 @@ export default function Purchase() {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan="8" className="text-center py-4">
+                      <td colSpan="8" className="text-center py-5">
                         <div
                           className="spinner-border text-primary"
                           role="status"
@@ -1069,7 +1048,7 @@ export default function Purchase() {
                     </tr>
                   ) : purchaseOrders.length === 0 ? (
                     <tr>
-                      <td colSpan="8" className="text-center py-4">
+                      <td colSpan="8" className="text-center text-muted py-5">
                         No purchase orders found
                       </td>
                     </tr>
@@ -1082,70 +1061,65 @@ export default function Purchase() {
                       const itemsCount = order.items?.length || 0;
 
                       return (
-                        <tr
-                          key={order._id}
-                          className={`table-hover ${activeRow === idx ? "active-row" : ""}`}
-                          style={{
-                            borderBottom: "1px solid #EAEAEA",
-                            cursor: 'pointer',
-                          }}
-                        >
+                        <tr key={order._id} style={{ verticalAlign: "middle" }}>
                           {/* Checkbox */}
                           <td
                             className="text-center"
-                            style={{ padding: "4px 16px" }}
+                            style={{ padding: "14px 16px" }}
                           >
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: 'center' }}>
-                              <input
-                                type="checkbox"
-                                aria-label="select row"
-                                checked={selectedRowIds.has(order._id)}
-                                onChange={(e) => {
-                                  const next = new Set(selectedRowIds);
-                                  if (e.target.checked) {
-                                    if (order._id) next.add(order._id);
-                                  } else {
-                                    if (order._id) next.delete(order._id);
-                                  }
-                                  setSelectedRowIds(next);
-                                }}
-                              />
-                            </div>
+                            <input
+                              type="checkbox"
+                              aria-label="select row"
+                              checked={selectedRowIds.has(order._id)}
+                              onChange={(e) => {
+                                const next = new Set(selectedRowIds);
+                                if (e.target.checked) {
+                                  if (order._id) next.add(order._id);
+                                } else {
+                                  if (order._id) next.delete(order._id);
+                                }
+                                setSelectedRowIds(next);
+                              }}
+                            />
                           </td>
 
                           {/* Supplier */}
                           <td
-                            style={{ padding: "4px 16px", color: "#0E101A" }}
+                            style={{ padding: "14px 16px", color: "#0E101A" }}
                           >
                             {supplierName} ({itemsCount} items)
                           </td>
 
                           {/* Invoice */}
-                          <td style={{ padding: "4px 16px" }}>
+                          <td style={{ padding: "14px 16px" }}>
                             {order.invoiceNo}
                           </td>
 
                           {/* Items */}
-                          <td style={{ padding: "4px 16px" }}>{itemsCount}</td>
+                          <td style={{ padding: "14px 16px" }}>{itemsCount}</td>
 
                           {/* Dates */}
-                          <td style={{ padding: "4px 16px" }}>
+                          <td style={{ padding: "14px 16px" }}>
                             <div
-                              className="spinner-border text-primary"
-                              role="status"
+                              style={{
+                                display: "flex",
+                                gap: 6,
+                                flexWrap: "wrap",
+                              }}
                             >
-                              <span className="visually-hidden">Loading...</span>
+                              <span>{formatDate(order.invoiceDate)}</span>&
+                              <span>{getArrivingDate(order.invoiceDate)}</span>
                             </div>
                           </td>
 
                           {/* Status chip */}
-                          <td style={{ padding: "4px 16px" }}>
+                          <td style={{ padding: "14px 16px" }}>
                             <div
                               style={{
                                 display: "inline-flex",
                                 alignItems: "center",
                                 gap: 8,
-                                padding: "2px 5px",
+                                padding: "6px 10px",
                                 borderRadius: 50,
                                 background: sty.bg,
                                 color: sty.color,
@@ -1168,55 +1142,32 @@ export default function Purchase() {
                                     display: "inline-block",
                                   }}
                                 />
-                              </td>
+                              ) : (
+                                <span style={{ color: sty.color }}>
+                                  {sty.icon}
+                                </span>
+                              )}
+                              {sty.label}
+                            </div>
+                          </td>
 
                           {/* Amount */}
-                          <td style={{ padding: "4px 16px" }}>
+                          <td style={{ padding: "14px 16px" }}>
                             ₹ {order.grandTotal?.toLocaleString("en-IN")}/-
                           </td>
 
                           {/* Actions */}
                           <td
+                            className="text-center"
                             style={{
-                              padding: "4px 16px",
+                              padding: "14px 16px",
                               position: "relative",
-                              overflow: "visible",
-                              display: "flex",
-                              justifyContent: "center",
-                              alignItems: "center",
                             }}
                           >
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-
-                                const rect =
-                                  e.currentTarget.getBoundingClientRect();
+                              onClick={() =>
                                 setOpenMenu(openMenu === idx ? null : idx)
-
-                                const dropdownHeight = 160; // your menu height
-                                const spaceBelow =
-                                  window.innerHeight - rect.bottom;
-                                const spaceAbove = rect.top;
-
-                                // decide direction
-                                if (
-                                  spaceBelow < dropdownHeight &&
-                                  spaceAbove > dropdownHeight
-                                ) {
-                                  setOpenUpwards(true);
-                                  setDropdownPos({
-                                    x: rect.left,
-                                    y: rect.top - 6, // position above button
-                                  });
-                                } else {
-                                  setOpenUpwards(false);
-                                  setDropdownPos({
-                                    x: rect.left,
-                                    y: rect.bottom + 6, // position below button
-                                  });
-                                }
-                              }}
+                              }
                               className="btn"
                               style={{
                                 border: "none",
@@ -1224,121 +1175,110 @@ export default function Purchase() {
                                 padding: 4,
                                 display: "flex",
                                 alignItems: "center",
-                                justifyContent: "center",
-                                position: "relative",
                               }}
                               aria-label="actions"
                             >
-                              <HiOutlineDotsHorizontal size={20} color="grey" />
+                              <BsThreeDots style={{ color: "#6C748C" }} />
                             </button>
 
                             {openMenu === idx && (
                               <div
+                                ref={menuRef}
                                 style={{
-                                  position: "fixed",
-                                  top: openUpwards
-                                    ? dropdownPos.y - 60
-                                    : dropdownPos.y,
-                                  left: dropdownPos.x - 80,
-                                  zIndex: 999999,
+                                  position: "absolute",
+                                  right: 140,
+                                  width: "210px",
+                                  backgroundColor: "#ffff",
+                                  borderRadius: "12px",
+                                  boxShadow: "0 8px 25px rgba(0, 0, 0, 0.15)",
+                                  border: "1px solid #E5E7EB",
+                                  overflow: "hidden",
+                                  animation: "fadeIn 0.2s ease-out",
+                                  zIndex: 1000,
                                 }}
                               >
-                                <div
-                                  ref={menuRef}
-                                  style={{
-                                    background: "white",
-                                    padding: 8,
-                                    borderRadius: 12,
-                                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                                    minWidth: 170,
-                                    height: "auto", // height must match dropdownHeight above
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: 4,
-                                  }}
-                                >
-                                  {menuItems.map((item) => (
-                                    <div
-                                      key={item.action}
-                                      onClick={() =>
-                                        handleMenuAction(order, item.action)
-                                      }
-                                      style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 12,
-                                        padding: "8px 12px",
-                                        fontFamily: "Inter, sans-serif",
-                                        fontSize: 16,
-                                        fontWeight: 400,
-                                        cursor: "pointer",
-                                        borderRadius: 8,
-                                      }}
-                                      onMouseEnter={(e) => {
-                                        e.currentTarget.style.backgroundColor =
-                                          "#e3f2fd";
-                                      }}
-                                      onMouseLeave={(e) => {
-                                        e.currentTarget.style.backgroundColor =
-                                          "transparent";
-                                      }}
-                                    >
-                                      <span style={{ fontSize: "20px" }}>
-                                        {item.icon}
-                                      </span>
-                                      <span>{item.label}</span>
-                                    </div>
-                                  ))}
-                                  {/* animation */}
-                                  <style>{`
+                                {menuItems.map((item) => (
+                                  <div
+                                    key={item.action}
+                                    onClick={() =>
+                                      handleMenuAction(order, item.action)
+                                    }
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "12px",
+                                      padding: "8px 18px",
+                                      fontFamily: "Inter, sans-serif",
+                                      fontSize: "14px",
+                                      fontWeight: 500,
+                                      cursor: "pointer",
+                                      transition: "0.2s",
+                                      textDecoration: "none",
+                                      color: "#344054",
+                                    }}
+                                    onMouseEnter={(e) => {
+                                      e.currentTarget.style.backgroundColor =
+                                        "#e3f2fd";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                      e.currentTarget.style.backgroundColor =
+                                        "transparent";
+                                    }}
+                                  >
+                                    <span style={{ fontSize: "18px" }}>
+                                      {item.icon}
+                                    </span>
+                                    <span>{item.label}</span>
+                                  </div>
+                                ))}
+                                {/* animation */}
+                                <style>{`
                                     @keyframes fadeIn {
                                       from { opacity: 0; transform: translateY(-6px); }
                                       to { opacity: 1; transform: translateY(0); }
                                     }
                                   `}</style>
-                                  </div>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Pagination */}
-              {!loading && purchaseOrders.length > 0 && (
-                <Pagination
-                  currentPage={currentPage}
-                  itemsPerPage={10}
-                  total={totalCount}
-                  onPageChange={handlePageChange}
-                />
-              )}
-
-              <ConfirmDeleteModal
-                isOpen={showDeleteModal}
-                onCancel={() => {
-                  setShowDeleteModal(false);
-                  setSelectedInvoice(null);
-                }}
-                onConfirm={handleDeleteInvoice}
-                title="Delete Purchase Order"
-                message={`Are you sure you want to delete invoice ${selectedInvoice?.invoiceNo}? This action cannot be undone.`}
-              />
-
-              {/* Convert purchase modal */}
-              <Convertpurchasepopupmodal
-                isOpen={showModal}
-                onCancel={() => setShowModal(false)}
-                onConfirm={(status) => updateInvoiceStatus(status)}
-              />
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
-        </>
-      )};
+
+          {/* Pagination */}
+          {!loading && purchaseOrders.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              itemsPerPage={10}
+              total={totalCount}
+              onPageChange={handlePageChange}
+            />
+          )}
+
+          <ConfirmDeleteModal
+            isOpen={showDeleteModal}
+            onCancel={() => {
+              setShowDeleteModal(false);
+              setSelectedInvoice(null);
+            }}
+            onConfirm={handleDeleteInvoice}
+            title="Delete Purchase Order"
+            message={`Are you sure you want to delete invoice ${selectedInvoice?.invoiceNo}? This action cannot be undone.`}
+          />
+
+          {/* Convert purchase modal */}
+          <Convertpurchasepopupmodal
+            isOpen={showModal}
+            onCancel={() => setShowModal(false)}
+            onConfirm={(status) => updateInvoiceStatus(status)}
+          />
+        </div>
+      </div>
     </div>
   );
 }
