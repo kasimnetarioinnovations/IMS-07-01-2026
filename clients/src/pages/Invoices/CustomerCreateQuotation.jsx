@@ -21,6 +21,7 @@ import AddCustomers from "../Modal/customerModals/AddCustomerModal";
 import { FiSearch } from "react-icons/fi";
 
 function CustomerCreateQuotation() {
+    const viewManageRef = useRef(null);  //for handle click outside for calendar
   const hasAddedInitialProduct = useRef(false);
   const { customerId, quotationId } = useParams();
   const navigate = useNavigate();
@@ -709,380 +710,396 @@ function CustomerCreateQuotation() {
       }
     }
 
-      if (!customer.phone.trim()) {
-        newErrors.phone = "Phone number is required";
-      } else if (!/^\d{10}$/.test(customer.phone)) {
-        newErrors.phone = "Phone number must be 10 digits";
-      }
+    if (!customer.phone.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else if (!/^\d{10}$/.test(customer.phone)) {
+      newErrors.phone = "Phone number must be 10 digits";
+    }
 
-      if (!customer.address.trim()) {
-        newErrors.address = "Address is required";
-      }
+    if (!customer.address.trim()) {
+      newErrors.address = "Address is required";
+    }
 
-      if (products.length === 0) {
-        newErrors.products = "At least one product is required";
-      }
+    if (products.length === 0) {
+      newErrors.products = "At least one product is required";
+    }
 
-      // Validate product selection - ADD THIS
-      const productsWithoutId = products.filter(p => !p.productId || p.productId.trim() === "");
-      if (productsWithoutId.length > 0) {
-        newErrors.productSelection = "Please select products from dropdown for all items";
-        // Also mark which rows have issues
-        productsWithoutId.forEach((p, idx) => {
-          newErrors[`productRow_${idx}`] = `Row ${idx + 1}: Product selection required`;
+    // Validate product selection - ADD THIS
+    const productsWithoutId = products.filter(p => !p.productId || p.productId.trim() === "");
+    if (productsWithoutId.length > 0) {
+      newErrors.productSelection = "Please select products from dropdown for all items";
+      // Also mark which rows have issues
+      productsWithoutId.forEach((p, idx) => {
+        newErrors[`productRow_${idx}`] = `Row ${idx + 1}: Product selection required`;
+      });
+    }
+
+    setErrors(newErrors);
+
+    return {
+      isValid: Object.keys(newErrors).length === 0,
+      errors: newErrors
+    };
+  };
+
+
+  // Handle form submission for quotation
+  const handleSubmit = async (shouldPrint = false) => {
+    console.log("handleSubmit called with shouldPrint:", shouldPrint);
+    console.log("Button clicked, isSubmitting:", isSubmitting);
+
+    if (!customer.customerId) {
+      toast.error("Please select a customer first")
+      return;
+    }
+
+    if (isSubmitting) {
+      console.log("Already submitting, returning...");
+      return;
+    }
+
+    const { isValid, errors } = validateForm();
+    if (!isValid) {
+      const firstErrorKey = Object.keys(errors)[0];
+      toast.error(errors[firstErrorKey]);
+      return;
+    }
+
+    // Additional validation for productId
+    const missingProductIds = products.filter(p => !p.productId || p.productId.trim() === "");
+    if (missingProductIds.length > 0) {
+      toast.error(`Please select products from dropdown for row(s): ${missingProductIds.map((_, idx) => idx + 1).join(', ')}`);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Prepare FormData for file uploads
+      const formData = new FormData();
+
+      // Add all quotation data as separate fields
+      // formData.append("customerId", customerId);
+      // use customer.customerId in the form data
+      formData.append("customerId", customer.customerId);
+      formData.append("quotationDate", quotationDate.toISOString());
+      formData.append("expiryDate", expiryDate.toISOString());
+      formData.append("validForDays", validForDays);
+      formData.append("billingAddress", customer.address);
+      formData.append("shippingAddress", customer.address);
+      formData.append("subtotal", subtotal);
+      formData.append("totalTax", totalTax);
+      formData.append("totalDiscount", totalDiscount);
+      formData.append("additionalCharges", additionalChargesTotal);
+      formData.append(
+        "shoppingPointsUsed",
+        usePoints ? parseFloat(shoppingPointsUsed) || 0 : 0
+      );
+      formData.append("pointValue", POINT_VALUE);
+      formData.append("autoRoundOff", autoRoundOff);
+      formData.append("grandTotal", grandTotal);
+
+      // Determine status based on payment
+      const finalStatus = fullyReceived || (parseFloat(amountReceived) || 0) >= grandTotal
+        ? "paid"
+        : "draft";
+      formData.append("status", finalStatus);
+
+      formData.append("fullyReceived", fullyReceived);
+      formData.append("paidAmount", parseFloat(amountReceived) || 0);
+      formData.append("notes", "");
+      formData.append("termsAndConditions", "");
+
+      // Add additional discount as object
+      formData.append(
+        "additionalDiscount[pct]",
+        parseFloat(additionalDiscountPct) || 0
+      );
+      formData.append(
+        "additionalDiscount[amt]",
+        parseFloat(additionalDiscountAmt) || 0
+      );
+
+      // Add additional charges details as separate fields
+      formData.append(
+        "additionalChargesDetails[shipping]",
+        additionalChargesDetails.shipping
+      );
+      formData.append(
+        "additionalChargesDetails[handling]",
+        additionalChargesDetails.handling
+      );
+      formData.append(
+        "additionalChargesDetails[packing]",
+        additionalChargesDetails.packing
+      );
+      formData.append(
+        "additionalChargesDetails[service]",
+        additionalChargesDetails.service
+      );
+      formData.append(
+        "additionalChargesDetails[other]",
+        additionalChargesDetails.other
+      );
+
+      // Add items array
+      products.forEach((p, index) => {
+        formData.append(`items[${index}][productId]`, p.productId);
+        formData.append(`items[${index}][itemName]`, p.itemName || p.name);
+        formData.append(`items[${index}][hsnCode]`, p.hsnCode || "");
+        formData.append(`items[${index}][qty]`, parseFloat(p.qty));
+        formData.append(`items[${index}][unit]`, p.unit);
+        formData.append(`items[${index}][unitPrice]`, parseFloat(p.unitPrice));
+        formData.append(
+          `items[${index}][taxType]`,
+          `GST ${p.taxRate}%`
+        );
+        formData.append(`items[${index}][taxRate]`, p.taxRate);
+        formData.append(`items[${index}][taxAmount]`, p.taxAmount);
+        formData.append(
+          `items[${index}][discountPct]`,
+          parseFloat(p.discountPct) || 0
+        );
+        formData.append(`items[${index}][discountAmt]`, p.discountAmt);
+        formData.append(`items[${index}][amount]`, p.amount);
+      });
+
+      // Add uploaded images
+      uploadedImages.forEach((image, index) => {
+        formData.append(`attachments`, image.file, image.filename);
+      });
+
+      let response;
+
+      // 🚨 CRITICAL: CHECK IF WE'RE UPDATING OR CREATING
+      if (quotationId) {
+        // UPDATE EXISTING QUOTATION
+        console.log("Updating existing quotation:", quotationId);
+        response = await api.put(`/api/quotations/${quotationId}`, formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         });
+        toast.success("Quotation updated successfully!");
+      } else {
+        // CREATE NEW QUOTATION
+        console.log("Creating new quotation");
+        response = await api.post("/api/quotations", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        toast.success("Quotation created successfully!");
       }
 
-      setErrors(newErrors);
+      console.log("Response:", response.data);
 
-      return {
-        isValid: Object.keys(newErrors).length === 0,
-        errors: newErrors
-      };
+      if (response.data.success) {
+        const newQuotationId = response.data.quotation._id;
+
+        if (shouldPrint) {
+          // Navigate to print page for quotation
+          navigate(`/skeleton?redirect=/showquotation/${newQuotationId}`); // Create this route
+        } else {
+          // Navigate to show customer page
+          navigate("/skeleton?redirect=/customers");
+        }
+      } else {
+        toast.error(response.data.error || "Operation failed");
+      }
+    } catch (error) {
+      console.error("Quotation operation failed:", error);
+
+      // Show detailed error information
+      if (error.response?.data?.error) {
+        toast.error(`Backend error: ${error.response.data.error}`);
+      } else if (error.response?.data?.message) {
+        toast.error(`Validation error: ${error.response.data.message}`);
+      } else if (error.response?.data?.details) {
+        const validationErrors = error.response.data.details.join(", ");
+        toast.error(`Validation errors: ${validationErrors}`);
+      } else if (error.response?.status === 500) {
+        toast.error("Server error 500. Check backend logs.");
+      } else {
+        toast.error("Failed to process quotation. Please try again.");
+      }
+
+      // Log full error for debugging
+      console.log("Full error response:", error.response?.data);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Helper for preview
+  const parseNumber = (num) => parseFloat(num) || 0;
+ useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        viewManageRef.current &&
+        !viewManageRef.current.contains(event.target)
+      ) {
+        setViewManageOptions(false);
+        setIsDatePickerOpen(false);
+      }
     };
 
-
-    // Handle form submission for quotation
-    const handleSubmit = async (shouldPrint = false) => {
-      console.log("handleSubmit called with shouldPrint:", shouldPrint);
-      console.log("Button clicked, isSubmitting:", isSubmitting);
-
-      if (!customer.customerId) {
-        toast.error("Please select a customer first")
-        return;
-      }
-
-      if (isSubmitting) {
-        console.log("Already submitting, returning...");
-        return;
-      }
-
-      const { isValid, errors } = validateForm();
-      if (!isValid) {
-        const firstErrorKey = Object.keys(errors)[0];
-        toast.error(errors[firstErrorKey]);
-        return;
-      }
-
-      // Additional validation for productId
-      const missingProductIds = products.filter(p => !p.productId || p.productId.trim() === "");
-      if (missingProductIds.length > 0) {
-        toast.error(`Please select products from dropdown for row(s): ${missingProductIds.map((_, idx) => idx + 1).join(', ')}`);
-        return;
-      }
-
-      setIsSubmitting(true);
-
-      try {
-        // Prepare FormData for file uploads
-        const formData = new FormData();
-
-        // Add all quotation data as separate fields
-        // formData.append("customerId", customerId);
-        // use customer.customerId in the form data
-        formData.append("customerId", customer.customerId);
-        formData.append("quotationDate", quotationDate.toISOString());
-        formData.append("expiryDate", expiryDate.toISOString());
-        formData.append("validForDays", validForDays);
-        formData.append("billingAddress", customer.address);
-        formData.append("shippingAddress", customer.address);
-        formData.append("subtotal", subtotal);
-        formData.append("totalTax", totalTax);
-        formData.append("totalDiscount", totalDiscount);
-        formData.append("additionalCharges", additionalChargesTotal);
-        formData.append(
-          "shoppingPointsUsed",
-          usePoints ? parseFloat(shoppingPointsUsed) || 0 : 0
-        );
-        formData.append("pointValue", POINT_VALUE);
-        formData.append("autoRoundOff", autoRoundOff);
-        formData.append("grandTotal", grandTotal);
-
-        // Determine status based on payment
-        const finalStatus = fullyReceived || (parseFloat(amountReceived) || 0) >= grandTotal
-          ? "paid"
-          : "draft";
-        formData.append("status", finalStatus);
-
-        formData.append("fullyReceived", fullyReceived);
-        formData.append("paidAmount", parseFloat(amountReceived) || 0);
-        formData.append("notes", "");
-        formData.append("termsAndConditions", "");
-
-        // Add additional discount as object
-        formData.append(
-          "additionalDiscount[pct]",
-          parseFloat(additionalDiscountPct) || 0
-        );
-        formData.append(
-          "additionalDiscount[amt]",
-          parseFloat(additionalDiscountAmt) || 0
-        );
-
-        // Add additional charges details as separate fields
-        formData.append(
-          "additionalChargesDetails[shipping]",
-          additionalChargesDetails.shipping
-        );
-        formData.append(
-          "additionalChargesDetails[handling]",
-          additionalChargesDetails.handling
-        );
-        formData.append(
-          "additionalChargesDetails[packing]",
-          additionalChargesDetails.packing
-        );
-        formData.append(
-          "additionalChargesDetails[service]",
-          additionalChargesDetails.service
-        );
-        formData.append(
-          "additionalChargesDetails[other]",
-          additionalChargesDetails.other
-        );
-
-        // Add items array
-        products.forEach((p, index) => {
-          formData.append(`items[${index}][productId]`, p.productId);
-          formData.append(`items[${index}][itemName]`, p.itemName || p.name);
-          formData.append(`items[${index}][hsnCode]`, p.hsnCode || "");
-          formData.append(`items[${index}][qty]`, parseFloat(p.qty));
-          formData.append(`items[${index}][unit]`, p.unit);
-          formData.append(`items[${index}][unitPrice]`, parseFloat(p.unitPrice));
-          formData.append(
-            `items[${index}][taxType]`,
-            `GST ${p.taxRate}%`
-          );
-          formData.append(`items[${index}][taxRate]`, p.taxRate);
-          formData.append(`items[${index}][taxAmount]`, p.taxAmount);
-          formData.append(
-            `items[${index}][discountPct]`,
-            parseFloat(p.discountPct) || 0
-          );
-          formData.append(`items[${index}][discountAmt]`, p.discountAmt);
-          formData.append(`items[${index}][amount]`, p.amount);
-        });
-
-        // Add uploaded images
-        uploadedImages.forEach((image, index) => {
-          formData.append(`attachments`, image.file, image.filename);
-        });
-
-        let response;
-
-        // 🚨 CRITICAL: CHECK IF WE'RE UPDATING OR CREATING
-        if (quotationId) {
-          // UPDATE EXISTING QUOTATION
-          console.log("Updating existing quotation:", quotationId);
-          response = await api.put(`/api/quotations/${quotationId}`, formData, {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          });
-          toast.success("Quotation updated successfully!");
-        } else {
-          // CREATE NEW QUOTATION
-          console.log("Creating new quotation");
-          response = await api.post("/api/quotations", formData, {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          });
-          toast.success("Quotation created successfully!");
-        }
-
-        console.log("Response:", response.data);
-
-        if (response.data.success) {
-          const newQuotationId = response.data.quotation._id;
-
-          if (shouldPrint) {
-            // Navigate to print page for quotation
-            navigate(`/skeleton?redirect=/showquotation/${newQuotationId}`); // Create this route
-          } else {
-            // Navigate to show customer page
-            navigate("/skeleton?redirect=/customers");
-          }
-        } else {
-          toast.error(response.data.error || "Operation failed");
-        }
-      } catch (error) {
-        console.error("Quotation operation failed:", error);
-
-        // Show detailed error information
-        if (error.response?.data?.error) {
-          toast.error(`Backend error: ${error.response.data.error}`);
-        } else if (error.response?.data?.message) {
-          toast.error(`Validation error: ${error.response.data.message}`);
-        } else if (error.response?.data?.details) {
-          const validationErrors = error.response.data.details.join(", ");
-          toast.error(`Validation errors: ${validationErrors}`);
-        } else if (error.response?.status === 500) {
-          toast.error("Server error 500. Check backend logs.");
-        } else {
-          toast.error("Failed to process quotation. Please try again.");
-        }
-
-        // Log full error for debugging
-        console.log("Full error response:", error.response?.data);
-      } finally {
-        setIsSubmitting(false);
-      }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
     };
+  }, []);
 
-    // Helper for preview
-    const parseNumber = (num) => parseFloat(num) || 0;
+  if (loading) return <div>Loading...</div>;
 
-    if (loading) return <div>Loading...</div>;
-
-    // ... rest of your JSX remains the same ...
-    return (
-      <div className="px-4 py-4" style={{ height: "100vh" }}>
+  // ... rest of your JSX remains the same ...
+  return (
+    <div className="px-4 py-4" style={{ height: "100vh" }}>
+      <div className="">
         <div className="">
-          <div className="">
-            {/* Header */}
+          {/* Header */}
+          <div
+            style={{
+              width: "100%",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "0px 0px",
+              height: "80px",
+            }}
+          >
+            {/* Left: Title + Icon */}
             <div
               style={{
-                width: "100%",
                 display: "flex",
-                justifyContent: "space-between",
                 alignItems: "center",
-                padding: "0px 0px",
-                height: "80px",
+                gap: 11,
+                height: "32px",
+                padding: "0px 24px",
               }}
             >
-              {/* Left: Title + Icon */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 11,
-                  height: "32px",
-                  padding: "0px 24px",
-                }}
-              >
-                {/* Icon Container */}
-                <Link to="/customers" style={{ textDecoration: "none" }}>
-                  <span
-                    style={{
-                      backgroundColor: "white",
-                      width: "32px",
-                      height: "32px",
-                      borderRadius: "50px",
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      border: "1px solid #FCFCFC",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <img src={total_orders_icon} alt="total_orders_icon" />
-                  </span>
-                </Link>
-
-                {/* Title */}
-                <h2
+              {/* Icon Container */}
+              <Link to="/customers" style={{ textDecoration: "none" }}>
+                <span
                   style={{
-                    margin: 0,
-                    color: "black",
-                    fontSize: 22,
-                    fontFamily: "Inter, sans-serif",
-                    fontWeight: 500,
-                    lineHeight: "26.4px",
-                  }}
-                >
-                  Create Quotation
-                </h2>
-              </div>
-
-              {/* Right: Preview Button */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 16,
-                  height: "33px",
-                }}
-              >
-                <div
-                  onClick={() => handleViewQuotation(true)}
-                  style={{
-                    padding: "6px 16px",
-                    background: "#1F7FFF",
-                    border: "1px solid #1F7FFF",
-                    borderRadius: 8,
-                    textDecoration: "none",
-                    fontSize: "14px",
+                    backgroundColor: "white",
+                    width: "32px",
+                    height: "32px",
+                    borderRadius: "50px",
                     display: "flex",
-                    gap: "8px",
+                    justifyContent: "center",
                     alignItems: "center",
-                    height: "33px",
-                    color: "white",
+                    border: "1px solid #FCFCFC",
                     cursor: "pointer",
                   }}
                 >
-                  <span className="fs-6">Preview</span>
-                </div>
-              </div>
+                  <img src={total_orders_icon} alt="total_orders_icon" />
+                </span>
+              </Link>
+
+              {/* Title */}
+              <h2
+                style={{
+                  margin: 0,
+                  color: "black",
+                  fontSize: 22,
+                  fontFamily: "Inter, sans-serif",
+                  fontWeight: 500,
+                  lineHeight: "26.4px",
+                }}
+              >
+                Create Quotation
+              </h2>
             </div>
 
-            {/* Main Content */}
+            {/* Right: Preview Button */}
             <div
               style={{
-                width: "100%",
-                padding: "16px",
-                background: "var(--White, white)",
-                borderRadius: "16px",
-                border: "1px var(--Stroke, #EAEAEA) solid",
-                flexDirection: "column",
-                justifyContent: "flex-start",
-                alignItems: "flex-start",
-                gap: "24px",
                 display: "flex",
-                overflowX: "auto",
-                height: "calc(100vh - 180px)",
+                alignItems: "center",
+                gap: 16,
+                height: "33px",
               }}
             >
-              {/* Customer Details */}
-              <div style={{ width: "1860px" }}>
-                <div
-                  style={{
-                    color: "black",
-                    fontSize: "16px",
-                    fontFamily: "Inter",
-                    fontWeight: "500",
-                    lineHeight: "19.20px",
-                  }}
-                >
-                  Customer Details
-                </div>
+              <div
+                onClick={() => handleViewQuotation(true)}
+                style={{
+                  padding: "6px 16px",
+                  background: "#1F7FFF",
+                  border: "1px solid #1F7FFF",
+                  borderRadius: 8,
+                  textDecoration: "none",
+                  fontSize: "14px",
+                  display: "flex",
+                  gap: "8px",
+                  alignItems: "center",
+                  height: "33px",
+                  color: "white",
+                  cursor: "pointer",
+                }}
+              >
+                <span className="fs-6">Preview</span>
+              </div>
+            </div>
+          </div>
 
+          {/* Main Content */}
+          <div
+            style={{
+              width: "100%",
+              padding: "16px",
+              background: "var(--White, white)",
+              borderRadius: "16px",
+              border: "1px var(--Stroke, #EAEAEA) solid",
+              flexDirection: "column",
+              justifyContent: "flex-start",
+              alignItems: "flex-start",
+              gap: "24px",
+              display: "flex",
+              overflowX: "auto",
+              height: "calc(100vh - 180px)",
+            }}
+          >
+            {/* Customer Details */}
+            <div style={{ width: "1860px" }}>
+              <div
+                style={{
+                  color: "black",
+                  fontSize: "16px",
+                  fontFamily: "Inter",
+                  fontWeight: "500",
+                  lineHeight: "19.20px",
+                }}
+              >
+                Customer Details
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gap: "16px",
+                  width: "100%",
+                  marginTop: "16px",
+                }}
+              >
                 <div
                   style={{
-                    display: "grid",
-                    gap: "16px",
                     width: "100%",
-                    marginTop: "16px",
+                    height: "100%",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    display: "inline-flex",
                   }}
                 >
-                  <div
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      display: "inline-flex",
-                    }}
-                  >
-                    <div style={{ width: "60%" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "flex-start",
-                          gap: "40px",
-                        }}
-                      >
-                        {/* <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div style={{ width: "60%" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "flex-start",
+                        gap: "40px",
+                      }}
+                    >
+                      {/* <div style={{ display: "flex", flexDirection: "column" }}>
                         <label>
                           Customer Name<span style={{ color: "red" }}>*</span>
                         </label>
@@ -1129,26 +1146,27 @@ function CustomerCreateQuotation() {
                           </div>
                         )}
                       </div> */}
-                        {/* from nav start */}
-                        <div style={{ display: "flex", flexDirection: "column" }}>
-                          <label>
-                            Customer Name<span style={{ color: "red" }}>*</span>
-                          </label>
-                          <div
-                            style={{
-                              width: "360px",
-                              borderRadius: "8px",
-                              border: "1px solid #EAEAEA",
-                              padding: "6px 8px",
-                              display: "flex",
-                              gap: "4px",
-                              marginTop: "4px",
-                              alignItems: "center",
-                              position: "relative",
-                            }}
-                          >
-                            {/* Input field */}
-                            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "8px" }}>
+                      {/* from nav start */}
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        <label>
+                          Customer Name<span style={{ color: "red" }}>*</span>
+                        </label>
+                        <div
+                          style={{
+                            width: "360px",
+                            borderRadius: "8px",
+                            border: "1px solid #EAEAEA",
+                            padding: "6px 8px",
+                            display: "flex",
+                            gap: "4px",
+                            marginTop: "4px",
+                            alignItems: "center",
+                            position: "relative",
+                          }}
+                        >
+                          {/* Input field */}
+                          <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "8px" }}>
+                            {isFromNavbar && (
                               <FiSearch
                                 style={{
                                   color: "#666",
@@ -1157,317 +1175,189 @@ function CustomerCreateQuotation() {
                                 }}
                                 onClick={() => isFromNavbar && setShowCustomerDropdown(true)}
                               />
-                              <input
-                                type="text"
-                                placeholder={isFromNavbar ? "Search or select customer..." : "Enter Name"}
-                                style={{
-                                  width: "100%",
-                                  border: "none",
-                                  outline: "none",
-                                  fontSize: "14px",
-                                  cursor: isFromNavbar ? "pointer" : "text",
-                                }}
-                                value={customer.name}
-                                onChange={(e) => {
-                                  if (isFromNavbar) {
-                                    // In navbar mode, show dropdown and search
-                                    setCustomerSearch(e.target.value);
-                                    setShowCustomerDropdown(true);
-                                    // Don't update customer name directly - wait for selection
-                                  } else {
-                                    // In customer page mode, update directly
-                                    setCustomer({
-                                      ...customer,
-                                      name: e.target.value,
-                                    });
-                                  }
-                                }}
-                                onFocus={() => isFromNavbar && setShowCustomerDropdown(true)}
-                                readOnly={isFromNavbar && customer.customerId} // Read-only when customer is selected
-                              />
-                            </div>
-
-                            {/* Action buttons */}
-                            {isFromNavbar && (
-                              <div style={{ display: "flex", gap: "4px" }}>
-                                {customer.customerId ? (
-                                  // When customer is selected - show clear button
-                                  <button
-                                    onClick={handleClearCustomer}
-                                    style={{
-                                      background: "transparent",
-                                      border: "none",
-                                      color: "#dc3545",
-                                      cursor: "pointer",
-                                      fontSize: "12px",
-                                      padding: "2px 6px",
-                                      whiteSpace: "nowrap",
-                                    }}
-                                  >
-                                    Change
-                                  </button>
-                                ) : (
-                                  // When no customer - show add button
-                                  <button
-                                    onClick={() => setOpenAddModal(true)}
-                                    style={{
-                                      background: "#1F7FFF",
-                                      color: "white",
-                                      border: "none",
-                                      borderRadius: "4px",
-                                      cursor: "pointer",
-                                      fontSize: "12px",
-                                      padding: "4px 8px",
-                                      whiteSpace: "nowrap",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: "4px",
-                                    }}
-                                  >
-                                    + Add
-                                  </button>
-                                )}
-                              </div>
                             )}
-
-                            {/* Customer Dropdown */}
-                            {isFromNavbar && showCustomerDropdown && (
-                              <div style={{
-                                position: "absolute",
-                                top: "100%",
-                                left: 0,
-                                right: 0,
-                                backgroundColor: "white",
-                                border: "1px solid #EAEAEA",
-                                borderRadius: "8px",
-                                maxHeight: "300px",
-                                overflowY: "auto",
-                                zIndex: 1000,
-                                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                                marginTop: "4px",
-                              }}>
-                                {filteredCustomers.length === 0 ? (
-                                  <div style={{ padding: "12px", color: "#666", textAlign: "center" }}>
-                                    No customers found
-                                    <div style={{ marginTop: "8px" }}>
-                                      <button
-                                        onClick={() => {
-                                          setOpenAddModal(true);
-                                          setShowCustomerDropdown(false);
-                                        }}
-                                        style={{
-                                          padding: "6px 12px",
-                                          backgroundColor: "#1F7FFF",
-                                          color: "white",
-                                          border: "none",
-                                          borderRadius: "4px",
-                                          cursor: "pointer",
-                                          fontSize: "12px",
-                                        }}
-                                      >
-                                        + Add New Customer
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <>
-                                    <div style={{
-                                      padding: "8px 12px",
-                                      borderBottom: "1px solid #f0f0f0",
-                                      backgroundColor: "#f8f9fa",
-                                      fontSize: "12px",
-                                      color: "#666",
-                                    }}>
-                                      Select customer or <button
-                                        onClick={() => {
-                                          setOpenAddModal(true);
-                                          setShowCustomerDropdown(false);
-                                        }}
-                                        style={{
-                                          background: "transparent",
-                                          border: "none",
-                                          color: "#1F7FFF",
-                                          cursor: "pointer",
-                                          fontWeight: "500",
-                                        }}
-                                      >
-                                        add new
-                                      </button>
-                                    </div>
-                                    {filteredCustomers.map((cust) => (
-                                      <div
-                                        key={cust._id}
-                                        onClick={() => handleCustomerSelect(cust)}
-                                        style={{
-                                          padding: "12px 16px",
-                                          borderBottom: "1px solid #f0f0f0",
-                                          cursor: "pointer",
-                                          display: "flex",
-                                          alignItems: "center",
-                                          gap: "12px",
-                                          transition: "background-color 0.2s",
-                                        }}
-                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
-                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
-                                      >
-                                        <div style={{
-                                          width: "32px",
-                                          height: "32px",
-                                          borderRadius: "50%",
-                                          backgroundColor: "#e0f0ff",
-                                          display: "flex",
-                                          alignItems: "center",
-                                          justifyContent: "center",
-                                          fontWeight: "bold",
-                                          color: "#1F7FFF",
-                                          fontSize: "14px",
-                                        }}>
-                                          {cust.name?.charAt(0).toUpperCase() || "C"}
-                                        </div>
-                                        <div style={{ flex: 1 }}>
-                                          <div style={{ fontWeight: "500" }}>{cust.name}</div>
-                                          <div style={{ fontSize: "12px", color: "#666" }}>
-                                            {cust.phone} {cust.email && `• ${cust.email}`}
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </>
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Customer details when selected */}
-                          {isFromNavbar && customer.customerId && (
-                            <div style={{
-                              marginTop: "8px",
-                              padding: "8px 12px",
-                              backgroundColor: "#f0f8ff",
-                              borderRadius: "6px",
-                              border: "1px solid #d1e7ff",
-                              fontSize: "12px",
-                            }}>
-                              <div style={{ display: "flex", justifyContent: "space-between" }}>
-                                <div>
-                                  <span style={{ fontWeight: "500", color: "#1F7FFF" }}>
-                                    📱 {customer.phone}
-                                  </span>
-                                  {customer.email && (
-                                    <span style={{ marginLeft: "8px" }}>✉️ {customer.email}</span>
-                                  )}
-                                </div>
-                                <div>
-                                  <span style={{ color: "#666" }}>
-                                    Points: 🪙 {customerPoints}
-                                  </span>
-                                </div>
-                              </div>
-                              <div style={{ marginTop: "4px", color: "#666" }}>
-                                {customer.address}
-                              </div>
-                            </div>
-                          )}
-
-                          {errors.customerName && (
-                            <div
+                            <input
+                              type="text"
+                              placeholder={isFromNavbar ? "Search or select customer..." : "Enter Name"}
                               style={{
-                                color: "red",
-                                fontSize: "12px",
-                                marginTop: "4px",
+                                width: "100%",
+                                border: "none",
+                                outline: "none",
+                                fontSize: "14px",
+                                cursor: isFromNavbar ? "pointer" : "text",
                               }}
-                            >
-                              {errors.customerName}
-                            </div>
-                          )}
-                        </div>
-                        {/* from nav end */}
-                        <div style={{ display: "flex", flexDirection: "column" }}>
-                          <label>
-                            Phone No.<span style={{ color: "red" }}>*</span>
-                          </label>
-                          <div
-                            style={{
-                              width: "360px",
-                              borderRadius: "8px",
-                              border: "1px solid #EAEAEA",
-                              padding: "6px 8px",
-                              display: "flex",
-                              gap: "6px",
-                              marginTop: "4px",
-                            }}
-                          >
-                            <div
-                              className="d-flex "
-                              style={{ borderRight: "1px solid #EAEAEA" }}
-                            >
-                              <img src={indialogo} alt="india-logo" />
-                              <span
-                                style={{ color: "black", padding: "0px 6px" }}
-                              >
-                                {" "}
-                                +91{" "}
-                              </span>
-                            </div>
-                            <div>
-                              <input
-                                type="text"
-                                placeholder="Enter Customer No."
-                                style={{
-                                  width: "250px",
-                                  border: "none",
-                                  outline: "none",
-                                  fontSize: "14px",
-                                }}
-                                value={customer.phone}
-                                onChange={(e) =>
+                              value={customer.name}
+                              onChange={(e) => {
+                                if (isFromNavbar) {
+                                  // In navbar mode, show dropdown and search
+                                  setCustomerSearch(e.target.value);
+                                  setShowCustomerDropdown(true);
+                                  // Don't update customer name directly - wait for selection
+                                } else {
+                                  // In customer page mode, update directly
                                   setCustomer({
                                     ...customer,
-                                    phone: e.target.value,
-                                  })
+                                    name: e.target.value,
+                                  });
                                 }
-                              />
-                            </div>
-                          </div>
-                          {errors.phone && (
-                            <div
-                              style={{
-                                color: "red",
-                                fontSize: "12px",
-                                marginTop: "4px",
                               }}
-                            >
-                              {errors.phone}
+                              onFocus={() => isFromNavbar && setShowCustomerDropdown(true)}
+                              readOnly={isFromNavbar && customer.customerId} // Read-only when customer is selected
+                            />
+                          </div>
+
+                          {/* Action buttons */}
+                          {isFromNavbar && (
+                            <div style={{ display: "flex", gap: "4px" }}>
+                              {customer.customerId ? (
+                                // When customer is selected - show clear button
+                                <button
+                                  onClick={handleClearCustomer}
+                                  style={{
+                                    background: "transparent",
+                                    border: "none",
+                                    color: "#dc3545",
+                                    cursor: "pointer",
+                                    fontSize: "12px",
+                                    padding: "2px 6px",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  Change
+                                </button>
+                              ) : (
+                                // When no customer - show add button
+                                <button
+                                  onClick={() => setOpenAddModal(true)}
+                                  style={{
+                                    background: "#1F7FFF",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "4px",
+                                    cursor: "pointer",
+                                    fontSize: "12px",
+                                    padding: "4px 8px",
+                                    whiteSpace: "nowrap",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "4px",
+                                  }}
+                                >
+                                  + Add
+                                </button>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Customer Dropdown */}
+                          {isFromNavbar && showCustomerDropdown && (
+                            <div style={{
+                              position: "absolute",
+                              top: "100%",
+                              left: 0,
+                              right: 0,
+                              backgroundColor: "white",
+                              border: "1px solid #EAEAEA",
+                              borderRadius: "8px",
+                              maxHeight: "300px",
+                              overflowY: "auto",
+                              zIndex: 1000,
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                              marginTop: "4px",
+                            }}>
+                              {filteredCustomers.length === 0 ? (
+                                <div style={{ padding: "12px", color: "#666", textAlign: "center" }}>
+                                  No customers found
+                                  <div style={{ marginTop: "8px" }}>
+                                    <button
+                                      onClick={() => {
+                                        setOpenAddModal(true);
+                                        setShowCustomerDropdown(false);
+                                      }}
+                                      style={{
+                                        padding: "6px 12px",
+                                        backgroundColor: "#1F7FFF",
+                                        color: "white",
+                                        border: "none",
+                                        borderRadius: "4px",
+                                        cursor: "pointer",
+                                        fontSize: "12px",
+                                      }}
+                                    >
+                                      + Add New Customer
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <div style={{
+                                    padding: "8px 12px",
+                                    borderBottom: "1px solid #f0f0f0",
+                                    backgroundColor: "#f8f9fa",
+                                    fontSize: "12px",
+                                    color: "#666",
+                                  }}>
+                                    Select customer or <button
+                                      onClick={() => {
+                                        setOpenAddModal(true);
+                                        setShowCustomerDropdown(false);
+                                      }}
+                                      style={{
+                                        background: "transparent",
+                                        border: "none",
+                                        color: "#1F7FFF",
+                                        cursor: "pointer",
+                                        fontWeight: "500",
+                                      }}
+                                    >
+                                      add new
+                                    </button>
+                                  </div>
+                                  {filteredCustomers.map((cust) => (
+                                    <div
+                                      key={cust._id}
+                                      onClick={() => handleCustomerSelect(cust)}
+                                      style={{
+                                        padding: "12px 16px",
+                                        borderBottom: "1px solid #f0f0f0",
+                                        cursor: "pointer",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "12px",
+                                        transition: "background-color 0.2s",
+                                      }}
+                                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
+                                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
+                                    >
+                                      <div style={{
+                                        width: "32px",
+                                        height: "32px",
+                                        borderRadius: "50%",
+                                        backgroundColor: "#e0f0ff",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontWeight: "bold",
+                                        color: "#1F7FFF",
+                                        fontSize: "14px",
+                                      }}>
+                                        {cust.name?.charAt(0).toUpperCase() || "C"}
+                                      </div>
+                                      <div style={{ flex: 1 }}>
+                                        <div style={{ fontWeight: "500" }}>{cust.name}</div>
+                                        <div style={{ fontSize: "12px", color: "#666" }}>
+                                          {cust.phone} {cust.email && `• ${cust.email}`}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </>
+                              )}
                             </div>
                           )}
                         </div>
-                      </div>
-                      <div style={{ marginTop: "10px", width: "50%" }}>
-                        <label>
-                          Billing Address<span style={{ color: "red" }}>*</span>
-                        </label>
-                        <div>
-                          <textarea
-                            placeholder="Enter Billing Address"
-                            style={{
-                              width: "760px",
-                              height: "80px",
-                              borderRadius: "8px",
-                              border: "1px dashed #EAEAEA",
-                              padding: "8px",
-                              marginTop: "4px",
-                              resize: "none",
-                            }}
-                            value={customer.address}
-                            onChange={(e) =>
-                              setCustomer({
-                                ...customer,
-                                address: e.target.value,
-                              })
-                            }
-                          ></textarea>
-                        </div>
-                        {errors.address && (
+
+                        {errors.customerName && (
                           <div
                             style={{
                               color: "red",
@@ -1475,244 +1365,414 @@ function CustomerCreateQuotation() {
                               marginTop: "4px",
                             }}
                           >
-                            {errors.address}
+                            {errors.customerName}
+                          </div>
+                        )}
+                      </div>
+                      {/* from nav end */}
+                      <div style={{ display: "flex", flexDirection: "column" }}>
+                        <label>
+                          Phone No.<span style={{ color: "red" }}>*</span>
+                        </label>
+                        <div
+                          style={{
+                            width: "360px",
+                            borderRadius: "8px",
+                            border: "1px solid #EAEAEA",
+                            padding: "6px 8px",
+                            display: "flex",
+                            gap: "6px",
+                            marginTop: "4px",
+                          }}
+                        >
+                          <div
+                            className="d-flex "
+                            style={{ borderRight: "1px solid #EAEAEA" }}
+                          >
+                            <img src={indialogo} alt="india-logo" />
+                            <span
+                              style={{ color: "black", padding: "0px 6px" }}
+                            >
+                              {" "}
+                              +91{" "}
+                            </span>
+                          </div>
+                          <div>
+                            <input
+                              type="text"
+                              placeholder="Enter Customer No."
+                              style={{
+                                width: "250px",
+                                border: "none",
+                                outline: "none",
+                                fontSize: "14px",
+                              }}
+                              value={customer.phone}
+                              onChange={(e) =>
+                                setCustomer({
+                                  ...customer,
+                                  phone: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                        </div>
+                        {errors.phone && (
+                          <div
+                            style={{
+                              color: "red",
+                              fontSize: "12px",
+                              marginTop: "4px",
+                            }}
+                          >
+                            {errors.phone}
                           </div>
                         )}
                       </div>
                     </div>
+                    <div style={{ marginTop: "10px", width: "50%" }}>
+                      <label>
+                        Billing Address<span style={{ color: "red" }}>*</span>
+                      </label>
+                      <div>
+                        <textarea
+                          placeholder="Enter Billing Address"
+                          style={{
+                            width: "760px",
+                            height: "80px",
+                            borderRadius: "8px",
+                            border: "1px dashed #EAEAEA",
+                            padding: "8px",
+                            marginTop: "4px",
+                            resize: "none",
+                          }}
+                          value={customer.address}
+                          onChange={(e) =>
+                            setCustomer({
+                              ...customer,
+                              address: e.target.value,
+                            })
+                          }
+                        ></textarea>
+                      </div>
+                      {errors.address && (
+                        <div
+                          style={{
+                            color: "red",
+                            fontSize: "12px",
+                            marginTop: "4px",
+                          }}
+                        >
+                          {errors.address}
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-                    <div
-                      style={{
-                        width: 2,
-                        alignSelf: "stretch",
-                        transform: "rotate(-180deg)",
-                        background: "var(--Black-Disable, #A2A8B8)",
-                        flexShrink: 0,
-                      }}
-                    />
+                  <div
+                    style={{
+                      width: 2,
+                      alignSelf: "stretch",
+                      transform: "rotate(-180deg)",
+                      background: "var(--Black-Disable, #A2A8B8)",
+                      flexShrink: 0,
+                    }}
+                  />
 
-                    {/* rr */}
+                  {/* rr */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "end",
+                      gap: "10px",
+                      width: "40%",
+                    }}
+                  >
                     <div
                       style={{
                         display: "flex",
                         justifyContent: "end",
                         gap: "10px",
-                        width: "40%",
+                        flexDirection: "column",
                       }}
                     >
                       <div
                         style={{
-                          display: "flex",
-                          justifyContent: "end",
-                          gap: "10px",
-                          flexDirection: "column",
+                          height: 30,
+                          justifyContent: "flex-start",
+                          alignItems: "center",
+                          display: "inline-flex",
+                          gap: "15px",
+                          cursor:"pointer"
                         }}
                       >
                         <div
+                          ref={viewManageRef}
                           style={{
-                            height: 30,
-                            justifyContent: "flex-start",
+                            alignSelf: "stretch",
+                            minWidth: 200,
+                            paddingLeft: 12,
+                            paddingRight: 12,
+                            paddingTop: 4,
+                            paddingBottom: 4,
+                            background: "white",
+                            borderRadius: 8,
+                            outline: "1px var(--Black-Disable, #A2A8B8) solid",
+                            outlineOffset: "-1px",
+                            justifyContent: "space-between",
                             alignItems: "center",
-                            display: "inline-flex",
-                            gap: "15px",
+                            gap: 8,
+                            display: "flex",
+                            position: "relative",
+                          }}
+                          onClick={handleViewManage}
+                        >
+                          <LuCalendarMinus2 />
+                          <div
+                            style={{
+                              color: "var(--Black-Black, #0E101A)",
+                              fontSize: 14,
+                              fontFamily: "Inter",
+                              fontWeight: "400",
+                              lineHeight: 16.8,
+                              wordWrap: "break-word",
+                            }}
+                          >
+                            {format(quotationDate, "dd MMM yyyy")}
+                          </div>
+                          <FiChevronDown />
+                          {viewManageOptions && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: "35px",
+                                left: "0px",
+                                zIndex: 999999,
+                              }}
+                            >
+                              <div
+                                style={{
+                                  background: "white",
+                                  padding: 6,
+                                  borderRadius: 12,
+                                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                                  minWidth: 200,
+                                  height: "auto",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: 4,
+                                }}
+                              >
+                                {[
+                                  "Today",
+                                  "Yesterday",
+                                  "Last Week",
+                                  "Last 15 Days",
+                                  "Last Month",
+                                  "Custom",
+                                ].map((option) => (
+                                  <div
+                                    key={option}
+                                    style={{
+                                      display: "flex",
+                                      justifyContent: "flex-start",
+                                      alignItems: "center",
+                                      gap: 8,
+                                      padding: "5px 12px",
+                                      borderRadius: 8,
+                                      border: "none",
+                                      cursor: "pointer",
+                                      fontFamily: "Inter, sans-serif",
+                                      fontSize: 14,
+                                      fontWeight: 400,
+                                      color: "#6C748C",
+                                      textDecoration: "none",
+                                    }}
+                                    className="button-action"
+                                    onClick={() => handleDateSelect(option)}
+                                  >
+                                    <span style={{ color: "black" }}>
+                                      {option}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* DatePicker for Custom selection */}
+                          {isDatePickerOpen && (
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: "35px",
+                                left: "0px",
+                                zIndex: 1000000,
+                                background: "white",
+                                padding: "10px",
+                                borderRadius: "8px",
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <DatePicker
+                                selected={quotationDate}
+                                onChange={(date) => {
+                                  if (date) {
+                                    setQuotationDate(date);
+                                  }
+                                  setIsDatePickerOpen(false);
+                                  setViewManageOptions(false);
+                                }}
+                                inline
+                                calendarClassName="custom-calendar"
+                              />
+                              <div style={{ textAlign: "center", marginTop: "10px" }}>
+                                <button
+                                  onClick={() => {
+                                    setIsDatePickerOpen(false);
+                                    setViewManageOptions(false);
+                                  }}
+                                  style={{
+                                    padding: "5px 15px",
+                                    background: "#f3f4f6",
+                                    border: "1px solid #d1d5db",
+                                    borderRadius: "4px",
+                                    cursor: "pointer",
+                                    fontSize: "14px",
+                                  }}
+                                >
+                                  Close
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        {/* kkk */}
+                        <div
+                          style={{
+                            alignSelf: "stretch",
+                            minWidth: 156,
+                            paddingLeft: 12,
+                            paddingRight: 12,
+                            paddingTop: 4,
+                            paddingBottom: 4,
+                            background: "white",
+                            borderRadius: 8,
+                            outline: "1px var(--Black-Disable, #A2A8B8) solid",
+                            outlineOffset: "-1px",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            gap: 8,
+                            display: "flex",
                           }}
                         >
                           <div
                             style={{
-                              alignSelf: "stretch",
-                              minWidth: 200,
-                              paddingLeft: 12,
-                              paddingRight: 12,
-                              paddingTop: 4,
-                              paddingBottom: 4,
-                              background: "white",
-                              borderRadius: 8,
-                              outline: "1px var(--Black-Disable, #A2A8B8) solid",
-                              outlineOffset: "-1px",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              gap: 8,
-                              display: "flex",
-                              position: "relative",
-                            }}
-                            onClick={handleViewManage}
-                          >
-                            <LuCalendarMinus2 />
-                            <div
-                              style={{
-                                color: "var(--Black-Black, #0E101A)",
-                                fontSize: 14,
-                                fontFamily: "Inter",
-                                fontWeight: "400",
-                                lineHeight: 16.8,
-                                wordWrap: "break-word",
-                              }}
-                            >
-                              {format(quotationDate, "dd MMM yyyy")}
-                            </div>
-                            <FiChevronDown />
-                            {viewManageOptions && (
-                              <div
-                                style={{
-                                  position: "absolute",
-                                  top: "35px",
-                                  left: "0px",
-                                  zIndex: 999999,
-                                }}
-                              >
-                                <div
-                                  style={{
-                                    background: "white",
-                                    padding: 6,
-                                    borderRadius: 12,
-                                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                                    minWidth: 200,
-                                    height: "auto",
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: 4,
-                                  }}
-                                >
-                                  {[
-                                    "Today",
-                                    "Yesterday",
-                                    "Last Week",
-                                    "Last 15 Days",
-                                    "Last Month",
-                                    "Custom",
-                                  ].map((option) => (
-                                    <div
-                                      key={option}
-                                      style={{
-                                        display: "flex",
-                                        justifyContent: "flex-start",
-                                        alignItems: "center",
-                                        gap: 8,
-                                        padding: "5px 12px",
-                                        borderRadius: 8,
-                                        border: "none",
-                                        cursor: "pointer",
-                                        fontFamily: "Inter, sans-serif",
-                                        fontSize: 14,
-                                        fontWeight: 400,
-                                        color: "#6C748C",
-                                        textDecoration: "none",
-                                      }}
-                                      className="button-action"
-                                      onClick={() => handleDateSelect(option)}
-                                    >
-                                      <span style={{ color: "black" }}>
-                                        {option}
-                                      </span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* DatePicker for Custom selection */}
-                            {isDatePickerOpen && (
-                              <div
-                                style={{
-                                  position: "absolute",
-                                  top: "35px",
-                                  left: "0px",
-                                  zIndex: 1000000,
-                                  background: "white",
-                                  padding: "10px",
-                                  borderRadius: "8px",
-                                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                                }}
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <DatePicker
-                                  selected={quotationDate}
-                                  onChange={(date) => {
-                                    if (date) {
-                                      setQuotationDate(date);
-                                    }
-                                    setIsDatePickerOpen(false);
-                                    setViewManageOptions(false);
-                                  }}
-                                  inline
-                                  calendarClassName="custom-calendar"
-                                />
-                                <div style={{ textAlign: "center", marginTop: "10px" }}>
-                                  <button
-                                    onClick={() => {
-                                      setIsDatePickerOpen(false);
-                                      setViewManageOptions(false);
-                                    }}
-                                    style={{
-                                      padding: "5px 15px",
-                                      background: "#f3f4f6",
-                                      border: "1px solid #d1d5db",
-                                      borderRadius: "4px",
-                                      cursor: "pointer",
-                                      fontSize: "14px",
-                                    }}
-                                  >
-                                    Close
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                          {/* kkk */}
-                          <div
-                            style={{
-                              alignSelf: "stretch",
-                              minWidth: 156,
-                              paddingLeft: 12,
-                              paddingRight: 12,
-                              paddingTop: 4,
-                              paddingBottom: 4,
-                              background: "white",
-                              borderRadius: 8,
-                              outline: "1px var(--Black-Disable, #A2A8B8) solid",
-                              outlineOffset: "-1px",
-                              justifyContent: "space-between",
-                              alignItems: "center",
-                              gap: 8,
-                              display: "flex",
+                              color: "var(--Black-Black, #0E101A)",
+                              fontSize: 14,
+                              fontFamily: "Inter",
+                              fontWeight: "400",
+                              lineHeight: 16.8,
+                              wordWrap: "break-word",
                             }}
                           >
-                            <div
-                              style={{
-                                color: "var(--Black-Black, #0E101A)",
-                                fontSize: 14,
-                                fontFamily: "Inter",
-                                fontWeight: "400",
-                                lineHeight: 16.8,
-                                wordWrap: "break-word",
-                              }}
-                            >
-                              Quotation No.- {quotationNo}
-                            </div>
+                            Quotation No.- {quotationNo}
                           </div>
                         </div>
                       </div>
                     </div>
-                    {/* rr */}
                   </div>
+                  {/* rr */}
                 </div>
               </div>
+            </div>
 
-              {/* Add Products */}
+            {/* Add Products */}
+            <div
+              style={{
+                width: "1860px",
+                height: "100%",
+                flexDirection: "column",
+                justifyContent: "flex-start",
+                alignItems: "center",
+                gap: 16,
+                display: "inline-flex",
+              }}
+            >
               <div
                 style={{
-                  width: "1860px",
-                  height: "100%",
-                  flexDirection: "column",
-                  justifyContent: "flex-start",
+                  alignSelf: "stretch",
+                  justifyContent: "space-between",
                   alignItems: "center",
-                  gap: 16,
                   display: "inline-flex",
                 }}
               >
                 <div
                   style={{
-                    alignSelf: "stretch",
+                    color: "var(--Black-Black, #0E101A)",
+                    fontSize: 16,
+                    fontFamily: "Inter",
+                    fontWeight: "500",
+                    lineHeight: "19.20px",
+                    wordWrap: "break-word",
+                  }}
+                >
+                  Add Products
+                </div>
+                <div
+                  style={{
+                    height: 31.95,
+                    justifyContent: "flex-start",
+                    alignItems: "center",
+                    display: "flex",
+                  }}
+                >
+                  <div
+                    style={{
+                      alignSelf: "stretch",
+                      paddingLeft: 10,
+                      paddingRight: 10,
+                      paddingTop: 4.26,
+                      paddingBottom: 4.26,
+                      background: "white",
+                      borderRadius: 8.52,
+                      outline: "1.07px var(--Blue-Blue, #1F7FFF) solid",
+                      outlineOffset: "-1.07px",
+                      justifyContent: "flex-start",
+                      alignItems: "center",
+                      gap: 8.52,
+                      display: "flex",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => handleViewQuotation(true)}
+                  >
+                    <CiBarcode className="fs-4" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Products Table - Same as invoice */}
+              <div
+                style={{
+                  alignSelf: "stretch",
+                  flexDirection: "column",
+                  justifyContent: "flex-start",
+                  alignItems: "flex-start",
+                  display: "flex",
+                  cursor: "pointer",
+                }}
+              >
+                <div
+                  style={{
+                    width: "100%",
+                    paddingLeft: 8,
+                    paddingRight: 8,
+                    paddingTop: 4,
+                    paddingBottom: 4,
+                    background: "var(--Blue-Light-Blue, #E5F0FF)",
+                    borderTopLeftRadius: 8,
+                    borderTopRightRadius: 8,
                     justifyContent: "space-between",
                     alignItems: "center",
                     display: "inline-flex",
@@ -1720,19 +1780,7 @@ function CustomerCreateQuotation() {
                 >
                   <div
                     style={{
-                      color: "var(--Black-Black, #0E101A)",
-                      fontSize: 16,
-                      fontFamily: "Inter",
-                      fontWeight: "500",
-                      lineHeight: "19.20px",
-                      wordWrap: "break-word",
-                    }}
-                  >
-                    Add Products
-                  </div>
-                  <div
-                    style={{
-                      height: 31.95,
+                      flex: "1 1 0%",
                       justifyContent: "flex-start",
                       alignItems: "center",
                       display: "flex",
@@ -1740,327 +1788,274 @@ function CustomerCreateQuotation() {
                   >
                     <div
                       style={{
-                        alignSelf: "stretch",
-                        paddingLeft: 10,
-                        paddingRight: 10,
-                        paddingTop: 4.26,
-                        paddingBottom: 4.26,
-                        background: "white",
-                        borderRadius: 8.52,
-                        outline: "1.07px var(--Blue-Blue, #1F7FFF) solid",
-                        outlineOffset: "-1.07px",
+                        width: 80,
+                        height: 30,
+                        paddingLeft: 12,
+                        paddingRight: 12,
+                        paddingTop: 4,
+                        paddingBottom: 4,
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: 8,
+                        display: "flex",
+                      }}
+                    >
+                      <div
+                        style={{
+                          color: "#727681",
+                          fontSize: 14,
+                          fontFamily: "Inter",
+                          fontWeight: "500",
+                          lineHeight: "16.80px",
+                          wordWrap: "break-word",
+                        }}
+                      >
+                        Sl No.
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        flex: "1 1 auto",
+                        minWidth: 0,
+                        height: 30,
+                        paddingLeft: 12,
+                        paddingRight: 12,
+                        paddingTop: 4,
+                        paddingBottom: 4,
                         justifyContent: "flex-start",
                         alignItems: "center",
-                        gap: 8.52,
+                        gap: 8,
                         display: "flex",
-                        cursor: "pointer",
                       }}
-                      onClick={() => handleViewQuotation(true)}
                     >
-                      <CiBarcode className="fs-4" />
+                      <div
+                        style={{
+                          color: "#727681",
+                          fontSize: 14,
+                          fontFamily: "Inter",
+                          fontWeight: "500",
+                          lineHeight: "16.80px",
+                          wordWrap: "break-word",
+                        }}
+                      >
+                        Items
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                {/* Products Table - Same as invoice */}
-                <div
-                  style={{
-                    alignSelf: "stretch",
-                    flexDirection: "column",
-                    justifyContent: "flex-start",
-                    alignItems: "flex-start",
-                    display: "flex",
-                    cursor: "pointer",
-                  }}
-                >
                   <div
                     style={{
-                      width: "100%",
-                      paddingLeft: 8,
-                      paddingRight: 8,
-                      paddingTop: 4,
-                      paddingBottom: 4,
-                      background: "var(--Blue-Light-Blue, #E5F0FF)",
-                      borderTopLeftRadius: 8,
-                      borderTopRightRadius: 8,
-                      justifyContent: "space-between",
+                      justifyContent: "flex-end",
                       alignItems: "center",
-                      display: "inline-flex",
+                      gap: 12,
+                      display: "flex",
                     }}
                   >
                     <div
                       style={{
-                        flex: "1 1 0%",
-                        justifyContent: "flex-start",
+                        width: 120,
+                        height: 30,
+                        paddingLeft: 12,
+                        paddingRight: 12,
+                        paddingTop: 4,
+                        paddingBottom: 4,
+                        justifyContent: "center",
                         alignItems: "center",
+                        gap: 8,
                         display: "flex",
                       }}
                     >
                       <div
                         style={{
-                          width: 80,
-                          height: 30,
-                          paddingLeft: 12,
-                          paddingRight: 12,
-                          paddingTop: 4,
-                          paddingBottom: 4,
-                          justifyContent: "center",
-                          alignItems: "center",
-                          gap: 8,
-                          display: "flex",
+                          color: "#727681",
+                          fontSize: 14,
+                          fontFamily: "Inter",
+                          fontWeight: "500",
+                          lineHeight: "16.80px",
+                          wordWrap: "break-word",
                         }}
                       >
-                        <div
-                          style={{
-                            color: "#727681",
-                            fontSize: 14,
-                            fontFamily: "Inter",
-                            fontWeight: "500",
-                            lineHeight: "16.80px",
-                            wordWrap: "break-word",
-                          }}
-                        >
-                          Sl No.
-                        </div>
-                      </div>
-                      <div
-                        style={{
-                          flex: "1 1 auto",
-                          minWidth: 0,
-                          height: 30,
-                          paddingLeft: 12,
-                          paddingRight: 12,
-                          paddingTop: 4,
-                          paddingBottom: 4,
-                          justifyContent: "flex-start",
-                          alignItems: "center",
-                          gap: 8,
-                          display: "flex",
-                        }}
-                      >
-                        <div
-                          style={{
-                            color: "#727681",
-                            fontSize: 14,
-                            fontFamily: "Inter",
-                            fontWeight: "500",
-                            lineHeight: "16.80px",
-                            wordWrap: "break-word",
-                          }}
-                        >
-                          Items
-                        </div>
+                        Qty
                       </div>
                     </div>
                     <div
                       style={{
-                        justifyContent: "flex-end",
+                        width: 1,
+                        height: 30,
+                        background: "var(--Black-Disable, #A2A8B8)",
+                      }}
+                    />
+                    <div
+                      style={{
+                        width: 120,
+                        height: 30,
+                        paddingLeft: 12,
+                        paddingRight: 12,
+                        paddingTop: 4,
+                        paddingBottom: 4,
+                        justifyContent: "center",
                         alignItems: "center",
-                        gap: 12,
+                        gap: 8,
                         display: "flex",
                       }}
                     >
                       <div
                         style={{
-                          width: 120,
-                          height: 30,
-                          paddingLeft: 12,
-                          paddingRight: 12,
-                          paddingTop: 4,
-                          paddingBottom: 4,
-                          justifyContent: "center",
-                          alignItems: "center",
-                          gap: 8,
-                          display: "flex",
+                          color: "#727681",
+                          fontSize: 14,
+                          fontFamily: "Inter",
+                          fontWeight: "500",
+                          lineHeight: "16.80px",
+                          wordWrap: "break-word",
                         }}
                       >
-                        <div
-                          style={{
-                            color: "#727681",
-                            fontSize: 14,
-                            fontFamily: "Inter",
-                            fontWeight: "500",
-                            lineHeight: "16.80px",
-                            wordWrap: "break-word",
-                          }}
-                        >
-                          Qty
-                        </div>
+                        Unit Price
                       </div>
+                    </div>
+                    <div
+                      style={{
+                        width: 1,
+                        height: 30,
+                        background: "var(--Black-Disable, #A2A8B8)",
+                      }}
+                    />
+                    <div
+                      style={{
+                        width: 120,
+                        height: 30,
+                        paddingLeft: 12,
+                        paddingRight: 12,
+                        paddingTop: 4,
+                        paddingBottom: 4,
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: 8,
+                        display: "flex",
+                      }}
+                    >
                       <div
                         style={{
-                          width: 1,
-                          height: 30,
-                          background: "var(--Black-Disable, #A2A8B8)",
-                        }}
-                      />
-                      <div
-                        style={{
-                          width: 120,
-                          height: 30,
-                          paddingLeft: 12,
-                          paddingRight: 12,
-                          paddingTop: 4,
-                          paddingBottom: 4,
-                          justifyContent: "center",
-                          alignItems: "center",
-                          gap: 8,
-                          display: "flex",
+                          color: "#727681",
+                          fontSize: 14,
+                          fontFamily: "Inter",
+                          fontWeight: "500",
+                          lineHeight: "16.80px",
+                          wordWrap: "break-word",
                         }}
                       >
-                        <div
-                          style={{
-                            color: "#727681",
-                            fontSize: 14,
-                            fontFamily: "Inter",
-                            fontWeight: "500",
-                            lineHeight: "16.80px",
-                            wordWrap: "break-word",
-                          }}
-                        >
-                          Unit Price
-                        </div>
+                        Tax
                       </div>
+                    </div>
+                    <div
+                      style={{
+                        width: 1,
+                        height: 30,
+                        background: "var(--Black-Disable, #A2A8B8)",
+                      }}
+                    />
+                    <div
+                      style={{
+                        width: 120,
+                        height: 30,
+                        paddingLeft: 12,
+                        paddingRight: 12,
+                        paddingTop: 4,
+                        paddingBottom: 4,
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: 8,
+                        display: "flex",
+                      }}
+                    >
                       <div
                         style={{
-                          width: 1,
-                          height: 30,
-                          background: "var(--Black-Disable, #A2A8B8)",
-                        }}
-                      />
-                      <div
-                        style={{
-                          width: 120,
-                          height: 30,
-                          paddingLeft: 12,
-                          paddingRight: 12,
-                          paddingTop: 4,
-                          paddingBottom: 4,
-                          justifyContent: "center",
-                          alignItems: "center",
-                          gap: 8,
-                          display: "flex",
+                          color: "#727681",
+                          fontSize: 14,
+                          fontFamily: "Inter",
+                          fontWeight: "500",
+                          lineHeight: "16.80px",
+                          wordWrap: "break-word",
                         }}
                       >
-                        <div
-                          style={{
-                            color: "#727681",
-                            fontSize: 14,
-                            fontFamily: "Inter",
-                            fontWeight: "500",
-                            lineHeight: "16.80px",
-                            wordWrap: "break-word",
-                          }}
-                        >
-                          Tax
-                        </div>
+                        Tax Amount
                       </div>
+                    </div>
+                    <div
+                      style={{
+                        width: 1,
+                        height: 30,
+                        background: "var(--Black-Disable, #A2A8B8)",
+                      }}
+                    />
+                    <div
+                      style={{
+                        width: 200,
+                        height: 30,
+                        paddingLeft: 12,
+                        paddingRight: 12,
+                        paddingTop: 4,
+                        paddingBottom: 4,
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: 8,
+                        display: "flex",
+                      }}
+                    >
                       <div
                         style={{
-                          width: 1,
-                          height: 30,
-                          background: "var(--Black-Disable, #A2A8B8)",
-                        }}
-                      />
-                      <div
-                        style={{
-                          width: 120,
-                          height: 30,
-                          paddingLeft: 12,
-                          paddingRight: 12,
-                          paddingTop: 4,
-                          paddingBottom: 4,
-                          justifyContent: "center",
-                          alignItems: "center",
-                          gap: 8,
-                          display: "flex",
+                          color: "#727681",
+                          fontSize: 14,
+                          fontFamily: "Inter",
+                          fontWeight: "500",
+                          lineHeight: "16.80px",
+                          wordWrap: "break-word",
                         }}
                       >
-                        <div
-                          style={{
-                            color: "#727681",
-                            fontSize: 14,
-                            fontFamily: "Inter",
-                            fontWeight: "500",
-                            lineHeight: "16.80px",
-                            wordWrap: "break-word",
-                          }}
-                        >
-                          Tax Amount
-                        </div>
+                        Discount
                       </div>
+                    </div>
+                    <div
+                      style={{
+                        width: 1,
+                        height: 30,
+                        background: "var(--Black-Disable, #A2A8B8)",
+                      }}
+                    />
+                    <div
+                      style={{
+                        width: 120,
+                        height: 30,
+                        paddingLeft: 12,
+                        paddingRight: 12,
+                        paddingTop: 4,
+                        paddingBottom: 4,
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: 8,
+                        display: "flex",
+                      }}
+                    >
                       <div
                         style={{
-                          width: 1,
-                          height: 30,
-                          background: "var(--Black-Disable, #A2A8B8)",
-                        }}
-                      />
-                      <div
-                        style={{
-                          width: 200,
-                          height: 30,
-                          paddingLeft: 12,
-                          paddingRight: 12,
-                          paddingTop: 4,
-                          paddingBottom: 4,
-                          justifyContent: "center",
-                          alignItems: "center",
-                          gap: 8,
-                          display: "flex",
-                        }}
-                      >
-                        <div
-                          style={{
-                            color: "#727681",
-                            fontSize: 14,
-                            fontFamily: "Inter",
-                            fontWeight: "500",
-                            lineHeight: "16.80px",
-                            wordWrap: "break-word",
-                          }}
-                        >
-                          Discount
-                        </div>
-                      </div>
-                      <div
-                        style={{
-                          width: 1,
-                          height: 30,
-                          background: "var(--Black-Disable, #A2A8B8)",
-                        }}
-                      />
-                      <div
-                        style={{
-                          width: 120,
-                          height: 30,
-                          paddingLeft: 12,
-                          paddingRight: 12,
-                          paddingTop: 4,
-                          paddingBottom: 4,
-                          justifyContent: "center",
-                          alignItems: "center",
-                          gap: 8,
-                          display: "flex",
+                          color: "#727681",
+                          fontSize: 14,
+                          fontFamily: "Inter",
+                          fontWeight: "500",
+                          lineHeight: "16.80px",
+                          wordWrap: "break-word",
                         }}
                       >
-                        <div
-                          style={{
-                            color: "#727681",
-                            fontSize: 14,
-                            fontFamily: "Inter",
-                            fontWeight: "500",
-                            lineHeight: "16.80px",
-                            wordWrap: "break-word",
-                          }}
-                        >
-                          Amount
-                        </div>
+                        Amount
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  {/* Products List - Same as invoice */}
+                {/* Products List - Same as invoice */}
+                {(!products || products.length === 0) ? (
+                  <div style={{ width: "100%", padding: "16px", textAlign: "center", color: "#6b7280", fontSize: "14px" }}>
+                    No Product found
+                  </div>
+                ) : (
                   <div
                     style={{
                       alignSelf: "stretch",
@@ -2779,326 +2774,179 @@ function CustomerCreateQuotation() {
                       </span>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
+            </div>
 
-              {/* Payment Details */}
+            {/* Payment Details */}
+            <div
+              style={{
+                background: "#fff",
+                padding: "2px",
+                width: "1860px",
+              }}
+            >
               <div
                 style={{
-                  background: "#fff",
-                  padding: "2px",
-                  width: "1860px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: "32px",
+                  width: "100%",
                 }}
               >
+                {/* LEFT SIDE - Same as invoice */}
                 <div
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: "32px",
-                    width: "100%",
+                    width: "50%",
+                    paddingRight: "32px",
+                    borderRight: "1px solid #eee",
                   }}
                 >
-                  {/* LEFT SIDE - Same as invoice */}
                   <div
                     style={{
-                      width: "50%",
-                      paddingRight: "32px",
-                      borderRight: "1px solid #eee",
+                      fontSize: "16px",
+                      fontWeight: "600",
+                      marginBottom: "24px",
                     }}
                   >
+                    Payment Details
+                  </div>
+
+                  {/* Additional Discount */}
+                  <div style={{ marginBottom: "24px", width: "50%" }}>
                     <div
                       style={{
-                        fontSize: "16px",
-                        fontWeight: "600",
-                        marginBottom: "24px",
+                        fontSize: "12px",
+                        color: "#6b7280",
+                        marginBottom: "8px",
                       }}
                     >
-                      Payment Details
+                      Additional Discount
                     </div>
 
-                    {/* Additional Discount */}
-                    <div style={{ marginBottom: "24px", width: "50%" }}>
-                      <div
-                        style={{
-                          fontSize: "12px",
-                          color: "#6b7280",
-                          marginBottom: "8px",
-                        }}
-                      >
-                        Additional Discount
-                      </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "4px",
+                        width: "195px",
+                      }}
+                    >
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <div
+                          style={{
+                            height: "40px",
+                            paddingLeft: "8px",
+                            background: "var(--White, white)",
+                            borderRadius: "8px",
+                            border: "1px var(--Stroke, #EAEAEA) solid",
+                            justifyContent: "space-between",
+                            display: "flex",
+                            position: "relative",
+                            width: "100%",
+                          }}
+                        >
+                          <input
+                            type="number"
+                            placeholder="00"
+                            value={
+                              additionalDiscountType === "Percentage"
+                                ? (additionalDiscountPct || "")
+                                : additionalDiscountType === "Fixed"
+                                  ? (additionalDiscountAmt || "")
+                                  : ""
+                            }
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              const numValue = parseFloat(value);
 
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "4px",
-                          width: "195px",
-                        }}
-                      >
-                        <div style={{ display: "flex", gap: "8px" }}>
+                              if (additionalDiscountType === "Percentage") {
+                                setAdditionalDiscountPct(value === "" ? "" : numValue);
+                                if (value !== "" && !isNaN(numValue) && subtotal > 0) {
+                                  // Calculate and update fixed amount
+                                  const fixedValue = (subtotal * numValue) / 100;
+                                  setAdditionalDiscountAmt(fixedValue);
+                                } else {
+                                  setAdditionalDiscountAmt("");
+                                }
+                              } else if (additionalDiscountType === "Fixed") {
+                                setAdditionalDiscountAmt(value === "" ? "" : numValue);
+                                if (value !== "" && !isNaN(numValue) && subtotal > 0) {
+                                  // Calculate and update percentage
+                                  const pctValue = (numValue / subtotal) * 100;
+                                  setAdditionalDiscountPct(pctValue);
+                                } else {
+                                  setAdditionalDiscountPct("");
+                                }
+                              }
+                            }}
+                            style={{
+                              width: "100%",
+                              border: "none",
+                              background: "transparent",
+                              color: "var(--Black-Black, #0E101A)",
+                              fontSize: "14px",
+                              fontFamily: "Inter",
+                              fontWeight: "400",
+                              overflow: "hidden",
+                              outline: "none",
+                            }}
+                          />
                           <div
                             style={{
-                              height: "40px",
-                              paddingLeft: "8px",
-                              background: "var(--White, white)",
-                              borderRadius: "8px",
-                              border: "1px var(--Stroke, #EAEAEA) solid",
-                              justifyContent: "space-between",
+                              paddingRight: "4px",
+                              background: "var(--Spinning-Frame, #E9F0F4)",
+                              borderTopRightRadius: "8px",
+                              borderBottomRightRadius: "8px",
+                              border: "1px var(--Stroke, #C2C9D1) solid",
+                              justifyContent: "center",
+                              alignItems: "center",
                               display: "flex",
-                              position: "relative",
-                              width: "100%",
+                              padding: "6px",
+                              minWidth: "60px",
                             }}
                           >
-                            <input
-                              type="number"
-                              placeholder="00"
-                              value={
-                                additionalDiscountType === "Percentage"
-                                  ? (additionalDiscountPct || "")
-                                  : additionalDiscountType === "Fixed"
-                                    ? (additionalDiscountAmt || "")
-                                    : ""
-                              }
+                            <select
+                              value={additionalDiscountType}
                               onChange={(e) => {
-                                const value = e.target.value;
-                                const numValue = parseFloat(value);
-
-                                if (additionalDiscountType === "Percentage") {
-                                  setAdditionalDiscountPct(value === "" ? "" : numValue);
-                                  if (value !== "" && !isNaN(numValue) && subtotal > 0) {
-                                    // Calculate and update fixed amount
-                                    const fixedValue = (subtotal * numValue) / 100;
-                                    setAdditionalDiscountAmt(fixedValue);
-                                  } else {
-                                    setAdditionalDiscountAmt("");
-                                  }
-                                } else if (additionalDiscountType === "Fixed") {
-                                  setAdditionalDiscountAmt(value === "" ? "" : numValue);
-                                  if (value !== "" && !isNaN(numValue) && subtotal > 0) {
-                                    // Calculate and update percentage
-                                    const pctValue = (numValue / subtotal) * 100;
-                                    setAdditionalDiscountPct(pctValue);
-                                  } else {
-                                    setAdditionalDiscountPct("");
-                                  }
+                                const type = e.target.value;
+                                setAdditionalDiscountType(type);
+                                // Clear both values when switching type
+                                if (type === "") {
+                                  setAdditionalDiscountPct("");
+                                  setAdditionalDiscountAmt("");
                                 }
                               }}
                               style={{
-                                width: "100%",
+                                color: "var(--Black-Secondary, #6C748C)",
+                                fontSize: "14px",
+                                fontFamily: "Poppins",
+                                fontWeight: "400",
                                 border: "none",
                                 background: "transparent",
-                                color: "var(--Black-Black, #0E101A)",
-                                fontSize: "14px",
-                                fontFamily: "Inter",
-                                fontWeight: "400",
-                                overflow: "hidden",
+                                cursor: "pointer",
                                 outline: "none",
                               }}
-                            />
-                            <div
-                              style={{
-                                paddingRight: "4px",
-                                background: "var(--Spinning-Frame, #E9F0F4)",
-                                borderTopRightRadius: "8px",
-                                borderBottomRightRadius: "8px",
-                                border: "1px var(--Stroke, #C2C9D1) solid",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                display: "flex",
-                                padding: "6px",
-                                minWidth: "60px",
-                              }}
                             >
-                              <select
-                                value={additionalDiscountType}
-                                onChange={(e) => {
-                                  const type = e.target.value;
-                                  setAdditionalDiscountType(type);
-                                  // Clear both values when switching type
-                                  if (type === "") {
-                                    setAdditionalDiscountPct("");
-                                    setAdditionalDiscountAmt("");
-                                  }
-                                }}
-                                style={{
-                                  color: "var(--Black-Secondary, #6C748C)",
-                                  fontSize: "14px",
-                                  fontFamily: "Poppins",
-                                  fontWeight: "400",
-                                  border: "none",
-                                  background: "transparent",
-                                  cursor: "pointer",
-                                  outline: "none",
-                                }}
-                              >
-                                <option value="">₹/%</option>
-                                <option value="Fixed">₹</option>
-                                <option value="Percentage">%</option>
-                              </select>
-                            </div>
+                              <option value="">₹/%</option>
+                              <option value="Fixed">₹</option>
+                              <option value="Percentage">%</option>
+                            </select>
                           </div>
                         </div>
                       </div>
                     </div>
+                  </div>
 
-                    {/* Additional Charges */}
-                    <div
-                      style={{
-                        marginBottom: "24px",
-                        display: "flex",
-                        width: "100%",
-                        gap: "10px",
-                      }}
-                    >
-                      <div>
-                        <div
-                          style={{
-                            fontSize: "12px",
-                            color: "#6b7280",
-                            marginBottom: "8px",
-                          }}
-                        >
-                          Additional Charges
-                        </div>
-
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            border: "1px solid #e5e7eb",
-                            borderRadius: "10px",
-                            paddingRight: "6px",
-                            position: "relative",
-                          }}
-                          ref={chargeRef}
-                        >
-                          <div
-                            style={{
-                              padding: "10px 12px",
-                              fontSize: "14px",
-                            }}
-                          >
-                            ₹
-                          </div>
-
-                          <input
-                            placeholder="00"
-                            className=""
-                            style={{
-                              flex: 1,
-                              border: "none",
-                              padding: "10px 12px",
-                              outline: "none",
-                              fontSize: "14px",
-                              width: "400px",
-                            }}
-                            value={chargeAmount}
-                            onChange={(e) => setChargeAmount(e.target.value)}
-                          />
-
-                          <div
-                            style={{
-                              background: "#2563eb",
-                              color: "#fff",
-                              padding: "6px 10px",
-                              borderRadius: "20px",
-                              fontSize: "12px",
-                              border: "none",
-                              marginRight: "6px",
-                              cursor: "pointer",
-                            }}
-                            onClick={handleViewChargeOptions}
-                          >
-                            <span>
-                              {selectedChargeType ? selectedChargeType.replace("charge", "") : "Charges"}
-                            </span> <FiChevronDown />
-                          </div>
-                          {viewChargeOptions && (
-                            <div
-                              style={{
-                                position: "absolute",
-                                top: "45px",
-                                left: "0px",
-                                zIndex: 999999,
-                              }}
-                            >
-                              <div
-                                style={{
-                                  background: "white",
-                                  padding: 6,
-                                  borderRadius: 12,
-                                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                                  minWidth: 300,
-                                  height: "auto",
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  gap: 4,
-                                }}
-                              >
-                                {[
-                                  "Shipping Charge",
-                                  "Handling Charge",
-                                  "Packing Charge",
-                                  "Service Charge",
-                                  "Other Charge",
-                                ].map((charge) => (
-                                  <div
-                                    key={charge}
-                                    style={{
-                                      display: "flex",
-                                      justifyContent: "flex-start",
-                                      alignItems: "center",
-                                      gap: 8,
-                                      padding: "5px 12px",
-                                      borderRadius: 8,
-                                      border: "none",
-                                      cursor: "pointer",
-                                      fontFamily: "Inter, sans-serif",
-                                      fontSize: 16,
-                                      fontWeight: 400,
-                                      color: "#6C748C",
-                                      textDecoration: "none",
-                                    }}
-                                    className="button-action"
-                                    onClick={() => handleChargeSelect(charge)}
-                                  >
-                                    <span style={{ color: "black" }}>
-                                      {charge}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
-                        }}
-                      >
-                        <button
-                          onClick={handleChargeDone}
-                          style={{
-                            padding: "6px 12px",
-                            fontSize: "12px",
-                            borderRadius: "20px",
-                            background: "#fff",
-                            border: "1px solid #d1d5db",
-                            color: "#2563eb",
-                            marginTop: "25px",
-                            cursor: "pointer",
-                          }}
-                        >
-                          Done
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Upload Images */}
+                  {/* Additional Charges */}
+                  <div
+                    style={{
+                      marginBottom: "24px",
+                      display: "flex",
+                      width: "100%",
+                      gap: "10px",
+                    }}
+                  >
                     <div>
                       <div
                         style={{
@@ -3107,615 +2955,762 @@ function CustomerCreateQuotation() {
                           marginBottom: "8px",
                         }}
                       >
-                        Upload Images
+                        Additional Charges
                       </div>
 
                       <div
                         style={{
-                          width: "80px",
-                          height: "90px",
-                          border: "1px solid #d1d5db",
-                          borderRadius: "8px",
                           display: "flex",
-                          justifyContent: "center",
                           alignItems: "center",
-                          cursor: "pointer",
-                          flexDirection: "column",
-                          fontSize: "12px",
-                          color: "#9ca3af",
+                          border: "1px solid #e5e7eb",
+                          borderRadius: "10px",
+                          paddingRight: "6px",
                           position: "relative",
                         }}
-                        onClick={() =>
-                          document.getElementById("file-upload").click()
-                        }
+                        ref={chargeRef}
                       >
-                        <input
-                          id="file-upload"
-                          type="file"
-                          multiple
-                          accept="image/jpeg,image/png,image/jpg"
-                          onChange={handleFileUpload}
+                        <div
                           style={{
-                            position: "absolute",
-                            opacity: 0,
-                            width: "100%",
-                            height: "100%",
+                            padding: "10px 12px",
+                            fontSize: "14px",
+                          }}
+                        >
+                          ₹
+                        </div>
+
+                        <input
+                          placeholder="00"
+                          className=""
+                          style={{
+                            flex: 1,
+                            border: "none",
+                            padding: "10px 12px",
+                            outline: "none",
+                            fontSize: "14px",
+                            width: "400px",
+                          }}
+                          value={chargeAmount}
+                          onChange={(e) => setChargeAmount(e.target.value)}
+                        />
+
+                        <div
+                          style={{
+                            background: "#2563eb",
+                            color: "#fff",
+                            padding: "6px 10px",
+                            borderRadius: "20px",
+                            fontSize: "12px",
+                            border: "none",
+                            marginRight: "6px",
                             cursor: "pointer",
                           }}
-                        />
-                        <div
-                          style={{
-                            width: "26px",
-                            height: "26px",
-                            borderRadius: "999px",
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            fontSize: "18px",
-                          }}
+                          onClick={handleViewChargeOptions}
                         >
-                          <RiImageAddFill />
+                          <span>
+                            {selectedChargeType ? selectedChargeType.replace("charge", "") : "Charges"}
+                          </span> <FiChevronDown />
                         </div>
-                      </div>
-                      {uploadedImages.length > 0 && (
-                        <div
-                          style={{
-                            marginTop: "10px",
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: "10px",
-                          }}
-                        >
-                          {uploadedImages.map((image, index) => (
-                            <div key={index} style={{ position: "relative" }}>
-                              <img
-                                src={image.preview}
-                                alt={`upload-${index}`}
-                                style={{
-                                  width: "60px",
-                                  height: "60px",
-                                  objectFit: "cover",
-                                  borderRadius: "4px",
-                                }}
-                              />
-                              <button
-                                onClick={() =>
-                                  setUploadedImages((prev) =>
-                                    prev.filter((_, i) => i !== index)
-                                  )
-                                }
-                                style={{
-                                  position: "absolute",
-                                  top: "-5px",
-                                  right: "-5px",
-                                  background: "red",
-                                  color: "white",
-                                  border: "none",
-                                  borderRadius: "50%",
-                                  width: "20px",
-                                  height: "20px",
-                                  cursor: "pointer",
-                                }}
-                              >
-                                ×
-                              </button>
+                        {viewChargeOptions && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              top: "45px",
+                              left: "0px",
+                              zIndex: 999999,
+                            }}
+                          >
+                            <div
+                              style={{
+                                background: "white",
+                                padding: 6,
+                                borderRadius: 12,
+                                boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                                minWidth: 300,
+                                height: "auto",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 4,
+                              }}
+                            >
+                              {[
+                                "Shipping Charge",
+                                "Handling Charge",
+                                "Packing Charge",
+                                "Service Charge",
+                                "Other Charge",
+                              ].map((charge) => (
+                                <div
+                                  key={charge}
+                                  style={{
+                                    display: "flex",
+                                    justifyContent: "flex-start",
+                                    alignItems: "center",
+                                    gap: 8,
+                                    padding: "5px 12px",
+                                    borderRadius: 8,
+                                    border: "none",
+                                    cursor: "pointer",
+                                    fontFamily: "Inter, sans-serif",
+                                    fontSize: 16,
+                                    fontWeight: 400,
+                                    color: "#6C748C",
+                                    textDecoration: "none",
+                                  }}
+                                  className="button-action"
+                                  onClick={() => handleChargeSelect(charge)}
+                                >
+                                  <span style={{ color: "black" }}>
+                                    {charge}
+                                  </span>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                      )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <button
+                        onClick={handleChargeDone}
+                        style={{
+                          padding: "6px 12px",
+                          fontSize: "12px",
+                          borderRadius: "20px",
+                          background: "#fff",
+                          border: "1px solid #d1d5db",
+                          color: "#2563eb",
+                          marginTop: "25px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Done
+                      </button>
                     </div>
                   </div>
 
-                  {/* RIGHT SIDE */}
-                  {/* RIGHT SIDE */}
-                  <div style={{ width: "50%" }}>
-                    {/* Summary */}
+                  {/* Upload Images */}
+                  <div>
                     <div
                       style={{
-                        display: "flex",
-                        justifyContent: "space-between",
+                        fontSize: "12px",
+                        color: "#6b7280",
                         marginBottom: "8px",
-                        fontSize: "14px",
                       }}
                     >
-                      <span style={{ color: "#6b7280" }}>Subtotal :</span>
-                      <span>₹{subtotal.toFixed(2)}</span>
+                      Upload Images
                     </div>
 
                     <div
                       style={{
+                        width: "80px",
+                        height: "90px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "8px",
                         display: "flex",
-                        justifyContent: "space-between",
-                        marginBottom: "8px",
-                        fontSize: "14px",
-                      }}
-                    >
-                      <span style={{ color: "#6b7280" }}>Taxes :</span>
-                      <span>₹{totalTax.toFixed(2)}</span>
-                    </div>
-
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        marginBottom: "8px",
-                        fontSize: "13px",
-                      }}
-                    >
-                      <span style={{ color: "#6b7280" }}>
-                        Additional Discount :
-                      </span>
-                      <span style={{ color: "#9ca3af" }}>
-                        ₹{additionalDiscountValue.toFixed(2)}
-                      </span>
-                    </div>
-
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        marginBottom: "16px",
-                        fontSize: "13px",
-                      }}
-                    >
-                      <span style={{ color: "#6b7280" }}>
-                        Additional Charges
-                        {Object.entries(additionalChargesDetails).some(([_, value]) => value > 0) && (
-                          <span style={{ color: "#3b82f6", marginLeft: "4px", fontSize: "11px" }}>
-                            (
-                            {Object.entries(additionalChargesDetails)
-                              .filter(([_, value]) => value > 0)
-                              .map(([key, _]) => key.charAt(0).toUpperCase() + key.slice(1))
-                              .join(", ")}
-                            )
-                          </span>
-                        )}
-                        :
-                      </span>
-                      <span style={{ color: "#9ca3af" }}>
-                        ₹{additionalChargesTotal.toFixed(2)}
-                      </span>
-                    </div>
-
-                    <div
-                      style={{
-                        height: "1px",
-                        background: "#eee",
-                        margin: "12px 0",
-                      }}
-                    />
-
-                    {/* Shopping Points */}
-                    <div
-                      style={{
-                        display: "flex",
-                        width: "100%",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <div>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "8px",
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            style={{ accentColor: "#ffffffff" }}
-                            checked={usePoints}
-                            onChange={(e) => {
-                              setUsePoints(e.target.checked);
-                              if (!e.target.checked) {
-                                setShoppingPointsUsed("");
-                              }
-                            }}
-                          />
-                          <span>Shopping Points</span>
-                        </div>
-
-                        <div style={{ fontSize: "12px", margin: "8px 0" }}>
-                          Available - 🪙 {customerPoints} points
-                        </div>
-                      </div>
-
-                      <div>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "end",
-                            marginBottom: "12px",
-                            gap: "16px",
-                          }}
-                        >
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: "6px",
-                              flexDirection: "column",
-                            }}
-                          >
-                            <span style={{ fontSize: "14px", color: "#6b7280" }}>
-                              Point Used
-                            </span>
-                            <div
-                              style={{
-                                display: "flex",
-                                border: "1px solid #e5e7eb",
-                                justifyContent: "space-between",
-                                width: "98px",
-                                height: "40px",
-                              }}
-                            >
-                              <input
-                                placeholder="0"
-                                className=""
-                                style={{
-                                  width: "30px",
-                                  border: "none",
-                                  background: "transparent",
-                                  textAlign: "center",
-                                  fontSize: "14px",
-                                  outline: "none",
-                                  backgroundColor: "white",
-                                }}
-                                value={shoppingPointsUsed}
-                                onChange={(e) => {
-                                  const value = e.target.value;
-                                  if (/^\d*$/.test(value)) {
-                                    const points = parseInt(value) || 0;
-                                    if (points > customerPoints) {
-                                      toast.error(`Cannot use more than ${customerPoints} points`);
-                                      setShoppingPointsUsed(customerPoints.toString());
-                                    } else {
-                                      setShoppingPointsUsed(value);
-                                    }
-                                  }
-                                }}
-                                disabled={!usePoints}
-                              />
-                              <div
-                                style={{
-                                  border: "1px solid #e5e7eb",
-                                  borderRadius: "1px",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  backgroundColor: "#e5e7eb",
-                                  justifyContent: "center",
-                                  width: "25px",
-                                }}
-                              >
-                                <span
-                                  style={{
-                                    fontSize: "14px",
-                                    background: "#e5e7eb",
-                                    padding: "0px 1px",
-                                  }}
-                                >
-                                  🪙
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div
-                            style={{
-                              display: "flex",
-                              justifyContent: "center",
-                              alignItems: "center",
-                            }}
-                          >
-                            <span style={{ marginTop: "25px" }}>=</span>
-                          </div>
-
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: "6px",
-                              flexDirection: "column",
-                            }}
-                          >
-                            <span style={{ fontSize: "14px", color: "#6b7280" }}>
-                              Amount
-                            </span>
-
-                            <div
-                              style={{
-                                display: "flex",
-                                border: "1px solid #e5e7eb",
-                                justifyContent: "space-between",
-                                width: "98px",
-                                height: "40px",
-                              }}
-                            >
-                              <input
-                                placeholder="0"
-                                className=""
-                                style={{
-                                  width: "30px",
-                                  border: "none",
-                                  background: "transparent",
-                                  textAlign: "center",
-                                  fontSize: "14px",
-                                  outline: "none",
-                                  backgroundColor: "white",
-                                }}
-                                value={pointsRedeemedAmount.toFixed(2)}
-                                readOnly
-                              />
-                              <div
-                                style={{
-                                  border: "1px solid #e5e7eb",
-                                  borderRadius: "1px",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  backgroundColor: "#e5e7eb",
-                                  justifyContent: "center",
-                                  width: "25px",
-                                }}
-                              >
-                                <span
-                                  style={{
-                                    fontSize: "14px",
-                                    background: "#e5e7eb",
-                                    padding: "0px 5px",
-                                  }}
-                                >
-                                  ₹
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div
-                      style={{
-                        height: "1px",
-                        background: "#eee",
-                        margin: "12px 0",
-                      }}
-                    />
-
-                    {/* Auto round-off */}
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "8px",
+                        justifyContent: "center",
                         alignItems: "center",
+                        cursor: "pointer",
+                        flexDirection: "column",
+                        fontSize: "12px",
+                        color: "#9ca3af",
+                        position: "relative",
                       }}
+                      onClick={() =>
+                        document.getElementById("file-upload").click()
+                      }
                     >
                       <input
-                        type="checkbox"
-                        style={{ accentColor: "#ffffffff" }}
-                        checked={autoRoundOff}
-                        onChange={(e) => setAutoRoundOff(e.target.checked)}
-                      />
-                      <span>Auto Round-off</span>
-                      <span style={{ marginLeft: "auto" }}>
-                        {roundOffAdded >= 0 ? "+" : "-"} ₹
-                        {Math.abs(roundOffAdded).toFixed(2)}
-                      </span>
-                    </div>
-
-                    <div
-                      style={{
-                        height: "1px",
-                        background: "#eee",
-                        margin: "12px 0",
-                      }}
-                    />
-
-                    {/* Total Amount */}
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontWeight: "700",
-                        fontSize: "20px",
-                        marginTop: "8px",
-                        marginBottom: "16px",
-                      }}
-                    >
-                      <span>Total Amount :-</span>
-                      <span>₹{grandTotal.toFixed(2)}</span>
-                    </div>
-
-                    {/* Fully Received */}
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "8px",
-                        fontSize: "14px",
-                        alignItems: "center",
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        style={{ accentColor: "#ffffffff" }}
-                        checked={fullyReceived}
-                        onChange={(e) => {
-                          const checked = e.target.checked;
-                          setFullyReceived(checked);
-                          if (checked) {
-                            setAmountReceived(grandTotal.toFixed(2));
-                          }
+                        id="file-upload"
+                        type="file"
+                        multiple
+                        accept="image/jpeg,image/png,image/jpg"
+                        onChange={handleFileUpload}
+                        style={{
+                          position: "absolute",
+                          opacity: 0,
+                          width: "100%",
+                          height: "100%",
+                          cursor: "pointer",
                         }}
                       />
-                      <span>Fully Received</span>
+                      <div
+                        style={{
+                          width: "26px",
+                          height: "26px",
+                          borderRadius: "999px",
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          fontSize: "18px",
+                        }}
+                      >
+                        <RiImageAddFill />
+                      </div>
                     </div>
+                    {uploadedImages.length > 0 && (
+                      <div
+                        style={{
+                          marginTop: "10px",
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: "10px",
+                        }}
+                      >
+                        {uploadedImages.map((image, index) => (
+                          <div key={index} style={{ position: "relative" }}>
+                            <img
+                              src={image.preview}
+                              alt={`upload-${index}`}
+                              style={{
+                                width: "60px",
+                                height: "60px",
+                                objectFit: "cover",
+                                borderRadius: "4px",
+                              }}
+                            />
+                            <button
+                              onClick={() =>
+                                setUploadedImages((prev) =>
+                                  prev.filter((_, i) => i !== index)
+                                )
+                              }
+                              style={{
+                                position: "absolute",
+                                top: "-5px",
+                                right: "-5px",
+                                background: "red",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "50%",
+                                width: "20px",
+                                height: "20px",
+                                cursor: "pointer",
+                              }}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-                    {/* Amount Inputs */}
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "16px",
-                        marginTop: "12px",
-                      }}
-                    >
-                      <div style={{ flex: 1 }}>
-                        <div
-                          style={{
-                            fontSize: "11px",
-                            color: "#6b7280",
-                            marginBottom: "6px",
+                {/* RIGHT SIDE */}
+                {/* RIGHT SIDE */}
+                <div style={{ width: "50%" }}>
+                  {/* Summary */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: "8px",
+                      fontSize: "14px",
+                    }}
+                  >
+                    <span style={{ color: "#6b7280" }}>Subtotal :</span>
+                    <span>₹{subtotal.toFixed(2)}</span>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: "8px",
+                      fontSize: "14px",
+                    }}
+                  >
+                    <span style={{ color: "#6b7280" }}>Taxes :</span>
+                    <span>₹{totalTax.toFixed(2)}</span>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: "8px",
+                      fontSize: "13px",
+                    }}
+                  >
+                    <span style={{ color: "#6b7280" }}>
+                      Additional Discount :
+                    </span>
+                    <span style={{ color: "#9ca3af" }}>
+                      ₹{additionalDiscountValue.toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: "16px",
+                      fontSize: "13px",
+                    }}
+                  >
+                    <span style={{ color: "#6b7280" }}>
+                      Additional Charges
+                      {Object.entries(additionalChargesDetails).some(([_, value]) => value > 0) && (
+                        <span style={{ color: "#3b82f6", marginLeft: "4px", fontSize: "11px" }}>
+                          (
+                          {Object.entries(additionalChargesDetails)
+                            .filter(([_, value]) => value > 0)
+                            .map(([key, _]) => key.charAt(0).toUpperCase() + key.slice(1))
+                            .join(", ")}
+                          )
+                        </span>
+                      )}
+                      :
+                    </span>
+                    <span style={{ color: "#9ca3af" }}>
+                      ₹{additionalChargesTotal.toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div
+                    style={{
+                      height: "1px",
+                      background: "#eee",
+                      margin: "12px 0",
+                    }}
+                  />
+
+                  {/* Shopping Points */}
+                  <div
+                    style={{
+                      display: "flex",
+                      width: "100%",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          style={{ accentColor: "#ffffffff" }}
+                          checked={usePoints}
+                          onChange={(e) => {
+                            setUsePoints(e.target.checked);
+                            if (!e.target.checked) {
+                              setShoppingPointsUsed("");
+                            }
                           }}
-                        >
-                          Amount Received
-                        </div>
-                        <div
-                          style={{
-                            width: "100%",
-                            borderRadius: "10px",
-                            padding: "10px",
-                            border: "1px solid #e5e7eb",
-                            background: "#f9fafb",
-                            outline: "none",
-                            display: "flex",
-                          }}
-                        >
-                          ₹
-                          <input
-                            placeholder="0.00"
-                            className=""
-                            value={amountReceived}
-                            onChange={(e) => setAmountReceived(e.target.value)}
-                            style={{
-                              borderRadius: "10px",
-                              border: "none",
-                              background: "#f9fafb",
-                              outline: "none",
-                              width: "100%",
-                            }}
-                            disabled={fullyReceived}
-                          />
-                        </div>
+                        />
+                        <span>Shopping Points</span>
                       </div>
 
-                      <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: "12px", margin: "8px 0" }}>
+                        Available - 🪙 {customerPoints} points
+                      </div>
+                    </div>
+
+                    <div>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "end",
+                          marginBottom: "12px",
+                          gap: "16px",
+                        }}
+                      >
                         <div
                           style={{
-                            fontSize: "11px",
-                            color: "#6b7280",
-                            marginBottom: "6px",
+                            display: "flex",
+                            gap: "6px",
+                            flexDirection: "column",
                           }}
                         >
-                          Amount to Return
+                          <span style={{ fontSize: "14px", color: "#6b7280" }}>
+                            Point Used
+                          </span>
+                          <div
+                            style={{
+                              display: "flex",
+                              border: "1px solid #e5e7eb",
+                              justifyContent: "space-between",
+                              width: "98px",
+                              height: "40px",
+                            }}
+                          >
+                            <input
+                              placeholder="0"
+                              className=""
+                              style={{
+                                width: "30px",
+                                border: "none",
+                                background: "transparent",
+                                textAlign: "center",
+                                fontSize: "14px",
+                                outline: "none",
+                                backgroundColor: "white",
+                              }}
+                              value={shoppingPointsUsed}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (/^\d*$/.test(value)) {
+                                  const points = parseInt(value) || 0;
+                                  if (points > customerPoints) {
+                                    toast.error(`Cannot use more than ${customerPoints} points`);
+                                    setShoppingPointsUsed(customerPoints.toString());
+                                  } else {
+                                    setShoppingPointsUsed(value);
+                                  }
+                                }
+                              }}
+                              disabled={!usePoints}
+                            />
+                            <div
+                              style={{
+                                border: "1px solid #e5e7eb",
+                                borderRadius: "1px",
+                                display: "flex",
+                                alignItems: "center",
+                                backgroundColor: "#e5e7eb",
+                                justifyContent: "center",
+                                width: "25px",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  fontSize: "14px",
+                                  background: "#e5e7eb",
+                                  padding: "0px 1px",
+                                }}
+                              >
+                                🪙
+                              </span>
+                            </div>
+                          </div>
                         </div>
+
                         <div
                           style={{
-                            width: "100%",
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                          }}
+                        >
+                          <span style={{ marginTop: "25px" }}>=</span>
+                        </div>
+
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "6px",
+                            flexDirection: "column",
+                          }}
+                        >
+                          <span style={{ fontSize: "14px", color: "#6b7280" }}>
+                            Amount
+                          </span>
+
+                          <div
+                            style={{
+                              display: "flex",
+                              border: "1px solid #e5e7eb",
+                              justifyContent: "space-between",
+                              width: "98px",
+                              height: "40px",
+                            }}
+                          >
+                            <input
+                              placeholder="0"
+                              className=""
+                              style={{
+                                width: "30px",
+                                border: "none",
+                                background: "transparent",
+                                textAlign: "center",
+                                fontSize: "14px",
+                                outline: "none",
+                                backgroundColor: "white",
+                              }}
+                              value={pointsRedeemedAmount.toFixed(2)}
+                              readOnly
+                            />
+                            <div
+                              style={{
+                                border: "1px solid #e5e7eb",
+                                borderRadius: "1px",
+                                display: "flex",
+                                alignItems: "center",
+                                backgroundColor: "#e5e7eb",
+                                justifyContent: "center",
+                                width: "25px",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  fontSize: "14px",
+                                  background: "#e5e7eb",
+                                  padding: "0px 5px",
+                                }}
+                              >
+                                ₹
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      height: "1px",
+                      background: "#eee",
+                      margin: "12px 0",
+                    }}
+                  />
+
+                  {/* Auto round-off */}
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "8px",
+                      alignItems: "center",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      style={{ accentColor: "#ffffffff" }}
+                      checked={autoRoundOff}
+                      onChange={(e) => setAutoRoundOff(e.target.checked)}
+                    />
+                    <span>Auto Round-off</span>
+                    <span style={{ marginLeft: "auto" }}>
+                      {roundOffAdded >= 0 ? "+" : "-"} ₹
+                      {Math.abs(roundOffAdded).toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div
+                    style={{
+                      height: "1px",
+                      background: "#eee",
+                      margin: "12px 0",
+                    }}
+                  />
+
+                  {/* Total Amount */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      fontWeight: "700",
+                      fontSize: "20px",
+                      marginTop: "8px",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    <span>Total Amount :-</span>
+                    <span>₹{grandTotal.toFixed(2)}</span>
+                  </div>
+
+                  {/* Fully Received */}
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "8px",
+                      fontSize: "14px",
+                      alignItems: "center",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      style={{ accentColor: "#ffffffff" }}
+                      checked={fullyReceived}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setFullyReceived(checked);
+                        if (checked) {
+                          setAmountReceived(grandTotal.toFixed(2));
+                        }
+                      }}
+                    />
+                    <span>Fully Received</span>
+                  </div>
+
+                  {/* Amount Inputs */}
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "16px",
+                      marginTop: "12px",
+                    }}
+                  >
+                    <div style={{ flex: 1 }}>
+                      <div
+                        style={{
+                          fontSize: "11px",
+                          color: "#6b7280",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        Amount Received
+                      </div>
+                      <div
+                        style={{
+                          width: "100%",
+                          borderRadius: "10px",
+                          padding: "10px",
+                          border: "1px solid #e5e7eb",
+                          background: "#f9fafb",
+                          outline: "none",
+                          display: "flex",
+                        }}
+                      >
+                        ₹
+                        <input
+                          placeholder="0.00"
+                          className=""
+                          value={amountReceived}
+                          onChange={(e) => setAmountReceived(e.target.value)}
+                          style={{
                             borderRadius: "10px",
-                            padding: "10px",
-                            border: "1px solid #e5e7eb",
+                            border: "none",
                             background: "#f9fafb",
                             outline: "none",
-                            display: "flex",
+                            width: "100%",
                           }}
-                        >
-                          ₹
-                          <input
-                            placeholder="0.00"
-                            className=""
-                            value={amountToReturn.toFixed(2)}
-                            readOnly
-                            style={{
-                              borderRadius: "10px",
-                              border: "none",
-                              background: "#f9fafb",
-                              outline: "none",
-                              width: "100%",
-                            }}
-                          />
-                        </div>
+                          disabled={fullyReceived}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ flex: 1 }}>
+                      <div
+                        style={{
+                          fontSize: "11px",
+                          color: "#6b7280",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        Amount to Return
+                      </div>
+                      <div
+                        style={{
+                          width: "100%",
+                          borderRadius: "10px",
+                          padding: "10px",
+                          border: "1px solid #e5e7eb",
+                          background: "#f9fafb",
+                          outline: "none",
+                          display: "flex",
+                        }}
+                      >
+                        ₹
+                        <input
+                          placeholder="0.00"
+                          className=""
+                          value={amountToReturn.toFixed(2)}
+                          readOnly
+                          style={{
+                            borderRadius: "10px",
+                            border: "none",
+                            background: "#f9fafb",
+                            outline: "none",
+                            width: "100%",
+                          }}
+                        />
                       </div>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* Action Buttons */}
+              {/* Action Buttons */}
+              <div
+                style={{
+                  width: "100%",
+                  justifyContent: "end",
+                  alignItems: "center",
+                  display: "flex",
+                  marginTop: 16,
+                }}
+              >
                 <div
                   style={{
-                    width: "100%",
-                    justifyContent: "end",
-                    alignItems: "center",
-                    display: "flex",
-                    marginTop: 16,
+                    paddingLeft: 47,
+                    paddingRight: 47,
+                    justifyContent: "flex-start",
+                    alignItems: "flex-start",
+                    gap: 15,
+                    display: "inline-flex",
                   }}
                 >
                   <div
+                    onClick={() => handleSubmit(false)}
                     style={{
-                      paddingLeft: 47,
-                      paddingRight: 47,
+                      height: 36,
+                      padding: 8,
+                      background: "var(--White-Universal-White, white)",
+                      boxShadow: "-1px -1px 4px rgba(0, 0, 0, 0.25) inset",
+                      borderRadius: 8,
+                      outline: "1.50px var(--Blue-Blue, #1F7FFF) solid",
+                      outlineOffset: "-1.50px",
                       justifyContent: "flex-start",
-                      alignItems: "flex-start",
-                      gap: 15,
-                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      display: "flex",
+                      cursor: isSubmitting ? "not-allowed" : "pointer",
+                      textDecoration: "none",
+                      opacity: isSubmitting ? 0.7 : 1,
                     }}
                   >
                     <div
-                      onClick={() => handleSubmit(false)}
                       style={{
-                        height: 36,
-                        padding: 8,
-                        background: "var(--White-Universal-White, white)",
-                        boxShadow: "-1px -1px 4px rgba(0, 0, 0, 0.25) inset",
-                        borderRadius: 8,
-                        outline: "1.50px var(--Blue-Blue, #1F7FFF) solid",
-                        outlineOffset: "-1.50px",
-                        justifyContent: "flex-start",
-                        alignItems: "center",
-                        gap: 4,
-                        display: "flex",
-                        cursor: isSubmitting ? "not-allowed" : "pointer",
-                        textDecoration: "none",
-                        opacity: isSubmitting ? 0.7 : 1,
+                        color: "var(--Blue-Blue, #1F7FFF)",
+                        fontSize: 14,
+                        fontFamily: "Inter",
+                        fontWeight: "500",
+                        wordWrap: "break-word",
                       }}
                     >
-                      <div
-                        style={{
-                          color: "var(--Blue-Blue, #1F7FFF)",
-                          fontSize: 14,
-                          fontFamily: "Inter",
-                          fontWeight: "500",
-                          wordWrap: "break-word",
-                        }}
-                      >
-                        {isSubmitting ? "Saving..." : "Save"}
-                      </div>
+                      {isSubmitting ? "Saving..." : "Save"}
                     </div>
+                  </div>
+                  <div
+                    onClick={() => handleSubmit(true)}
+                    style={{
+                      height: 36,
+                      padding: 8,
+                      background: "var(--Blue-Blue, #1F7FFF)",
+                      boxShadow: "-1px -1px 4px rgba(0, 0, 0, 0.25) inset",
+                      borderRadius: 8,
+                      outline: "1.50px var(--Blue-Blue, #1F7FFF) solid",
+                      outlineOffset: "-1.50px",
+                      justifyContent: "flex-start",
+                      alignItems: "center",
+                      gap: 4,
+                      display: "flex",
+                      cursor: isSubmitting ? "not-allowed" : "pointer",
+                      textDecoration: "none",
+                      opacity: isSubmitting ? 0.7 : 1,
+                    }}
+                  >
                     <div
-                      onClick={() => handleSubmit(true)}
                       style={{
-                        height: 36,
-                        padding: 8,
-                        background: "var(--Blue-Blue, #1F7FFF)",
-                        boxShadow: "-1px -1px 4px rgba(0, 0, 0, 0.25) inset",
-                        borderRadius: 8,
-                        outline: "1.50px var(--Blue-Blue, #1F7FFF) solid",
-                        outlineOffset: "-1.50px",
-                        justifyContent: "flex-start",
-                        alignItems: "center",
-                        gap: 4,
-                        display: "flex",
-                        cursor: isSubmitting ? "not-allowed" : "pointer",
-                        textDecoration: "none",
-                        opacity: isSubmitting ? 0.7 : 1,
+                        color: "white",
+                        fontSize: 14,
+                        fontFamily: "Inter",
+                        fontWeight: "500",
+                        wordWrap: "break-word",
                       }}
                     >
-                      <div
-                        style={{
-                          color: "white",
-                          fontSize: 14,
-                          fontFamily: "Inter",
-                          fontWeight: "500",
-                          wordWrap: "break-word",
-                        }}
-                      >
-                        {isSubmitting ? "Saving..." : "Save & Print"}
-                      </div>
+                      {isSubmitting ? "Saving..." : "Save & Print"}
                     </div>
                   </div>
                 </div>
@@ -3723,331 +3718,332 @@ function CustomerCreateQuotation() {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Add Customer Modal */}
-        {openAddModal && (
-          <div style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            backgroundColor: "rgba(0,0,0,0.27)",
-            backdropFilter: "blur(1px)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 99999999,
-          }}
-            onClick={() => setOpenAddModal(false)}
-          >
-            <div onClick={(e) => e.stopPropagation()} className="">
-              <AddCustomers
-                onClose={() => {
-                  setOpenAddModal(false);
-                  fetchCustomersForSearch();
-                }}
-                onSuccess={handleNewCustomerCreated}
-              />
-            </div>
+      {/* Add Customer Modal */}
+      {openAddModal && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          backgroundColor: "rgba(0,0,0,0.27)",
+          backdropFilter: "blur(1px)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 99999999,
+        }}
+          onClick={() => setOpenAddModal(false)}
+        >
+          <div onClick={(e) => e.stopPropagation()} className="">
+            <AddCustomers
+              onClose={() => {
+                setOpenAddModal(false);
+                fetchCustomersForSearch();
+              }}
+              onSuccess={handleNewCustomerCreated}
+            />
           </div>
-        )}
-        {/* Preview Modal */}
-        {viewQuotationOptions && (
-          <>
+        </div>
+      )}
+      {/* Preview Modal */}
+      {viewQuotationOptions && (
+        <>
+          <div
+            style={{
+              position: "absolute",
+              top: '0px',
+              left: '0px',
+              zIndex: 999999,
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              justifyContent: 'center',
+              backgroundColor: "rgba(0, 0, 0, 0.27)",
+              backdropFilter: "blur(0.1px)",
+              overflow: 'auto',
+            }}
+            onClick={(e) => e.target === e.currentTarget && handleViewQuotation(false)}
+          >
             <div
               style={{
-                position: "absolute",
-                top: '0px',
-                left: '0px',
-                zIndex: 999999,
+                background: '#F3F5F6',
+                padding: 6,
+                borderRadius: 12,
+                boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                width: '60%',
+                height: "auto", // height must match dropdownHeight above
+                display: "flex",
+                flexDirection: "column",
+                gap: 4,
+                position: 'absolute'
+              }}
+              ref={modelRef}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{
                 width: '100%',
                 height: '100%',
-                display: 'flex',
-                justifyContent: 'center',
-                backgroundColor: "rgba(0, 0, 0, 0.27)",
-                backdropFilter: "blur(0.1px)",
-                overflow: 'auto',
-              }}
-              onClick={(e) => e.target === e.currentTarget && handleViewQuotation(false)}
-            >
-              <div
-                style={{
-                  background: '#F3F5F6',
-                  padding: 6,
-                  borderRadius: 12,
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                  width: '60%',
-                  height: "auto", // height must match dropdownHeight above
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 4,
-                  position: 'absolute'
-                }}
-                ref={modelRef}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div style={{
-                  width: '100%',
-                  height: '100%',
-                  paddingLeft: 36.37,
-                  paddingRight: 36.37,
-                  padding: '16px 36px 36px 36px'
-                }}>
-                  <div
-                    style={{
-                      borderBottom: '1px solid #EAEAEA',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}
+                paddingLeft: 36.37,
+                paddingRight: 36.37,
+                padding: '16px 36px 36px 36px'
+              }}>
+                <div
+                  style={{
+                    borderBottom: '1px solid #EAEAEA',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
+                  <div style={{ fontSize: '20px', fontWeight: '600', marginBottom: '10px' }}>Preview</div>
+                  <div style={{
+                    color: 'red',
+                    padding: '9px',
+                    background: 'white',
+                    border: '1px solid #EAEAEA',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                  }}
+                    onClick={() => handleViewQuotation(false)}
                   >
-                    <div style={{ fontSize: '20px', fontWeight: '600', marginBottom: '10px' }}>Preview</div>
-                    <div style={{
-                      color: 'red',
-                      padding: '9px',
-                      background: 'white',
-                      border: '1px solid #EAEAEA',
-                      borderRadius: '50%',
-                      display: 'flex',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      cursor: 'pointer',
-                    }}
-                      onClick={() => handleViewQuotation(false)}
-                    >
-                      <IoIosCloseCircleOutline />
-                    </div>
+                    <IoIosCloseCircleOutline />
                   </div>
+                </div>
+                <div
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    paddingTop: 20,
+                    position: 'relative',
+                    flexDirection: 'column',
+                    justifyContent: 'flex-start',
+                    alignItems: 'flex-start',
+                    gap: 18.18,
+                    display: 'inline-flex'
+                  }}
+                >
                   <div
                     style={{
                       width: '100%',
                       height: '100%',
-                      paddingTop: 20,
                       position: 'relative',
-                      flexDirection: 'column',
-                      justifyContent: 'flex-start',
-                      alignItems: 'flex-start',
-                      gap: 18.18,
-                      display: 'inline-flex'
+                      fontFamily: 'IBM Plex Mono'
                     }}
                   >
                     <div
                       style={{
                         width: '100%',
                         height: '100%',
-                        position: 'relative',
-                        fontFamily: 'IBM Plex Mono'
+                        left: 0,
+                        top: 0,
+                        background: 'var(--White-White-1, white)',
+                        boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.10)',
+                        padding: '10px 30px'
                       }}
                     >
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}>
+                        <div style={{ width: '100px' }}>
+                          <img src={CompanyLogo} alt='company logo' style={{ width: '100%', objectFit: 'contain', }} />
+                        </div>
+                        <div style={{ width: '130px' }}>
+                          <img src={TaxInvoiceLogo} alt='tax invoice' style={{ width: '100%', objectFit: 'contain', }} />
+                        </div>
+                      </div>
                       <div
                         style={{
                           width: '100%',
-                          height: '100%',
-                          left: 0,
-                          top: 0,
-                          background: 'var(--White-White-1, white)',
-                          boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.10)',
-                          padding: '10px 30px'
+                          height: 0.76,
+                          left: 31.77,
+                          background: 'var(--White-Stroke, #EAEAEA)',
+                          marginTop: '8px'
                         }}
-                      >
-                        <div style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                        }}>
-                          <div style={{ width: '100px' }}>
-                            <img src={CompanyLogo} alt='company logo' style={{ width: '100%', objectFit: 'contain', }} />
-                          </div>
-                          <div style={{ width: '130px' }}>
-                            <img src={TaxInvoiceLogo} alt='tax invoice' style={{ width: '100%', objectFit: 'contain', }} />
-                          </div>
+                      />
+                      <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
+                        <span>QUOTATION Date - {format(quotationDate, "dd MMM yyyy")}</span>
+                        <span style={{ marginRight: '12px' }}>Quotation No. - {quotationNo}</span>
+                      </div>
+                      <div
+                        style={{
+                          width: '100%',
+                          height: 0.76,
+                          left: 31.77,
+                          marginTop: '1px',
+                          background: 'var(--White-Stroke, #EAEAEA)',
+                        }}
+                      />
+                      <div style={{ width: '100%', display: 'flex', justifyContent: 'space-around', marginTop: '2px', alignItems: 'center', borderBottom: '1px solid #EAEAEA' }}>
+                        <div style={{ borderRight: '1px solid #EAEAEA', width: '50%', textAlign: 'center' }}>
+                          <span>From</span>
                         </div>
-                        <div
-                          style={{
-                            width: '100%',
-                            height: 0.76,
-                            left: 31.77,
-                            background: 'var(--White-Stroke, #EAEAEA)',
-                            marginTop: '8px'
-                          }}
-                        />
-                        <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', marginTop: '2px' }}>
-                          <span>QUOTATION Date - {format(quotationDate, "dd MMM yyyy")}</span>
-                          <span style={{ marginRight: '12px' }}>Quotation No. - {quotationNo}</span>
+                        <div style={{ width: '50%', textAlign: 'center' }}>
+                          <span>Customer Details</span>
                         </div>
-                        <div
-                          style={{
-                            width: '100%',
-                            height: 0.76,
-                            left: 31.77,
-                            marginTop: '1px',
-                            background: 'var(--White-Stroke, #EAEAEA)',
-                          }}
-                        />
-                        <div style={{ width: '100%', display: 'flex', justifyContent: 'space-around', marginTop: '2px', alignItems: 'center', borderBottom: '1px solid #EAEAEA' }}>
-                          <div style={{ borderRight: '1px solid #EAEAEA', width: '50%', textAlign: 'center' }}>
-                            <span>From</span>
-                          </div>
-                          <div style={{ width: '50%', textAlign: 'center' }}>
-                            <span>Customer Details</span>
-                          </div>
+                      </div>
+                      <div style={{ width: '100%', display: 'flex', justifyContent: 'space-around', marginTop: '2px', alignItems: 'center', borderBottom: '1px solid #EAEAEA' }}>
+                        <div style={{ borderRight: '1px solid #EAEAEA', width: '50%', padding: '3px' }}>
+                          <div>Name : <span style={{ color: 'black', fontWeight: '600' }}>Kasper Infotech Pvt. Ltd.</span></div>
+                          <div>Address : </div>
+                          <div style={{ marginTop: '8px' }}>Phone : </div>
+                          <div>Email : </div>
+                          <div>GSTIN : </div>
                         </div>
-                        <div style={{ width: '100%', display: 'flex', justifyContent: 'space-around', marginTop: '2px', alignItems: 'center', borderBottom: '1px solid #EAEAEA' }}>
-                          <div style={{ borderRight: '1px solid #EAEAEA', width: '50%', padding: '3px' }}>
-                            <div>Name : <span style={{ color: 'black', fontWeight: '600' }}>Kasper Infotech Pvt. Ltd.</span></div>
-                            <div>Address : </div>
-                            <div style={{ marginTop: '8px' }}>Phone : </div>
-                            <div>Email : </div>
-                            <div>GSTIN : </div>
-                          </div>
-                          <div style={{ width: '50%', padding: '3px' }}>
-                            <div>Name : <span style={{ color: 'black', fontWeight: '600' }}>{customer.name}</span></div>
-                            <div>Address : <span style={{ color: 'black', fontWeight: '600' }}>{customer.address}</span></div>
-                            <div style={{ marginTop: '8px' }}>Phone : <span style={{ color: 'black', fontWeight: '600' }}>{customer.phone}</span></div>
-                            <div style={{ marginTop: '0px' }}>Email : <span style={{ color: 'black', fontWeight: '600' }}>{customer?.email}</span></div>
-                            <div style={{ marginTop: '0px' }}>GSTIN : <span style={{ color: 'black', fontWeight: '600' }}>{customer?.gstin}</span></div>
-                          </div>
+                        <div style={{ width: '50%', padding: '3px' }}>
+                          <div>Name : <span style={{ color: 'black', fontWeight: '600' }}>{customer.name}</span></div>
+                          <div>Address : <span style={{ color: 'black', fontWeight: '600' }}>{customer.address}</span></div>
+                          <div style={{ marginTop: '8px' }}>Phone : <span style={{ color: 'black', fontWeight: '600' }}>{customer.phone}</span></div>
+                          <div style={{ marginTop: '0px' }}>Email : <span style={{ color: 'black', fontWeight: '600' }}>{customer?.email}</span></div>
+                          <div style={{ marginTop: '0px' }}>GSTIN : <span style={{ color: 'black', fontWeight: '600' }}>{customer?.gstin}</span></div>
                         </div>
-                        <div className='table-responsive mt-3' >
-                          <table className='' style={{ width: '100%', border: '1px solid #EAEAEA', borderCollapse: 'collapse' }}>
-                            <thead style={{ textAlign: 'center', }}>
-                              <tr>
-                                <th style={{ borderRight: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA', fontWeight: '400' }} rowSpan='2'>Sr No.</th>
-                                <th style={{ borderRight: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA', fontWeight: '400' }} rowSpan='2'>Name of the Products</th>
-                                <th style={{ borderRight: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA', fontWeight: '400' }} rowSpan='2'>HSN</th>
-                                <th style={{ borderRight: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA', fontWeight: '400' }} rowSpan='2'>QTY</th>
-                                <th style={{ borderRight: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA', fontWeight: '400' }} rowSpan='2'>Rate</th>
-                                <th style={{ borderRight: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA', fontWeight: '400' }} colSpan="2">Tax</th>
-                                <th style={{ borderRight: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA', fontWeight: '400' }} rowSpan='2'>Total</th>
+                      </div>
+                      <div className='table-responsive mt-3' >
+                        <table className='' style={{ width: '100%', border: '1px solid #EAEAEA', borderCollapse: 'collapse' }}>
+                          <thead style={{ textAlign: 'center', }}>
+                            <tr>
+                              <th style={{ borderRight: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA', fontWeight: '400' }} rowSpan='2'>Sr No.</th>
+                              <th style={{ borderRight: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA', fontWeight: '400' }} rowSpan='2'>Name of the Products</th>
+                              <th style={{ borderRight: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA', fontWeight: '400' }} rowSpan='2'>HSN</th>
+                              <th style={{ borderRight: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA', fontWeight: '400' }} rowSpan='2'>QTY</th>
+                              <th style={{ borderRight: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA', fontWeight: '400' }} rowSpan='2'>Rate</th>
+                              <th style={{ borderRight: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA', fontWeight: '400' }} colSpan="2">Tax</th>
+                              <th style={{ borderRight: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA', fontWeight: '400' }} rowSpan='2'>Total</th>
+                            </tr>
+                            <tr>
+                              <th style={{ borderRight: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA', width: '40px', fontWeight: '400' }}>%</th>
+                              <th style={{ borderRight: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA', width: '40px', fontWeight: '400' }}>₹</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {products.map((item, idx) => (
+                              <tr key={idx}>
+                                <td style={{ borderRight: '1px solid #EAEAEA', height: '40px', textAlign: 'center' }}> {idx + 1}</td>
+                                <td style={{ borderRight: '1px solid #EAEAEA', padding: '0px 20px' }}>{item.name || ''}</td>
+                                <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}>{item.hsnCode || "-"}</td>
+                                <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}>{item.qty || ''}</td>
+                                <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}>{item.unitPrice ? `₹${parseNumber(item.unitPrice).toFixed(2)}` : ''}</td>
+                                <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}>{item.taxRate || "0"}%</td>
+                                <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}>₹{(item.taxAmount || 0).toFixed(2)}</td>
+                                <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}>₹{(item.amount || 0).toFixed(2)}</td>
                               </tr>
-                              <tr>
-                                <th style={{ borderRight: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA', width: '40px', fontWeight: '400' }}>%</th>
-                                <th style={{ borderRight: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA', width: '40px', fontWeight: '400' }}>₹</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {products.map((item, idx) => (
-                                <tr key={idx}>
-                                  <td style={{ borderRight: '1px solid #EAEAEA', height: '40px', textAlign: 'center' }}> {idx + 1}</td>
-                                  <td style={{ borderRight: '1px solid #EAEAEA', padding: '0px 20px' }}>{item.name || ''}</td>
-                                  <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}>{item.hsnCode || "-"}</td>
-                                  <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}>{item.qty || ''}</td>
-                                  <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}>{item.unitPrice ? `₹${parseNumber(item.unitPrice).toFixed(2)}` : ''}</td>
-                                  <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}>{item.taxRate || "0"}%</td>
-                                  <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}>₹{(item.taxAmount || 0).toFixed(2)}</td>
-                                  <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}>₹{(item.amount || 0).toFixed(2)}</td>
-                                </tr>
-                              ))}
-                              <tr>
-                                <td style={{ borderRight: '1px solid #EAEAEA', height: '250px', textAlign: 'center' }}></td>
-                                <td style={{ borderRight: '1px solid #EAEAEA', padding: '0px 20px' }}></td>
-                                <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}></td>
-                                <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}></td>
-                                <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}></td>
-                                <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}></td>
-                                <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}></td>
-                                <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}></td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </div>
-                        <div style={{ width: '100%', display: 'flex', justifyContent: 'space-around', marginTop: '15px', borderTop: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA', }}>
-                          <div style={{ borderRight: '', width: '50%', padding: '3px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <u>Total in words</u>
-                            <div style={{ fontSize: "12px", marginTop: '5px', fontWeight: '600' }}>{toWords(grandTotal).toUpperCase()} RUPEES ONLY</div>
-                            <div
-                              style={{
-                                width: '100%',
-                                height: 0.76,
-                                left: 31.77,
-                                background: 'var(--White-Stroke, #EAEAEA)',
-                                marginTop: '10px'
-                              }}
-                            />
-                            <div style={{ marginTop: '2px', textDecoration: 'underline' }}>Bank Details</div>
-                            <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', padding: '0px 5px' }}>
-                              <div style={{ textAlign: 'left' }}>
-                                <div>Bank : <span style={{ color: 'black', fontWeight: '600' }}>ICICI Bank</span></div>
-                                <div>Branch : <span style={{ color: 'black', fontWeight: '600' }}>Noida, Sector 62</span></div>
-                                <div>Account No.: <span style={{ color: 'black', fontWeight: '600' }}>278415630109014</span></div>
-                                <div>IFSC : <span style={{ color: 'black', fontWeight: '600' }}>ICINO512345</span></div>
-                                <div>Upi : <span style={{ color: 'black', fontWeight: '600' }}>abc@ybl</span></div>
+                            ))}
+                            <tr>
+                              <td style={{ borderRight: '1px solid #EAEAEA', height: '250px', textAlign: 'center' }}></td>
+                              <td style={{ borderRight: '1px solid #EAEAEA', padding: '0px 20px' }}></td>
+                              <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}></td>
+                              <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}></td>
+                              <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}></td>
+                              <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}></td>
+                              <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}></td>
+                              <td style={{ borderRight: '1px solid #EAEAEA', textAlign: 'center' }}></td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                      <div style={{ width: '100%', display: 'flex', justifyContent: 'space-around', marginTop: '15px', borderTop: '1px solid #EAEAEA', borderBottom: '1px solid #EAEAEA', }}>
+                        <div style={{ borderRight: '', width: '50%', padding: '3px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <u>Total in words</u>
+                          <div style={{ fontSize: "12px", marginTop: '5px', fontWeight: '600' }}>{toWords(grandTotal).toUpperCase()} RUPEES ONLY</div>
+                          <div
+                            style={{
+                              width: '100%',
+                              height: 0.76,
+                              left: 31.77,
+                              background: 'var(--White-Stroke, #EAEAEA)',
+                              marginTop: '10px'
+                            }}
+                          />
+                          <div style={{ marginTop: '2px', textDecoration: 'underline' }}>Bank Details</div>
+                          <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', padding: '0px 5px' }}>
+                            <div style={{ textAlign: 'left' }}>
+                              <div>Bank : <span style={{ color: 'black', fontWeight: '600' }}>ICICI Bank</span></div>
+                              <div>Branch : <span style={{ color: 'black', fontWeight: '600' }}>Noida, Sector 62</span></div>
+                              <div>Account No.: <span style={{ color: 'black', fontWeight: '600' }}>278415630109014</span></div>
+                              <div>IFSC : <span style={{ color: 'black', fontWeight: '600' }}>ICINO512345</span></div>
+                              <div>Upi : <span style={{ color: 'black', fontWeight: '600' }}>abc@ybl</span></div>
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                              <div style={{ width: '90px', objectFit: 'contain' }}>
+                                <img src={Qrcode} alt='QR Code' style={{ width: '100%' }} />
                               </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-                                <div style={{ width: '90px', objectFit: 'contain' }}>
-                                  <img src={Qrcode} alt='QR Code' style={{ width: '100%' }} />
-                                </div>
-                                <div>Pay Using Upi</div>
-                              </div>
+                              <div>Pay Using Upi</div>
                             </div>
                           </div>
+                        </div>
 
-                          <div style={{ width: '50%', padding: '3px', borderLeft: '1px solid #EAEAEA' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #EAEAEA', padding: '2px 8px' }}>
-                              <span>Sub-total</span>
-                              <span style={{ color: 'black', }}>₹{subtotal.toFixed(2)}</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #EAEAEA', padding: '2px 8px' }}>
-                              <span>Tax Amount</span>
-                              <span style={{ color: 'black', }}>₹{totalTax.toFixed(2)}</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #EAEAEA', padding: '2px 8px' }}>
-                              <span>Discount</span>
-                              <span style={{ color: 'black', }}>₹{totalDiscount.toFixed(2)}</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #EAEAEA', padding: '2px 8px' }}>
-                              <span>🪙 Shopping Points</span>
-                              <span style={{ color: 'black', }}>₹{pointsRedeemedAmount.toFixed(2)}</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #EAEAEA', padding: '2px 8px' }}>
-                              <span>Additional Charges</span>
-                              <span style={{ color: 'black', }}>₹{additionalChargesTotal.toFixed(2)}</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #EAEAEA', padding: '2px 8px', }}>
-                              <span style={{ fontWeight: '700', fontSize: '20px' }}>Total</span>
-                              <span style={{ color: 'black', fontWeight: '600', fontSize: '20px' }}>₹{grandTotal.toFixed(2)}</span>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1px 8px' }}>
-                              <span>Due Amount</span>
-                              <span style={{ color: 'black', }}>₹
-                                {/* {Math.max(
+                        <div style={{ width: '50%', padding: '3px', borderLeft: '1px solid #EAEAEA' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #EAEAEA', padding: '2px 8px' }}>
+                            <span>Sub-total</span>
+                            <span style={{ color: 'black', }}>₹{subtotal.toFixed(2)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #EAEAEA', padding: '2px 8px' }}>
+                            <span>Tax Amount</span>
+                            <span style={{ color: 'black', }}>₹{totalTax.toFixed(2)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #EAEAEA', padding: '2px 8px' }}>
+                            <span>Discount</span>
+                            <span style={{ color: 'black', }}>₹{totalDiscount.toFixed(2)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #EAEAEA', padding: '2px 8px' }}>
+                            <span>🪙 Shopping Points</span>
+                            <span style={{ color: 'black', }}>₹{pointsRedeemedAmount.toFixed(2)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #EAEAEA', padding: '2px 8px' }}>
+                            <span>Additional Charges</span>
+                            <span style={{ color: 'black', }}>₹{additionalChargesTotal.toFixed(2)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #EAEAEA', padding: '2px 8px', }}>
+                            <span style={{ fontWeight: '700', fontSize: '20px' }}>Total</span>
+                            <span style={{ color: 'black', fontWeight: '600', fontSize: '20px' }}>₹{grandTotal.toFixed(2)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '1px 8px' }}>
+                            <span>Due Amount</span>
+                            <span style={{ color: 'black', }}>₹
+                              {/* {Math.max(
                                 0,
                                 grandTotal - (parseFloat(amountReceived) || 0)
                               ).toFixed(2)} */}
-                              </span>
-                            </div>
+                            </span>
                           </div>
+                        </div>
+                      </div>
+
+                      <div style={{ width: '100%', display: 'flex', justifyContent: 'space-around', borderBottom: '1px solid #EAEAEA', }}>
+                        <div style={{ borderRight: '', width: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <u>Term & Conditions</u>
                         </div>
 
-                        <div style={{ width: '100%', display: 'flex', justifyContent: 'space-around', borderBottom: '1px solid #EAEAEA', }}>
-                          <div style={{ borderRight: '', width: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <u>Term & Conditions</u>
-                          </div>
-
-                          <div style={{ width: '50%', borderLeft: '1px solid #EAEAEA' }}>
-                            <div style={{ display: 'flex', justifyContent: 'center', borderTop: '1px solid #EAEAEA', padding: '1px 8px', marginTop: '60px' }}>
-                              <span style={{ fontWeight: '500', fontSize: '10px', }}>Signature</span>
-                            </div>
+                        <div style={{ width: '50%', borderLeft: '1px solid #EAEAEA' }}>
+                          <div style={{ display: 'flex', justifyContent: 'center', borderTop: '1px solid #EAEAEA', padding: '1px 8px', marginTop: '60px' }}>
+                            <span style={{ fontWeight: '500', fontSize: '10px', }}>Signature</span>
                           </div>
                         </div>
-                        <div style={{ width: '100%', justifyContent: 'center', display: 'flex' }}>
-                          <span style={{ marginTop: '5px' }}>Earned 🪙 {Math.floor(grandTotal / 100)} Shopping Point on this purchase. Redeem on your next purchase.</span>
-                        </div>
+                      </div>
+                      <div style={{ width: '100%', justifyContent: 'center', display: 'flex' }}>
+                        <span style={{ marginTop: '5px' }}>Earned 🪙 {Math.floor(grandTotal / 100)} Shopping Point on this purchase. Redeem on your next purchase.</span>
                       </div>
                     </div>
                   </div>
                 </div>
-
               </div>
-            </div>
-          </>
-        )}
-      </div>
-    );
-  }
 
-  export default CustomerCreateQuotation;
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+export default CustomerCreateQuotation;
 
 
 

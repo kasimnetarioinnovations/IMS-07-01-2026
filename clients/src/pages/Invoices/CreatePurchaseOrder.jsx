@@ -21,6 +21,8 @@ import AddSuppliers from "../Modal/suppliers/AddSupplierModals";
 import { FiSearch } from "react-icons/fi";
 
 function CreatePurchaseOrder() {
+    const viewManageRef = useRef(null);  //for handle click outside for calendar
+
     const hasAddedInitialProduct = useRef(false);
     const { supplierId } = useParams();
     const navigate = useNavigate();
@@ -863,6 +865,24 @@ function CreatePurchaseOrder() {
     // Helper for preview
     const parseNumber = (num) => parseFloat(num) || 0;
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        viewManageRef.current &&
+        !viewManageRef.current.contains(event.target)
+      ) {
+        setViewManageOptions(false);
+        setIsDatePickerOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+
     if (loading) return <div>Loading...</div>;
 
     return (
@@ -1030,14 +1050,16 @@ function CreatePurchaseOrder() {
                                                 >
                                                     {/* Input field */}
                                                     <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "8px" }}>
-                                                        <FiSearch
-                                                            style={{
-                                                                color: "#666",
-                                                                cursor: isFromNavbar ? "pointer" : "default",
-                                                                fontSize: "16px"
-                                                            }}
-                                                            onClick={() => isFromNavbar && setShowSupplierDropdown(true)}
-                                                        />
+                                                        {isFromNavbar && (
+                                                            <FiSearch
+                                                                style={{
+                                                                    color: "#666",
+                                                                    cursor: isFromNavbar ? "pointer" : "default",
+                                                                    fontSize: "16px"
+                                                                }}
+                                                                onClick={() => isFromNavbar && setShowSupplierDropdown(true)}
+                                                            />
+                                                        )}
                                                         <input
                                                             type="text"
                                                             placeholder={isFromNavbar ? "Search or select supplier..." : "Enter Supplier Name"}
@@ -1231,32 +1253,6 @@ function CreatePurchaseOrder() {
                                                     )}
                                                 </div>
 
-                                                {/* Supplier details when selected */}
-                                                {isFromNavbar && supplier.supplierId && (
-                                                    <div style={{
-                                                        marginTop: "8px",
-                                                        padding: "8px 12px",
-                                                        backgroundColor: "#f0f8ff",
-                                                        borderRadius: "6px",
-                                                        border: "1px solid #d1e7ff",
-                                                        fontSize: "12px",
-                                                    }}>
-                                                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                                                            <div>
-                                                                <span style={{ fontWeight: "500", color: "#1F7FFF" }}>
-                                                                    📱 {supplier.phone}
-                                                                </span>
-                                                                {supplier.email && (
-                                                                    <span style={{ marginLeft: "8px" }}>✉️ {supplier.email}</span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        <div style={{ marginTop: "4px", color: "#666" }}>
-                                                            {supplier.address}
-                                                        </div>
-                                                    </div>
-                                                )}
-
                                                 {errors.supplierName && (
                                                     <div
                                                         style={{
@@ -1401,9 +1397,11 @@ function CreatePurchaseOrder() {
                                                     alignItems: "center",
                                                     display: "inline-flex",
                                                     gap: "15px",
+                                                    cursor: "pointer"
                                                 }}
                                             >
                                                 <div
+                                                    ref={viewManageRef}
                                                     style={{
                                                         alignSelf: "stretch",
                                                         minWidth: 200,
@@ -1951,491 +1949,89 @@ function CreatePurchaseOrder() {
                                 </div>
 
                                 {/* Products List */}
-                                <div
-                                    style={{
-                                        alignSelf: "stretch",
-                                        minHeight: "auto",
-                                        paddingLeft: 8,
-                                        paddingRight: 8,
-                                        paddingTop: 4,
-                                        paddingBottom: 4,
-                                        background: "white",
-                                        borderBottomRightRadius: 8,
-                                        borderBottomLeftRadius: 8,
-                                        borderLeft: "1px var(--White-Stroke, #EAEAEA) solid",
-                                        borderRight: "1px var(--White-Stroke, #EAEAEA) solid",
-                                        borderBottom: "1px var(--White-Stroke, #EAEAEA) solid",
-                                        flexDirection: "column",
-                                        justifyContent: "flex-start",
-                                        alignItems: "flex-start",
-                                        display: "flex",
-                                    }}
-                                >
-                                    {products.map((p, idx) => (
-                                        <div
-                                            key={p.id}
-                                            style={{
-                                                width: "100%",
-                                                height: 46,
-                                                background: "white",
-                                                overflow: "hidden",
-                                                borderBottom: "1px var(--White-Stroke, #EAEAEA) solid",
-                                                justifyContent: "flex-start",
-                                                alignItems: "flex-start",
-                                                display: "inline-flex",
-                                            }}
-                                        >
+                                {(!products || products.length === 0) ? (
+                                    <div style={{ width: "100%", padding: "16px", textAlign: "center", color: "#6b7280", fontSize: "14px" }}>
+                                        No Product found
+                                    </div>
+                                ) : (
+                                    <div
+                                        style={{
+                                            alignSelf: "stretch",
+                                            minHeight: "auto",
+                                            paddingLeft: 8,
+                                            paddingRight: 8,
+                                            paddingTop: 4,
+                                            paddingBottom: 4,
+                                            background: "white",
+                                            borderBottomRightRadius: 8,
+                                            borderBottomLeftRadius: 8,
+                                            borderLeft: "1px var(--White-Stroke, #EAEAEA) solid",
+                                            borderRight: "1px var(--White-Stroke, #EAEAEA) solid",
+                                            borderBottom: "1px var(--White-Stroke, #EAEAEA) solid",
+                                            flexDirection: "column",
+                                            justifyContent: "flex-start",
+                                            alignItems: "flex-start",
+                                            display: "flex",
+                                        }}
+                                    >
+                                        {products.map((p, idx) => (
                                             <div
+                                                key={p.id}
                                                 style={{
-                                                    flex: "1 1 0%",
-                                                    alignSelf: "stretch",
-                                                    paddingTop: 4,
-                                                    paddingBottom: 4,
+                                                    width: "100%",
+                                                    height: 46,
+                                                    background: "white",
+                                                    overflow: "hidden",
+                                                    borderBottom: "1px var(--White-Stroke, #EAEAEA) solid",
                                                     justifyContent: "flex-start",
-                                                    alignItems: "center",
-                                                    gap: 8,
-                                                    display: "flex",
+                                                    alignItems: "flex-start",
+                                                    display: "inline-flex",
                                                 }}
                                             >
                                                 <div
                                                     style={{
                                                         flex: "1 1 0%",
-                                                        height: 40,
+                                                        alignSelf: "stretch",
+                                                        paddingTop: 4,
+                                                        paddingBottom: 4,
                                                         justifyContent: "flex-start",
                                                         alignItems: "center",
-                                                        display: "flex",
-                                                        gap: "15px",
-                                                    }}
-                                                >
-                                                    <div
-                                                        style={{
-                                                            width: 80,
-                                                            height: 30,
-                                                            paddingLeft: 2,
-                                                            paddingTop: 4,
-                                                            paddingBottom: 4,
-                                                            justifyContent: "center",
-                                                            alignItems: "center",
-                                                            gap: 8,
-                                                            display: "flex",
-                                                        }}
-                                                    >
-                                                        <RiDeleteBinLine
-                                                            className="text-danger fs-5"
-                                                            style={{ cursor: "pointer" }}
-                                                            onClick={() => removeProductRow(p.id)}
-                                                        />
-                                                        <div
-                                                            style={{
-                                                                textAlign: "center",
-                                                                color: "var(--Black-Black, #0E101A)",
-                                                                fontSize: 14,
-                                                                fontFamily: "Inter",
-                                                                fontWeight: "400",
-                                                                lineHeight: "16.80px",
-                                                                wordWrap: "break-word",
-                                                            }}
-                                                        >
-                                                            {idx + 1}
-                                                        </div>
-                                                    </div>
-                                                    <div
-                                                        className="search-input-container"
-                                                        style={{
-                                                            flex: "1 1 auto",
-                                                            minWidth: 0,
-                                                        }}
-                                                    >
-                                                        <input
-                                                            data-row-id={p.id}
-                                                            ref={inputRef}
-                                                            type="text"
-                                                            value={p.itemName || searchData[p.id]?.term || ""}
-                                                            onChange={(e) => {
-                                                                handleSearch(e, p.id);
-                                                                openDropdown(p.id);
-                                                            }}
-                                                            onFocus={() => {
-                                                                openDropdown(p.id);
-                                                                setSearchData((prev) => ({
-                                                                    ...prev,
-                                                                    [p.id]: {
-                                                                        ...prev[p.id],
-                                                                        isOpen: true,
-                                                                        filtered: allProducts,
-                                                                    },
-                                                                }));
-                                                            }}
-                                                            placeholder="Search Product by its name"
-                                                            style={{
-                                                                border: "none",
-                                                                outline: "none",
-                                                                width: "100%",
-                                                                backgroundColor: "transparent",
-                                                                padding: "8px",
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    {/* rr */}
-                                                    {searchData[p.id]?.isOpen && (
-                                                        <div
-                                                            style={{
-                                                                ...dropdownStyle,
-                                                                maxHeight: "400px", // Increase height for better view
-                                                                width: "400px", // Increase width to show more details
-                                                            }}
-                                                            onMouseDown={(e) => e.stopPropagation()}
-                                                        >
-                                                            {(searchData[p.id]?.filtered || []).map(
-                                                                (product) => (
-                                                                    <div
-                                                                        key={product._id}
-                                                                        onClick={() =>
-                                                                            handleProductSelect(product, p.id)
-                                                                        }
-                                                                        style={{
-                                                                            padding: "12px",
-                                                                            cursor: "pointer",
-                                                                            borderBottom: "1px solid #f0f0f0",
-                                                                            display: "flex",
-                                                                            alignItems: "center",
-                                                                            gap: "12px",
-                                                                            backgroundColor: "#fff",
-                                                                            transition: "background-color 0.2s",
-                                                                        }}
-                                                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
-                                                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#fff"}
-                                                                    >
-                                                                        {/* Product Image */}
-                                                                        <div style={{ width: "50px", height: "50px", flexShrink: 0 }}>
-                                                                            {product.images?.[0]?.url ? (
-                                                                                <img
-                                                                                    src={product.images?.[0]?.url}
-                                                                                    alt={product.productName}
-                                                                                    style={{
-                                                                                        width: "100%",
-                                                                                        height: "100%",
-                                                                                        objectFit: "cover",
-                                                                                        borderRadius: "4px",
-                                                                                        border: "1px solid #e5e7eb",
-                                                                                    }}
-                                                                                />
-                                                                            ) : (
-                                                                                <div
-                                                                                    style={{
-                                                                                        width: "100%",
-                                                                                        height: "100%",
-                                                                                        backgroundColor: "#f3f4f6",
-                                                                                        display: "flex",
-                                                                                        alignItems: "center",
-                                                                                        justifyContent: "center",
-                                                                                        borderRadius: "4px",
-                                                                                        border: "1px solid #e5e7eb",
-                                                                                        color: "#6b7280",
-                                                                                        fontSize: "12px",
-                                                                                    }}
-                                                                                >
-                                                                                    No Image
-                                                                                </div>
-                                                                            )}
-                                                                        </div>
-
-                                                                        {/* Product Details */}
-                                                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                                                            {/* Product Name */}
-                                                                            <div
-                                                                                style={{
-                                                                                    fontWeight: "500",
-                                                                                    color: "#1f2937",
-                                                                                    fontSize: "14px",
-                                                                                    lineHeight: "1.4",
-                                                                                    marginBottom: "4px",
-                                                                                    whiteSpace: "nowrap",
-                                                                                    overflow: "hidden",
-                                                                                    textOverflow: "ellipsis",
-                                                                                }}
-                                                                            >
-                                                                                {product.productName}
-                                                                            </div>
-                                                                            {/* HSN Code (optional) */}
-                                                                            {product.hsn?.hsnCode && (
-                                                                                <div style={{
-                                                                                    color: "#6b7280",
-                                                                                    fontSize: "10px",
-                                                                                    marginBottom: "2px",
-                                                                                    display: "flex",
-                                                                                    alignItems: "center",
-                                                                                    justifyContent: "end"
-                                                                                }}>
-                                                                                    HSN: {product.hsn.hsnCode}
-                                                                                </div>
-                                                                            )}
-                                                                            {/* Price */}
-                                                                            <div
-                                                                                style={{
-                                                                                    fontWeight: "600",
-                                                                                    color: "#1f2937",
-                                                                                    fontSize: "14px",
-                                                                                }}
-                                                                            >
-                                                                                ₹{product.purchasePrice || product.price || 0}
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                )
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                    {/* rr end */}
-                                                </div>
-                                                {/* dd */}
-
-                                                <div
-                                                    style={{
-                                                        height: 40,
-                                                        justifyContent: "flex-end",
-                                                        alignItems: "center",
-                                                        gap: 12,
+                                                        gap: 8,
                                                         display: "flex",
                                                     }}
                                                 >
                                                     <div
                                                         style={{
-                                                            width: 120,
-                                                            alignSelf: "stretch",
-                                                            paddingLeft: 12,
-                                                            paddingRight: 12,
-                                                            paddingTop: 4,
-                                                            paddingBottom: 4,
-                                                            justifyContent: "space-between",
-                                                            alignItems: "center",
-                                                            display: "flex",
-                                                        }}
-                                                    >
-                                                        <div
-                                                            style={{
-                                                                color: "var(--Black-Black, #0E101A)",
-                                                                fontSize: 14,
-                                                                fontFamily: "Inter",
-                                                                fontWeight: "400",
-                                                                lineHeight: "16.80px",
-                                                                wordWrap: "break-word",
-                                                            }}
-                                                        >
-                                                            <input
-                                                                type="number"
-                                                                placeholder="0"
-                                                                min="1"
-                                                                step="1"
-                                                                style={{
-                                                                    width: "100%",
-                                                                    border: "none",
-                                                                    outline: "none",
-                                                                }}
-                                                                value={p.qty}
-                                                                onChange={(e) => {
-                                                                    const rawValue = e.target.value;
-                                                                    if (rawValue === "") {
-                                                                        updateProduct(p.id, "qty", "");
-                                                                    } else {
-                                                                        const numValue = parseFloat(rawValue);
-                                                                        if (!isNaN(numValue)) {
-                                                                            updateProduct(
-                                                                                p.id,
-                                                                                "qty",
-                                                                                Math.max(1, numValue)
-                                                                            );
-                                                                        }
-                                                                    }
-                                                                }}
-                                                                onBlur={(e) => {
-                                                                    if (
-                                                                        !e.target.value ||
-                                                                        parseFloat(e.target.value) < 1
-                                                                    ) {
-                                                                        updateProduct(p.id, "qty", 1);
-                                                                    }
-                                                                }}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div
-                                                        style={{
-                                                            width: 1,
-                                                            height: 30,
-                                                            background: "var(--Black-Disable, #A2A8B8)",
-                                                        }}
-                                                    />
-
-                                                    <div
-                                                        style={{
-                                                            width: 120,
-                                                            alignSelf: "stretch",
-                                                            paddingLeft: 12,
-                                                            paddingRight: 12,
-                                                            paddingTop: 4,
-                                                            paddingBottom: 4,
-                                                            justifyContent: "space-between",
-                                                            alignItems: "center",
-                                                            display: "flex",
-                                                        }}
-                                                    >
-                                                        <div
-                                                            style={{
-                                                                color: "var(--Black-Black, #0E101A)",
-                                                                fontSize: 14,
-                                                                fontFamily: "Inter",
-                                                                fontWeight: "400",
-                                                                lineHeight: "16.80px",
-                                                                wordWrap: "break-word",
-                                                            }}
-                                                        >
-                                                            <input
-                                                                type="number"
-                                                                placeholder="0.00"
-                                                                style={{
-                                                                    width: "100%",
-                                                                    border: "none",
-                                                                    outline: "none",
-                                                                }}
-                                                                value={p.unitPrice}
-                                                                onChange={(e) =>
-                                                                    updateProduct(
-                                                                        p.id,
-                                                                        "unitPrice",
-                                                                        e.target.value
-                                                                    )
-                                                                }
-                                                            />
-                                                        </div>
-                                                    </div>
-
-                                                    <div
-                                                        style={{
-                                                            width: 1,
-                                                            height: 30,
-                                                            background: "var(--Black-Disable, #A2A8B8)",
-                                                        }}
-                                                    />
-
-                                                    <div
-                                                        style={{
-                                                            width: 120,
-                                                            alignSelf: "stretch",
-                                                            paddingLeft: 12,
-                                                            paddingRight: 12,
-                                                            paddingTop: 4,
-                                                            paddingBottom: 4,
-                                                            justifyContent: "space-between",
-                                                            alignItems: "center",
-                                                            display: "flex",
-                                                        }}
-                                                    >
-                                                        <div
-                                                            style={{
-                                                                color: "var(--Black-Black, #0E101A)",
-                                                                fontSize: 14,
-                                                                fontFamily: "Inter",
-                                                                fontWeight: "400",
-                                                                lineHeight: "16.80px",
-                                                                wordWrap: "break-word",
-                                                                width: "100%",
-                                                            }}
-                                                        >
-                                                            <input
-                                                                type="text"
-                                                                style={{
-                                                                    width: "100%",
-                                                                    border: "none",
-                                                                    outline: "none",
-                                                                }}
-                                                                value={`${p.taxRate}%`}
-                                                                readOnly
-                                                            />
-                                                        </div>
-                                                    </div>
-
-                                                    <div
-                                                        style={{
-                                                            width: 1,
-                                                            height: 30,
-                                                            background: "var(--Black-Disable, #A2A8B8)",
-                                                        }}
-                                                    />
-
-                                                    <div
-                                                        style={{
-                                                            width: 120,
-                                                            alignSelf: "stretch",
-                                                            paddingLeft: 12,
-                                                            paddingRight: 12,
-                                                            paddingTop: 4,
-                                                            paddingBottom: 4,
-                                                            justifyContent: "space-between",
-                                                            alignItems: "center",
-                                                            display: "flex",
-                                                        }}
-                                                    >
-                                                        <div
-                                                            style={{
-                                                                color: "var(--Black-Black, #0E101A)",
-                                                                fontSize: 14,
-                                                                fontFamily: "Inter",
-                                                                fontWeight: "400",
-                                                                lineHeight: "16.80px",
-                                                                wordWrap: "break-word",
-                                                            }}
-                                                        >
-                                                            <input
-                                                                type="number"
-                                                                style={{
-                                                                    width: "100%",
-                                                                    border: "none",
-                                                                    outline: "none",
-                                                                }}
-                                                                value={p.taxAmount.toFixed(2)}
-                                                                readOnly
-                                                            />
-                                                        </div>
-                                                    </div>
-
-                                                    <div
-                                                        style={{
-                                                            width: 1,
-                                                            height: 30,
-                                                            background: "var(--Black-Disable, #A2A8B8)",
-                                                        }}
-                                                    />
-
-                                                    <div
-                                                        style={{
-                                                            width: 200,
-                                                            alignSelf: "stretch",
+                                                            flex: "1 1 0%",
+                                                            height: 40,
                                                             justifyContent: "flex-start",
                                                             alignItems: "center",
-                                                            gap: 4,
                                                             display: "flex",
+                                                            gap: "15px",
                                                         }}
                                                     >
-                                                        {/* Percentage Discount Input */}
                                                         <div
                                                             style={{
-                                                                flex: "1 1 0%",
-                                                                alignSelf: "stretch",
-                                                                position: "relative",
-                                                                background: "white",
-                                                                overflow: "hidden",
-                                                                borderRadius: 4,
-                                                                outline: "1px var(--Stroke, #EAEAEA) solid",
-                                                                outlineOffset: "-1px",
+                                                                width: 80,
+                                                                height: 30,
+                                                                paddingLeft: 2,
+                                                                paddingTop: 4,
+                                                                paddingBottom: 4,
+                                                                justifyContent: "center",
+                                                                alignItems: "center",
+                                                                gap: 8,
+                                                                display: "flex",
                                                             }}
                                                         >
+                                                            <RiDeleteBinLine
+                                                                className="text-danger fs-5"
+                                                                style={{ cursor: "pointer" }}
+                                                                onClick={() => removeProductRow(p.id)}
+                                                            />
                                                             <div
                                                                 style={{
-                                                                    left: 1,
-                                                                    top: 10,
-                                                                    position: "absolute",
-                                                                    color: "var(--Black-Primary, #0E101A)",
+                                                                    textAlign: "center",
+                                                                    color: "var(--Black-Black, #0E101A)",
                                                                     fontSize: 14,
                                                                     fontFamily: "Inter",
                                                                     fontWeight: "400",
@@ -2443,240 +2039,648 @@ function CreatePurchaseOrder() {
                                                                     wordWrap: "break-word",
                                                                 }}
                                                             >
-                                                                <input
-                                                                    type="number"
-                                                                    placeholder="0.00"
-                                                                    style={{
-                                                                        width: "100%",
-                                                                        border: "none",
-                                                                        outline: "none",
-                                                                        padding: "0px 10px",
-                                                                    }}
-                                                                    value={p.discountPct || ""}
-                                                                    onChange={(e) => {
-                                                                        const value =
-                                                                            e.target.value === ""
-                                                                                ? ""
-                                                                                : parseFloat(e.target.value) || 0;
-                                                                        updateProduct(p.id, "discountPct", value);
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                            <div
-                                                                style={{
-                                                                    width: 25,
-                                                                    paddingRight: 4,
-                                                                    left: 73,
-                                                                    top: 1,
-                                                                    position: "absolute",
-                                                                    background: "var(--Spinning-Frame, #E9F0F4)",
-                                                                    outline: "1px var(--Stroke, #C2C9D1) solid",
-                                                                    justifyContent: "center",
-                                                                    alignItems: "center",
-                                                                    gap: 4,
-                                                                    display: "inline-flex",
-                                                                }}
-                                                            >
-                                                                <div
-                                                                    style={{
-                                                                        width: 1,
-                                                                        height: 38,
-                                                                        opacity: 0,
-                                                                        background: "var(--Stroke, #C2C9D1)",
-                                                                    }}
-                                                                />
-                                                                <div
-                                                                    style={{
-                                                                        color: "var(--Black-Secondary, #6C748C)",
-                                                                        fontSize: 14,
-                                                                        fontFamily: "Poppins",
-                                                                        fontWeight: "400",
-                                                                        lineHeight: "16.80px",
-                                                                        wordWrap: "break-word",
-                                                                    }}
-                                                                >
-                                                                    %
-                                                                </div>
+                                                                {idx + 1}
                                                             </div>
                                                         </div>
-
-                                                        {/* Fixed Amount Discount Input */}
                                                         <div
+                                                            className="search-input-container"
                                                             style={{
-                                                                flex: "1 1 0%",
-                                                                alignSelf: "stretch",
-                                                                position: "relative",
-                                                                background: "white",
-                                                                overflow: "hidden",
-                                                                borderRadius: 4,
-                                                                outline: "1px var(--Stroke, #EAEAEA) solid",
-                                                                outlineOffset: "-1px",
-                                                            }}
-                                                        >
-                                                            <div
-                                                                style={{
-                                                                    left: 1,
-                                                                    top: 10,
-                                                                    position: "absolute",
-                                                                    color: "var(--Black-Primary, #0E101A)",
-                                                                    fontSize: 14,
-                                                                    fontFamily: "Inter",
-                                                                    fontWeight: "400",
-                                                                    lineHeight: "16.80px",
-                                                                    wordWrap: "break-word",
-                                                                }}
-                                                            >
-                                                                <input
-                                                                    type="number"
-                                                                    placeholder="0.00"
-                                                                    style={{
-                                                                        width: "100%",
-                                                                        border: "none",
-                                                                        outline: "none",
-                                                                        padding: "0px 10px",
-                                                                    }}
-                                                                    value={p.discountAmt || ""}
-                                                                    onChange={(e) => {
-                                                                        const value =
-                                                                            e.target.value === ""
-                                                                                ? ""
-                                                                                : parseFloat(e.target.value) || 0;
-                                                                        updateProduct(p.id, "discountAmt", value);
-                                                                    }}
-                                                                />
-                                                            </div>
-                                                            <div
-                                                                style={{
-                                                                    width: 25,
-                                                                    paddingRight: 4,
-                                                                    left: 73,
-                                                                    top: 1,
-                                                                    position: "absolute",
-                                                                    background: "var(--Spinning-Frame, #E9F0F4)",
-                                                                    outline: "1px var(--Stroke, #C2C9D1) solid",
-                                                                    justifyContent: "center",
-                                                                    alignItems: "center",
-                                                                    gap: 4,
-                                                                    display: "inline-flex",
-                                                                }}
-                                                            >
-                                                                <div
-                                                                    style={{
-                                                                        width: 1,
-                                                                        height: 38,
-                                                                        opacity: 0,
-                                                                        background: "var(--Stroke, #C2C9D1)",
-                                                                    }}
-                                                                />
-                                                                <div
-                                                                    style={{
-                                                                        color: "var(--Black-Secondary, #6C748C)",
-                                                                        fontSize: 14,
-                                                                        fontFamily: "Poppins",
-                                                                        fontWeight: "400",
-                                                                        lineHeight: "16.80px",
-                                                                        wordWrap: "break-word",
-                                                                    }}
-                                                                >
-                                                                    ₹
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div
-                                                        style={{
-                                                            width: 1,
-                                                            height: 30,
-                                                            background: "var(--Black-Disable, #A2A8B8)",
-                                                        }}
-                                                    />
-
-                                                    <div
-                                                        style={{
-                                                            width: 120,
-                                                            alignSelf: "stretch",
-                                                            paddingLeft: 12,
-                                                            paddingRight: 12,
-                                                            paddingTop: 4,
-                                                            paddingBottom: 4,
-                                                            justifyContent: "space-between",
-                                                            alignItems: "center",
-                                                            display: "flex",
-                                                        }}
-                                                    >
-                                                        <div
-                                                            style={{
-                                                                color: "var(--Black-Black, #0E101A)",
-                                                                fontSize: 14,
-                                                                fontFamily: "Inter",
-                                                                fontWeight: "400",
-                                                                lineHeight: "16.80px",
-                                                                wordWrap: "break-word",
+                                                                flex: "1 1 auto",
+                                                                minWidth: 0,
                                                             }}
                                                         >
                                                             <input
-                                                                type="number"
+                                                                data-row-id={p.id}
+                                                                ref={inputRef}
+                                                                type="text"
+                                                                value={p.itemName || searchData[p.id]?.term || ""}
+                                                                onChange={(e) => {
+                                                                    handleSearch(e, p.id);
+                                                                    openDropdown(p.id);
+                                                                }}
+                                                                onFocus={() => {
+                                                                    openDropdown(p.id);
+                                                                    setSearchData((prev) => ({
+                                                                        ...prev,
+                                                                        [p.id]: {
+                                                                            ...prev[p.id],
+                                                                            isOpen: true,
+                                                                            filtered: allProducts,
+                                                                        },
+                                                                    }));
+                                                                }}
+                                                                placeholder="Search Product by its name"
                                                                 style={{
-                                                                    width: "100%",
                                                                     border: "none",
                                                                     outline: "none",
+                                                                    width: "100%",
+                                                                    backgroundColor: "transparent",
+                                                                    padding: "8px",
                                                                 }}
-                                                                value={p.amount.toFixed(2)}
-                                                                readOnly
                                                             />
+                                                        </div>
+                                                        {/* rr */}
+                                                        {searchData[p.id]?.isOpen && (
+                                                            <div
+                                                                style={{
+                                                                    ...dropdownStyle,
+                                                                    maxHeight: "400px", // Increase height for better view
+                                                                    width: "400px", // Increase width to show more details
+                                                                }}
+                                                                onMouseDown={(e) => e.stopPropagation()}
+                                                            >
+                                                                {(searchData[p.id]?.filtered || []).map(
+                                                                    (product) => (
+                                                                        <div
+                                                                            key={product._id}
+                                                                            onClick={() =>
+                                                                                handleProductSelect(product, p.id)
+                                                                            }
+                                                                            style={{
+                                                                                padding: "12px",
+                                                                                cursor: "pointer",
+                                                                                borderBottom: "1px solid #f0f0f0",
+                                                                                display: "flex",
+                                                                                alignItems: "center",
+                                                                                gap: "12px",
+                                                                                backgroundColor: "#fff",
+                                                                                transition: "background-color 0.2s",
+                                                                            }}
+                                                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
+                                                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#fff"}
+                                                                        >
+                                                                            {/* Product Image */}
+                                                                            <div style={{ width: "50px", height: "50px", flexShrink: 0 }}>
+                                                                                {product.images?.[0]?.url ? (
+                                                                                    <img
+                                                                                        src={product.images?.[0]?.url}
+                                                                                        alt={product.productName}
+                                                                                        style={{
+                                                                                            width: "100%",
+                                                                                            height: "100%",
+                                                                                            objectFit: "cover",
+                                                                                            borderRadius: "4px",
+                                                                                            border: "1px solid #e5e7eb",
+                                                                                        }}
+                                                                                    />
+                                                                                ) : (
+                                                                                    <div
+                                                                                        style={{
+                                                                                            width: "100%",
+                                                                                            height: "100%",
+                                                                                            backgroundColor: "#f3f4f6",
+                                                                                            display: "flex",
+                                                                                            alignItems: "center",
+                                                                                            justifyContent: "center",
+                                                                                            borderRadius: "4px",
+                                                                                            border: "1px solid #e5e7eb",
+                                                                                            color: "#6b7280",
+                                                                                            fontSize: "12px",
+                                                                                        }}
+                                                                                    >
+                                                                                        No Image
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+
+                                                                            {/* Product Details */}
+                                                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                                                {/* Product Name */}
+                                                                                <div
+                                                                                    style={{
+                                                                                        fontWeight: "500",
+                                                                                        color: "#1f2937",
+                                                                                        fontSize: "14px",
+                                                                                        lineHeight: "1.4",
+                                                                                        marginBottom: "4px",
+                                                                                        whiteSpace: "nowrap",
+                                                                                        overflow: "hidden",
+                                                                                        textOverflow: "ellipsis",
+                                                                                    }}
+                                                                                >
+                                                                                    {product.productName}
+                                                                                </div>
+                                                                                {/* HSN Code (optional) */}
+                                                                                {product.hsn?.hsnCode && (
+                                                                                    <div style={{
+                                                                                        color: "#6b7280",
+                                                                                        fontSize: "10px",
+                                                                                        marginBottom: "2px",
+                                                                                        display: "flex",
+                                                                                        alignItems: "center",
+                                                                                        justifyContent: "end"
+                                                                                    }}>
+                                                                                        HSN: {product.hsn.hsnCode}
+                                                                                    </div>
+                                                                                )}
+                                                                                {/* Price */}
+                                                                                <div
+                                                                                    style={{
+                                                                                        fontWeight: "600",
+                                                                                        color: "#1f2937",
+                                                                                        fontSize: "14px",
+                                                                                    }}
+                                                                                >
+                                                                                    ₹{product.purchasePrice || product.price || 0}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    )
+                                                                )}
+                                                            </div>
+                                                        )}
+                                                        {/* rr end */}
+                                                    </div>
+                                                    {/* dd */}
+
+                                                    <div
+                                                        style={{
+                                                            height: 40,
+                                                            justifyContent: "flex-end",
+                                                            alignItems: "center",
+                                                            gap: 12,
+                                                            display: "flex",
+                                                        }}
+                                                    >
+                                                        <div
+                                                            style={{
+                                                                width: 120,
+                                                                alignSelf: "stretch",
+                                                                paddingLeft: 12,
+                                                                paddingRight: 12,
+                                                                paddingTop: 4,
+                                                                paddingBottom: 4,
+                                                                justifyContent: "space-between",
+                                                                alignItems: "center",
+                                                                display: "flex",
+                                                            }}
+                                                        >
+                                                            <div
+                                                                style={{
+                                                                    color: "var(--Black-Black, #0E101A)",
+                                                                    fontSize: 14,
+                                                                    fontFamily: "Inter",
+                                                                    fontWeight: "400",
+                                                                    lineHeight: "16.80px",
+                                                                    wordWrap: "break-word",
+                                                                }}
+                                                            >
+                                                                <input
+                                                                    type="number"
+                                                                    placeholder="0"
+                                                                    min="1"
+                                                                    step="1"
+                                                                    style={{
+                                                                        width: "100%",
+                                                                        border: "none",
+                                                                        outline: "none",
+                                                                    }}
+                                                                    value={p.qty}
+                                                                    onChange={(e) => {
+                                                                        const rawValue = e.target.value;
+                                                                        if (rawValue === "") {
+                                                                            updateProduct(p.id, "qty", "");
+                                                                        } else {
+                                                                            const numValue = parseFloat(rawValue);
+                                                                            if (!isNaN(numValue)) {
+                                                                                updateProduct(
+                                                                                    p.id,
+                                                                                    "qty",
+                                                                                    Math.max(1, numValue)
+                                                                                );
+                                                                            }
+                                                                        }
+                                                                    }}
+                                                                    onBlur={(e) => {
+                                                                        if (
+                                                                            !e.target.value ||
+                                                                            parseFloat(e.target.value) < 1
+                                                                        ) {
+                                                                            updateProduct(p.id, "qty", 1);
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div
+                                                            style={{
+                                                                width: 1,
+                                                                height: 30,
+                                                                background: "var(--Black-Disable, #A2A8B8)",
+                                                            }}
+                                                        />
+
+                                                        <div
+                                                            style={{
+                                                                width: 120,
+                                                                alignSelf: "stretch",
+                                                                paddingLeft: 12,
+                                                                paddingRight: 12,
+                                                                paddingTop: 4,
+                                                                paddingBottom: 4,
+                                                                justifyContent: "space-between",
+                                                                alignItems: "center",
+                                                                display: "flex",
+                                                            }}
+                                                        >
+                                                            <div
+                                                                style={{
+                                                                    color: "var(--Black-Black, #0E101A)",
+                                                                    fontSize: 14,
+                                                                    fontFamily: "Inter",
+                                                                    fontWeight: "400",
+                                                                    lineHeight: "16.80px",
+                                                                    wordWrap: "break-word",
+                                                                }}
+                                                            >
+                                                                <input
+                                                                    type="number"
+                                                                    placeholder="0.00"
+                                                                    style={{
+                                                                        width: "100%",
+                                                                        border: "none",
+                                                                        outline: "none",
+                                                                    }}
+                                                                    value={p.unitPrice}
+                                                                    onChange={(e) =>
+                                                                        updateProduct(
+                                                                            p.id,
+                                                                            "unitPrice",
+                                                                            e.target.value
+                                                                        )
+                                                                    }
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div
+                                                            style={{
+                                                                width: 1,
+                                                                height: 30,
+                                                                background: "var(--Black-Disable, #A2A8B8)",
+                                                            }}
+                                                        />
+
+                                                        <div
+                                                            style={{
+                                                                width: 120,
+                                                                alignSelf: "stretch",
+                                                                paddingLeft: 12,
+                                                                paddingRight: 12,
+                                                                paddingTop: 4,
+                                                                paddingBottom: 4,
+                                                                justifyContent: "space-between",
+                                                                alignItems: "center",
+                                                                display: "flex",
+                                                            }}
+                                                        >
+                                                            <div
+                                                                style={{
+                                                                    color: "var(--Black-Black, #0E101A)",
+                                                                    fontSize: 14,
+                                                                    fontFamily: "Inter",
+                                                                    fontWeight: "400",
+                                                                    lineHeight: "16.80px",
+                                                                    wordWrap: "break-word",
+                                                                    width: "100%",
+                                                                }}
+                                                            >
+                                                                <input
+                                                                    type="text"
+                                                                    style={{
+                                                                        width: "100%",
+                                                                        border: "none",
+                                                                        outline: "none",
+                                                                    }}
+                                                                    value={`${p.taxRate}%`}
+                                                                    readOnly
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div
+                                                            style={{
+                                                                width: 1,
+                                                                height: 30,
+                                                                background: "var(--Black-Disable, #A2A8B8)",
+                                                            }}
+                                                        />
+
+                                                        <div
+                                                            style={{
+                                                                width: 120,
+                                                                alignSelf: "stretch",
+                                                                paddingLeft: 12,
+                                                                paddingRight: 12,
+                                                                paddingTop: 4,
+                                                                paddingBottom: 4,
+                                                                justifyContent: "space-between",
+                                                                alignItems: "center",
+                                                                display: "flex",
+                                                            }}
+                                                        >
+                                                            <div
+                                                                style={{
+                                                                    color: "var(--Black-Black, #0E101A)",
+                                                                    fontSize: 14,
+                                                                    fontFamily: "Inter",
+                                                                    fontWeight: "400",
+                                                                    lineHeight: "16.80px",
+                                                                    wordWrap: "break-word",
+                                                                }}
+                                                            >
+                                                                <input
+                                                                    type="number"
+                                                                    style={{
+                                                                        width: "100%",
+                                                                        border: "none",
+                                                                        outline: "none",
+                                                                    }}
+                                                                    value={p.taxAmount.toFixed(2)}
+                                                                    readOnly
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div
+                                                            style={{
+                                                                width: 1,
+                                                                height: 30,
+                                                                background: "var(--Black-Disable, #A2A8B8)",
+                                                            }}
+                                                        />
+
+                                                        <div
+                                                            style={{
+                                                                width: 200,
+                                                                alignSelf: "stretch",
+                                                                justifyContent: "flex-start",
+                                                                alignItems: "center",
+                                                                gap: 4,
+                                                                display: "flex",
+                                                            }}
+                                                        >
+                                                            {/* Percentage Discount Input */}
+                                                            <div
+                                                                style={{
+                                                                    flex: "1 1 0%",
+                                                                    alignSelf: "stretch",
+                                                                    position: "relative",
+                                                                    background: "white",
+                                                                    overflow: "hidden",
+                                                                    borderRadius: 4,
+                                                                    outline: "1px var(--Stroke, #EAEAEA) solid",
+                                                                    outlineOffset: "-1px",
+                                                                }}
+                                                            >
+                                                                <div
+                                                                    style={{
+                                                                        left: 1,
+                                                                        top: 10,
+                                                                        position: "absolute",
+                                                                        color: "var(--Black-Primary, #0E101A)",
+                                                                        fontSize: 14,
+                                                                        fontFamily: "Inter",
+                                                                        fontWeight: "400",
+                                                                        lineHeight: "16.80px",
+                                                                        wordWrap: "break-word",
+                                                                    }}
+                                                                >
+                                                                    <input
+                                                                        type="number"
+                                                                        placeholder="0.00"
+                                                                        style={{
+                                                                            width: "100%",
+                                                                            border: "none",
+                                                                            outline: "none",
+                                                                            padding: "0px 10px",
+                                                                        }}
+                                                                        value={p.discountPct || ""}
+                                                                        onChange={(e) => {
+                                                                            const value =
+                                                                                e.target.value === ""
+                                                                                    ? ""
+                                                                                    : parseFloat(e.target.value) || 0;
+                                                                            updateProduct(p.id, "discountPct", value);
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                                <div
+                                                                    style={{
+                                                                        width: 25,
+                                                                        paddingRight: 4,
+                                                                        left: 73,
+                                                                        top: 1,
+                                                                        position: "absolute",
+                                                                        background: "var(--Spinning-Frame, #E9F0F4)",
+                                                                        outline: "1px var(--Stroke, #C2C9D1) solid",
+                                                                        justifyContent: "center",
+                                                                        alignItems: "center",
+                                                                        gap: 4,
+                                                                        display: "inline-flex",
+                                                                    }}
+                                                                >
+                                                                    <div
+                                                                        style={{
+                                                                            width: 1,
+                                                                            height: 38,
+                                                                            opacity: 0,
+                                                                            background: "var(--Stroke, #C2C9D1)",
+                                                                        }}
+                                                                    />
+                                                                    <div
+                                                                        style={{
+                                                                            color: "var(--Black-Secondary, #6C748C)",
+                                                                            fontSize: 14,
+                                                                            fontFamily: "Poppins",
+                                                                            fontWeight: "400",
+                                                                            lineHeight: "16.80px",
+                                                                            wordWrap: "break-word",
+                                                                        }}
+                                                                    >
+                                                                        %
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Fixed Amount Discount Input */}
+                                                            <div
+                                                                style={{
+                                                                    flex: "1 1 0%",
+                                                                    alignSelf: "stretch",
+                                                                    position: "relative",
+                                                                    background: "white",
+                                                                    overflow: "hidden",
+                                                                    borderRadius: 4,
+                                                                    outline: "1px var(--Stroke, #EAEAEA) solid",
+                                                                    outlineOffset: "-1px",
+                                                                }}
+                                                            >
+                                                                <div
+                                                                    style={{
+                                                                        left: 1,
+                                                                        top: 10,
+                                                                        position: "absolute",
+                                                                        color: "var(--Black-Primary, #0E101A)",
+                                                                        fontSize: 14,
+                                                                        fontFamily: "Inter",
+                                                                        fontWeight: "400",
+                                                                        lineHeight: "16.80px",
+                                                                        wordWrap: "break-word",
+                                                                    }}
+                                                                >
+                                                                    <input
+                                                                        type="number"
+                                                                        placeholder="0.00"
+                                                                        style={{
+                                                                            width: "100%",
+                                                                            border: "none",
+                                                                            outline: "none",
+                                                                            padding: "0px 10px",
+                                                                        }}
+                                                                        value={p.discountAmt || ""}
+                                                                        onChange={(e) => {
+                                                                            const value =
+                                                                                e.target.value === ""
+                                                                                    ? ""
+                                                                                    : parseFloat(e.target.value) || 0;
+                                                                            updateProduct(p.id, "discountAmt", value);
+                                                                        }}
+                                                                    />
+                                                                </div>
+                                                                <div
+                                                                    style={{
+                                                                        width: 25,
+                                                                        paddingRight: 4,
+                                                                        left: 73,
+                                                                        top: 1,
+                                                                        position: "absolute",
+                                                                        background: "var(--Spinning-Frame, #E9F0F4)",
+                                                                        outline: "1px var(--Stroke, #C2C9D1) solid",
+                                                                        justifyContent: "center",
+                                                                        alignItems: "center",
+                                                                        gap: 4,
+                                                                        display: "inline-flex",
+                                                                    }}
+                                                                >
+                                                                    <div
+                                                                        style={{
+                                                                            width: 1,
+                                                                            height: 38,
+                                                                            opacity: 0,
+                                                                            background: "var(--Stroke, #C2C9D1)",
+                                                                        }}
+                                                                    />
+                                                                    <div
+                                                                        style={{
+                                                                            color: "var(--Black-Secondary, #6C748C)",
+                                                                            fontSize: 14,
+                                                                            fontFamily: "Poppins",
+                                                                            fontWeight: "400",
+                                                                            lineHeight: "16.80px",
+                                                                            wordWrap: "break-word",
+                                                                        }}
+                                                                    >
+                                                                        ₹
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div
+                                                            style={{
+                                                                width: 1,
+                                                                height: 30,
+                                                                background: "var(--Black-Disable, #A2A8B8)",
+                                                            }}
+                                                        />
+
+                                                        <div
+                                                            style={{
+                                                                width: 120,
+                                                                alignSelf: "stretch",
+                                                                paddingLeft: 12,
+                                                                paddingRight: 12,
+                                                                paddingTop: 4,
+                                                                paddingBottom: 4,
+                                                                justifyContent: "space-between",
+                                                                alignItems: "center",
+                                                                display: "flex",
+                                                            }}
+                                                        >
+                                                            <div
+                                                                style={{
+                                                                    color: "var(--Black-Black, #0E101A)",
+                                                                    fontSize: 14,
+                                                                    fontFamily: "Inter",
+                                                                    fontWeight: "400",
+                                                                    lineHeight: "16.80px",
+                                                                    wordWrap: "break-word",
+                                                                }}
+                                                            >
+                                                                <input
+                                                                    type="number"
+                                                                    style={{
+                                                                        width: "100%",
+                                                                        border: "none",
+                                                                        outline: "none",
+                                                                    }}
+                                                                    value={p.amount.toFixed(2)}
+                                                                    readOnly
+                                                                />
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        ))}
 
-                                    {/* Add New Product Button */}
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            gap: "7px",
-                                            marginTop: "16px",
-                                            cursor: "pointer",
-                                        }}
-                                        onClick={addProductRow}
-                                    >
+                                        {/* Add New Product Button */}
                                         <div
                                             style={{
-                                                width: "20px",
-                                                height: "20px",
-                                                overflow: "hidden",
-                                                border: "2px solid var(--Blue, #1F7FFF)",
                                                 display: "flex",
-                                                justifyContent: "center",
                                                 alignItems: "center",
-                                                borderRadius: "4px",
+                                                gap: "7px",
+                                                marginTop: "16px",
+                                                cursor: "pointer",
                                             }}
+                                            onClick={addProductRow}
                                         >
                                             <div
                                                 style={{
-                                                    color: "#1F7FFF",
-                                                    fontSize: "13px",
-                                                    fontWeight: "600",
+                                                    width: "20px",
+                                                    height: "20px",
+                                                    overflow: "hidden",
+                                                    border: "2px solid var(--Blue, #1F7FFF)",
+                                                    display: "flex",
+                                                    justifyContent: "center",
+                                                    alignItems: "center",
+                                                    borderRadius: "4px",
                                                 }}
                                             >
-                                                +
+                                                <div
+                                                    style={{
+                                                        color: "#1F7FFF",
+                                                        fontSize: "13px",
+                                                        fontWeight: "600",
+                                                    }}
+                                                >
+                                                    +
+                                                </div>
                                             </div>
+                                            <span
+                                                style={{
+                                                    color: "var(--Black, #212436)",
+                                                    fontSize: "16px",
+                                                    fontFamily: "Inter",
+                                                    fontWeight: "400",
+                                                }}
+                                            >
+                                                Add New Product
+                                            </span>
                                         </div>
-                                        <span
-                                            style={{
-                                                color: "var(--Black, #212436)",
-                                                fontSize: "16px",
-                                                fontFamily: "Inter",
-                                                fontWeight: "400",
-                                            }}
-                                        >
-                                            Add New Product
-                                        </span>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </div>
 

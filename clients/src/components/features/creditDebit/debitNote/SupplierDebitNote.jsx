@@ -237,9 +237,11 @@ const SupplierDebitNote = () => {
             invoiceNumber: "",
             items: [],
         }));
-        setSupplierSearch(supplier.name || supplier.company || "");
-        setShowSupplierDropdown(false);
-    };
+        if (isFromNavbar) {
+            setSupplierSearch(supplier.name || supplier.company || "");
+            setShowSupplierDropdown(false);
+        };
+    }
 
     const handleClearSupplier = () => {
         setFormData((prev) => ({
@@ -251,9 +253,11 @@ const SupplierDebitNote = () => {
             invoiceNumber: "",
             items: [],
         }));
-        setSupplierSearch("");
-        setShowSupplierDropdown(false);
-    };
+        if (isFromNavbar) {
+            setSupplierSearch("");
+            setShowSupplierDropdown(false);
+        };
+    }
 
     const handleNewSupplierCreated = (newSupplier) => {
         fetchSuppliers();
@@ -543,56 +547,56 @@ const SupplierDebitNote = () => {
     };
     return (
         <div>
-        <div className="p-4" style={{height:"100vh", overflow:"auto"}}>
-                    {/* Header - SAME UI */}
-                    <div className="d-flex justify-content-between align-items-center mb-4">
-                        <div className="d-flex align-items-center">
-                            <Link to="/supplier-list" style={{ marginRight: "10px" }}>
-                                <span
-                                    style={{
-                                        backgroundColor: "white",
-                                        width: "32px",
-                                        height: "32px",
-                                        borderRadius: "50px",
-                                        display: "flex",
-                                        justifyContent: "center",
-                                        alignItems: "center",
-                                        border: "1px solid #FCFCFC",
-                                    }}
-                                >
-                                    <img src={total_orders_icon} alt="total_orders_icon" />
-                                </span>
-                            </Link>
-                            <h4
-                                className="m-0"
+            <div className="p-4" style={{ height: "100vh", overflow: "auto" }}>
+                {/* Header - SAME UI */}
+                <div className="d-flex justify-content-between align-items-center mb-4">
+                    <div className="d-flex align-items-center">
+                        <Link to="/supplier-list" style={{ marginRight: "10px" }}>
+                            <span
                                 style={{
-                                    fontSize: "22px",
-                                    color: "#0E101A",
-                                    fontFamily: '"Inter", sans-serif',
-                                    fontWeight: 500,
-                                    lineHeight: "120%",
+                                    backgroundColor: "white",
+                                    width: "32px",
+                                    height: "32px",
+                                    borderRadius: "50px",
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    border: "1px solid #FCFCFC",
                                 }}
                             >
-                                Create Debit Notes
-                            </h4>
-                        </div>
+                                <img src={total_orders_icon} alt="total_orders_icon" />
+                            </span>
+                        </Link>
+                        <h4
+                            className="m-0"
+                            style={{
+                                fontSize: "22px",
+                                color: "#0E101A",
+                                fontFamily: '"Inter", sans-serif',
+                                fontWeight: 500,
+                                lineHeight: "120%",
+                            }}
+                        >
+                            Create Debit Notes
+                        </h4>
                     </div>
+                </div>
 
-                    {/* Supplier Details Section - EXACT SAME UI as customer */}
-                    <div
-                        className="section-card"
-                        style={{ padding: "20px", height: "auto" , overflow:"auto", maxHeight:"calc(100vh - 160px)"}}
-                    >
-                        <h6 className="section-title">Supplier Details</h6>
+                {/* Supplier Details Section - EXACT SAME UI as customer */}
+                <div
+                    className="section-card"
+                    style={{ padding: "20px", height: "auto", overflow: "auto", maxHeight: "calc(100vh - 160px)" }}
+                >
+                    <h6 className="section-title">Supplier Details</h6>
 
-                        {/* Main Horizontal Wrapper - SAME */}
-                        <div className="d-flex justify-content-between mb-4">
-                            {/* LEFT AREA (Supplier + Phone) */}
-                            <div
-                                style={{ display: "flex", alignItems: "center", gap: "20px" }}
-                            >
-                                {/* Supplier Name */}
-                                {/* <div className="col-md-7">
+                    {/* Main Horizontal Wrapper - SAME */}
+                    <div className="d-flex justify-content-between mb-4">
+                        {/* LEFT AREA (Supplier + Phone) */}
+                        <div
+                            style={{ display: "flex", alignItems: "center", gap: "20px" }}
+                        >
+                            {/* Supplier Name */}
+                            {/* <div className="col-md-7">
                                     <label className="form-label supplierlabel">
                                         Supplier Name <span className="text-danger">*</span>
                                     </label>
@@ -611,25 +615,25 @@ const SupplierDebitNote = () => {
                                         />
                                     </div>
                                 </div> */}
-                                {/* Supplier Name */}
-                                <div className="col-md-7">
-                                    <label className="form-label supplierlabel">
-                                        Supplier Name <span className="text-danger">*</span>
-                                    </label>
-                                    <div style={{ position: "relative" }} className="supplier-search-container">
-                                        <div
-                                            style={{
-                                                borderRadius: "8px",
-                                                border: "1px solid #EAEAEA",
-                                                padding: "6px 8px",
-                                                display: "flex",
-                                                gap: "4px",
-                                                alignItems: "center",
-                                                border: "1px solid #A2A8B8",
-                                            }}
-                                        >
-                                            {/* Input field */}
-                                            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "8px" }}>
+                            {/* Supplier Name */}
+                            <div className="col-md-7">
+                                <label className="form-label supplierlabel">
+                                    Supplier Name <span className="text-danger">*</span>
+                                </label>
+                                <div style={{ position: "relative" }} className="supplier-search-container">
+                                    <div
+                                        style={{
+                                            borderRadius: "8px",
+                                            border: "1px solid #EAEAEA",
+                                            padding: "6px 8px",
+                                            display: "flex",
+                                            gap: "4px",
+                                            alignItems: "center",
+                                        }}
+                                    >
+                                        {/* Input field */}
+                                        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "8px" }}>
+                                            {isFromNavbar && (
                                                 <FiSearch
                                                     style={{
                                                         color: "#666",
@@ -638,27 +642,37 @@ const SupplierDebitNote = () => {
                                                     }}
                                                     onClick={() => setShowSupplierDropdown(true)}
                                                 />
-                                                <input
-                                                    type="text"
-                                                    placeholder="Search or select supplier..."
-                                                    style={{
-                                                        width: "100%",
-                                                        border: "none",
-                                                        outline: "none",
-                                                        fontSize: "14px",
-                                                        cursor: "pointer",
-                                                    }}
-                                                    value={supplierSearch}
-                                                    onChange={(e) => {
+                                            )}
+                                            <input
+                                                type="text"
+                                                placeholder={isFromNavbar ? "Search or select supplier...":"Enter Name"}
+                                                style={{
+                                                    width: "100%",
+                                                    border: "none",
+                                                    outline: "none",
+                                                    fontSize: "14px",
+                                                    cursor: isFromNavbar ? "pointer" : "text",
+                                                }}
+                                                value={isFromNavbar ? supplierSearch : formData.supplierName}
+                                                onChange={(e) => {
+                                                    if (isFromNavbar) {
                                                         setSupplierSearch(e.target.value);
                                                         setShowSupplierDropdown(true);
-                                                    }}
-                                                    onFocus={() => setShowSupplierDropdown(true)}
-                                                    readOnly={formData.supplierId}
-                                                />
-                                            </div>
+                                                    }
+                                                    else {
+                                                        setFormData((prev) => ({
+                                                            ...prev,
+                                                            supplierName: e.target.value
+                                                        }))
+                                                    }
+                                                }}
+                                                onFocus={() => isFromNavbar && setShowSupplierDropdown(true)}
+                                                readOnly={isFromNavbar && formData.supplierId}
+                                            />
+                                        </div>
 
-                                            {/* Action buttons */}
+                                        {/* Action buttons */}
+                                        {isFromNavbar && (
                                             <div style={{ display: "flex", gap: "4px" }}>
                                                 {formData.supplierId ? (
                                                     // When supplier is selected - show clear button
@@ -698,291 +712,272 @@ const SupplierDebitNote = () => {
                                                     </button>
                                                 )}
                                             </div>
-                                        </div>
+                                        )}
+                                    </div>
 
-                                        {/* Supplier Dropdown */}
-                                        {showSupplierDropdown && (
-                                            <div style={{
+                                    {/* Supplier Dropdown */}
+                                    {isFromNavbar && showSupplierDropdown && (
+                                        <div style={{
+                                            position: "absolute",
+                                            top: "100%",
+                                            left: 0,
+                                            right: 0,
+                                            backgroundColor: "white",
+                                            border: "1px solid #EAEAEA",
+                                            borderRadius: "8px",
+                                            maxHeight: "300px",
+                                            overflowY: "auto",
+                                            zIndex: 1000,
+                                            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                            marginTop: "4px",
+                                        }}>
+                                            {!Array.isArray(filteredSuppliers) || filteredSuppliers.length === 0 ? (
+                                                <div style={{ padding: "12px", color: "#666", textAlign: "center" }}>
+                                                    No suppliers found
+                                                    <div style={{ marginTop: "8px" }}>
+                                                        <button
+                                                            onClick={() => {
+                                                                setOpenAddModal(true);
+                                                                setShowSupplierDropdown(false);
+                                                            }}
+                                                            style={{
+                                                                padding: "6px 12px",
+                                                                backgroundColor: "#1F7FFF",
+                                                                color: "white",
+                                                                border: "none",
+                                                                borderRadius: "4px",
+                                                                cursor: "pointer",
+                                                                fontSize: "12px",
+                                                            }}
+                                                        >
+                                                            + Add New Supplier
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div style={{
+                                                        padding: "8px 12px",
+                                                        borderBottom: "1px solid #f0f0f0",
+                                                        backgroundColor: "#f8f9fa",
+                                                        fontSize: "12px",
+                                                        color: "#666",
+                                                    }}>
+                                                        Select supplier or <button
+                                                            onClick={() => {
+                                                                setOpenAddModal(true);
+                                                                setShowSupplierDropdown(false);
+                                                            }}
+                                                            style={{
+                                                                background: "transparent",
+                                                                border: "none",
+                                                                color: "#1F7FFF",
+                                                                cursor: "pointer",
+                                                                fontWeight: "500",
+                                                            }}
+                                                        >
+                                                            add new
+                                                        </button>
+                                                    </div>
+                                                    {filteredSuppliers.map((sup) => {
+                                                        if (!sup || typeof sup !== 'object') return null;
+
+                                                        const supplierName = sup.name || "";
+                                                        const phone = sup.phone || "";
+                                                        const email = sup.email || "";
+                                                        const id = sup._id || "";
+
+                                                        return (
+                                                            <div
+                                                                key={id}
+                                                                onClick={() => handleSupplierSelect(sup)}
+                                                                style={{
+                                                                    padding: "12px 16px",
+                                                                    borderBottom: "1px solid #f0f0f0",
+                                                                    cursor: "pointer",
+                                                                    display: "flex",
+                                                                    alignItems: "center",
+                                                                    gap: "12px",
+                                                                    transition: "background-color 0.2s",
+                                                                }}
+                                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
+                                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
+                                                            >
+                                                                <div style={{
+                                                                    width: "32px",
+                                                                    height: "32px",
+                                                                    borderRadius: "50%",
+                                                                    backgroundColor: "#e0f0ff",
+                                                                    display: "flex",
+                                                                    alignItems: "center",
+                                                                    justifyContent: "center",
+                                                                    fontWeight: "bold",
+                                                                    color: "#1F7FFF",
+                                                                    fontSize: "14px",
+                                                                }}>
+                                                                    {supplierName.charAt(0).toUpperCase() || "S"}
+                                                                </div>
+                                                                <div style={{ flex: 1 }}>
+                                                                    <div style={{ fontWeight: "500" }}>{supplierName}</div>
+                                                                    <div style={{ fontSize: "12px", color: "#666" }}>
+                                                                        {phone} {email && `• ${email}`}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Phone Number */}
+                            <div className="col-md-7">
+                                <label className="form-label supplierlabel">Phone No.</label>
+
+                                <div className="input-group">
+                                    <span
+                                        className="input-group-text bg-white"
+                                        style={{ border: "1px solid #A2A8B8" }}
+                                    >
+                                        <img
+                                            src="https://flagcdn.com/in.svg"
+                                            alt="India"
+                                            width="20"
+                                            className="me-1"
+                                        />
+                                        +91
+                                    </span>
+
+                                    <input
+                                        type="tel"
+                                        className="form-control supplierinput shadow-none"
+                                        placeholder="Enter Phone"
+                                        style={{
+                                            border: "1px solid #A2A8B8",
+                                        }}
+                                        value={formData.phone}
+                                        readOnly
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        {/* LEFT END */}
+
+                        {/* middle line */}
+                        <div
+                            style={{
+                                width: "1px",
+                                height: "70px",
+                                backgroundColor: "#E0E0E0",
+                                margin: "0 20px",
+                            }}
+                        ></div>
+
+                        {/* RIGHT SIDE (Supplier Invoice No + Date) */}
+                        <div className="d-flex flex-column gap-3">
+                            {/* Supplier Invoice No */}
+                            <div className="d-flex justify-content-end">
+                                <div ref={dropdownRef} style={{ position: "relative", width: "100%" }}>
+                                    <div
+                                        onClick={() => setIsInvoiceOpen(!isInvoiceOpen)}
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "8px",
+                                            padding: "10px 14px",
+                                            border: "1px solid #D1D5DB",
+                                            borderRadius: "12px",
+                                            backgroundColor: "#FFFFFF",
+                                            cursor: "pointer",
+                                            fontSize: "14px",
+                                            fontFamily: '"Inter", sans-serif',
+                                            color: "#374151",
+                                            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                                            transition: "all 0.2s",
+                                            height: "37px",
+                                        }}
+                                        onMouseEnter={(e) =>
+                                            (e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)")
+                                        }
+                                        onMouseLeave={(e) =>
+                                            (e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)")
+                                        }
+                                    >
+                                        <span style={{ flex: 1 }}>
+                                            {formData.invoiceId
+                                                ? supplierInvoices.find(i => i._id === formData.invoiceId)?.invoiceNo
+                                                : "Purchase Invoice No"}
+                                        </span>
+
+                                        <span style={{ fontSize: "12px", color: "#9CA3AF" }}>
+                                            <IoChevronDownOutline />
+                                        </span>
+                                    </div>
+                                    {isInvoiceOpen && (
+                                        <div
+                                            style={{
                                                 position: "absolute",
                                                 top: "100%",
                                                 left: 0,
                                                 right: 0,
-                                                backgroundColor: "white",
-                                                border: "1px solid #EAEAEA",
-                                                borderRadius: "8px",
-                                                maxHeight: "300px",
-                                                overflowY: "auto",
-                                                zIndex: 1000,
-                                                boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                                                marginTop: "4px",
-                                            }}>
-                                                {!Array.isArray(filteredSuppliers) || filteredSuppliers.length === 0 ? (
-                                                    <div style={{ padding: "12px", color: "#666", textAlign: "center" }}>
-                                                        No suppliers found
-                                                        <div style={{ marginTop: "8px" }}>
-                                                            <button
-                                                                onClick={() => {
-                                                                    setOpenAddModal(true);
-                                                                    setShowSupplierDropdown(false);
-                                                                }}
-                                                                style={{
-                                                                    padding: "6px 12px",
-                                                                    backgroundColor: "#1F7FFF",
-                                                                    color: "white",
-                                                                    border: "none",
-                                                                    borderRadius: "4px",
-                                                                    cursor: "pointer",
-                                                                    fontSize: "12px",
-                                                                }}
-                                                            >
-                                                                + Add New Supplier
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        <div style={{
-                                                            padding: "8px 12px",
-                                                            borderBottom: "1px solid #f0f0f0",
-                                                            backgroundColor: "#f8f9fa",
-                                                            fontSize: "12px",
-                                                            color: "#666",
-                                                        }}>
-                                                            Select supplier or <button
-                                                                onClick={() => {
-                                                                    setOpenAddModal(true);
-                                                                    setShowSupplierDropdown(false);
-                                                                }}
-                                                                style={{
-                                                                    background: "transparent",
-                                                                    border: "none",
-                                                                    color: "#1F7FFF",
-                                                                    cursor: "pointer",
-                                                                    fontWeight: "500",
-                                                                }}
-                                                            >
-                                                                add new
-                                                            </button>
-                                                        </div>
-                                                        {filteredSuppliers.map((sup) => {
-                                                            if (!sup || typeof sup !== 'object') return null;
-
-                                                            const supplierName = sup.name || "";
-                                                            const phone = sup.phone || "";
-                                                            const email = sup.email || "";
-                                                            const id = sup._id || "";
-
-                                                            return (
-                                                                <div
-                                                                    key={id}
-                                                                    onClick={() => handleSupplierSelect(sup)}
-                                                                    style={{
-                                                                        padding: "12px 16px",
-                                                                        borderBottom: "1px solid #f0f0f0",
-                                                                        cursor: "pointer",
-                                                                        display: "flex",
-                                                                        alignItems: "center",
-                                                                        gap: "12px",
-                                                                        transition: "background-color 0.2s",
-                                                                    }}
-                                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f8f9fa"}
-                                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "white"}
-                                                                >
-                                                                    <div style={{
-                                                                        width: "32px",
-                                                                        height: "32px",
-                                                                        borderRadius: "50%",
-                                                                        backgroundColor: "#e0f0ff",
-                                                                        display: "flex",
-                                                                        alignItems: "center",
-                                                                        justifyContent: "center",
-                                                                        fontWeight: "bold",
-                                                                        color: "#1F7FFF",
-                                                                        fontSize: "14px",
-                                                                    }}>
-                                                                        {supplierName.charAt(0).toUpperCase() || "S"}
-                                                                    </div>
-                                                                    <div style={{ flex: 1 }}>
-                                                                        <div style={{ fontWeight: "500" }}>{supplierName}</div>
-                                                                        <div style={{ fontSize: "12px", color: "#666" }}>
-                                                                            {phone} {email && `• ${email}`}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </>
-                                                )}
-                                            </div>
-                                        )}
-
-                                        {/* Supplier details when selected */}
-                                        {formData.supplierId && (
-                                            <div style={{
                                                 marginTop: "8px",
-                                                padding: "8px 12px",
-                                                backgroundColor: "#f0f8ff",
-                                                borderRadius: "6px",
-                                                border: "1px solid #d1e7ff",
-                                                fontSize: "12px",
-                                            }}>
-                                                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                                                    <div>
-                                                        <span style={{ fontWeight: "500", color: "#1F7FFF" }}>
-                                                            📱 {formData.phone}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Phone Number */}
-                                <div className="col-md-7">
-                                    <label className="form-label supplierlabel">Phone No.</label>
-
-                                    <div className="input-group">
-                                        <span
-                                            className="input-group-text bg-white"
-                                            style={{ border: "1px solid #A2A8B8" }}
-                                        >
-                                            <img
-                                                src="https://flagcdn.com/in.svg"
-                                                alt="India"
-                                                width="20"
-                                                className="me-1"
-                                            />
-                                            +91
-                                        </span>
-
-                                        <input
-                                            type="tel"
-                                            className="form-control supplierinput shadow-none"
-                                            placeholder="Enter Phone"
-                                            style={{
-                                                border: "1px solid #A2A8B8",
-                                            }}
-                                            value={formData.phone}
-                                            readOnly
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                            {/* LEFT END */}
-
-                            {/* middle line */}
-                            <div
-                                style={{
-                                    width: "1px",
-                                    height: "70px",
-                                    backgroundColor: "#E0E0E0",
-                                    margin: "0 20px",
-                                }}
-                            ></div>
-
-                            {/* RIGHT SIDE (Supplier Invoice No + Date) */}
-                            <div className="d-flex flex-column gap-3">
-                                {/* Supplier Invoice No */}
-                                <div className="d-flex justify-content-end">
-                                    <div ref={dropdownRef} style={{ position: "relative", width: "100%" }}>
-                                        <div
-                                            onClick={() => setIsInvoiceOpen(!isInvoiceOpen)}
-                                            style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: "8px",
-                                                padding: "10px 14px",
-                                                border: "1px solid #D1D5DB",
-                                                borderRadius: "12px",
                                                 backgroundColor: "#FFFFFF",
-                                                cursor: "pointer",
-                                                fontSize: "14px",
-                                                fontFamily: '"Inter", sans-serif',
-                                                color: "#374151",
-                                                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                                                transition: "all 0.2s",
-                                                height: "37px",
+                                                borderRadius: "12px",
+                                                boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+                                                border: "1px solid #E5E7EB",
+                                                overflow: "hidden",
+                                                zIndex: 9999,
+                                                animation: "fadeIn 0.2s ease-out",
+                                                maxHeight: "240px",
+                                                overflowY: "auto",
+                                                scrollbarWidth: "none",
+                                                msOverflowStyle: "none",
                                             }}
-                                            onMouseEnter={(e) =>
-                                                (e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)")
-                                            }
-                                            onMouseLeave={(e) =>
-                                                (e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.1)")
-                                            }
                                         >
-                                            <span style={{ flex: 1 }}>
-                                                {formData.invoiceId
-                                                    ? supplierInvoices.find(i => i._id === formData.invoiceId)?.invoiceNo
-                                                    : "Purchase Invoice No"}
-                                            </span>
-
-                                            <span style={{ fontSize: "12px", color: "#9CA3AF" }}>
-                                                <IoChevronDownOutline />
-                                            </span>
-                                        </div>
-                                        {isInvoiceOpen && (
-                                            <div
-                                                style={{
-                                                    position: "absolute",
-                                                    top: "100%",
-                                                    left: 0,
-                                                    right: 0,
-                                                    marginTop: "8px",
-                                                    backgroundColor: "#FFFFFF",
-                                                    borderRadius: "12px",
-                                                    boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-                                                    border: "1px solid #E5E7EB",
-                                                    overflow: "hidden",
-                                                    zIndex: 9999,
-                                                    animation: "fadeIn 0.2s ease-out",
-                                                    maxHeight: "240px",
-                                                    overflowY: "auto",
-                                                    scrollbarWidth: "none",
-                                                    msOverflowStyle: "none",
-                                                }}
-                                            >
-                                                {supplierInvoices.map((invoice) => (
-                                                    <div
-                                                        key={invoice._id}
-                                                        onClick={() => {
-                                                            handleInvoiceSelect(invoice);
-                                                            setIsInvoiceOpen(false);
-                                                        }}
-                                                        style={{
-                                                            padding: "12px 16px",
-                                                            fontSize: "12px",
-                                                            fontFamily: '"Inter", sans-serif',
-                                                            cursor: "pointer",
-                                                            color:
-                                                                formData.invoiceId === invoice._id
-                                                                    ? "#0E101A"
-                                                                    : "#374151",
-                                                            fontWeight:
-                                                                formData.invoiceId === invoice._id ? "600" : "500",
-                                                            backgroundColor:
-                                                                formData.invoiceId === invoice._id
-                                                                    ? "#e5f0ff"
-                                                                    : "transparent",
-                                                            transition: "all 0.2s ease",
-                                                        }}
-                                                        onMouseEnter={(e) =>
-                                                            (e.currentTarget.style.backgroundColor = "#e5f0ff")
-                                                        }
-                                                        onMouseLeave={(e) =>
-                                                        (e.currentTarget.style.backgroundColor =
+                                            {supplierInvoices.map((invoice) => (
+                                                <div
+                                                    key={invoice._id}
+                                                    onClick={() => {
+                                                        handleInvoiceSelect(invoice);
+                                                        setIsInvoiceOpen(false);
+                                                    }}
+                                                    style={{
+                                                        padding: "12px 16px",
+                                                        fontSize: "12px",
+                                                        fontFamily: '"Inter", sans-serif',
+                                                        cursor: "pointer",
+                                                        color:
+                                                            formData.invoiceId === invoice._id
+                                                                ? "#0E101A"
+                                                                : "#374151",
+                                                        fontWeight:
+                                                            formData.invoiceId === invoice._id ? "600" : "500",
+                                                        backgroundColor:
                                                             formData.invoiceId === invoice._id
                                                                 ? "#e5f0ff"
-                                                                : "transparent")
-                                                        }
-                                                    >
-                                                        {invoice.invoiceNo || invoice.invoiceNumber}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                    <style jsx>{`
+                                                                : "transparent",
+                                                        transition: "all 0.2s ease",
+                                                    }}
+                                                    onMouseEnter={(e) =>
+                                                        (e.currentTarget.style.backgroundColor = "#e5f0ff")
+                                                    }
+                                                    onMouseLeave={(e) =>
+                                                    (e.currentTarget.style.backgroundColor =
+                                                        formData.invoiceId === invoice._id
+                                                            ? "#e5f0ff"
+                                                            : "transparent")
+                                                    }
+                                                >
+                                                    {invoice.invoiceNo || invoice.invoiceNumber}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <style jsx>{`
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -994,805 +989,810 @@ const SupplierDebitNote = () => {
     }
   }
 `}</style>
-                                </div>
+                            </div>
 
-                                {/* Date */}
-                                <div className="d-flex justify-content-end gap-2">
-                                    <div className="" style={{ marginLeft: "-10px" }}>
-                                        <DatePicker
-                                            padding="6px 10px"
-                                            value={formData.date}
-                                            onChange={(selectedDate) =>
-                                                setFormData((prev) => ({
-                                                    ...prev,
-                                                    date: selectedDate,
-                                                }))
-                                            }
-                                        />
-                                    </div>
+                            {/* Date */}
+                            <div className="d-flex justify-content-end gap-2">
+                                <div className="" style={{ marginLeft: "-10px" }}>
+                                    <DatePicker
+                                        padding="6px 10px"
+                                        value={formData.date}
+                                        onChange={(selectedDate) =>
+                                            setFormData((prev) => ({
+                                                ...prev,
+                                                date: selectedDate,
+                                            }))
+                                        }
+                                    />
                                 </div>
                             </div>
-                            {/* RIGHT END */}
                         </div>
+                        {/* RIGHT END */}
+                    </div>
 
-                        {/* Add Products Section - EXACTLY SAME */}
-                        <div className="mb-4">
-                            <h6 className="section-title">Add Products</h6>
+                    {/* Add Products Section - EXACTLY SAME */}
+                    <div className="mb-4">
+                        <h6 className="section-title">Add Products</h6>
 
-                            <table className="table po-table mt-3 table-bordered-custom">
-                                <thead style={{ textAlign: "center" }}>
-                                    <tr>
-                                        <th style={{ width: "70px", position: "relative" }}>
-                                            Sl No.
-                                        </th>
-                                        <th style={{ textAlign: "left", position: "relative" }}>
-                                            Items
-                                        </th>
-                                        <th style={{ position: "relative" }}>Qty</th>
-                                        <th style={{ position: "relative" }}>Unit</th>
-                                        <th style={{ position: "relative" }}>Unit Price</th>
-                                        <th style={{ position: "relative" }}>Tax</th>
-                                        <th style={{ position: "relative" }}>Tax Amount</th>
-                                        <th style={{ position: "relative" }}>Discount</th>
-                                        <th>Amount</th>
-                                    </tr>
-                                </thead>
+                        <table className="table po-table mt-3 table-bordered-custom">
+                            <thead style={{ textAlign: "center" }}>
+                                <tr>
+                                    <th style={{ width: "70px", position: "relative" }}>
+                                        Sl No.
+                                    </th>
+                                    <th style={{ textAlign: "left", position: "relative" }}>
+                                        Items
+                                    </th>
+                                    <th style={{ position: "relative" }}>Qty</th>
+                                    <th style={{ position: "relative" }}>Unit</th>
+                                    <th style={{ position: "relative" }}>Unit Price</th>
+                                    <th style={{ position: "relative" }}>Tax</th>
+                                    <th style={{ position: "relative" }}>Tax Amount</th>
+                                    <th style={{ position: "relative" }}>Discount</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
 
-                                <tbody>
-                                    {/* If invoice selected and has items, show them */}
-                                    {formData.items.length > 0
-                                        ? formData.items.map((item, index) => (
-                                            <tr key={item.id}>
-                                                <td
-                                                    className="numslno"
+                            <tbody>
+                                {/* If invoice selected and has items, show them */}
+                                {formData.items.length > 0
+                                    ? formData.items.map((item, index) => (
+                                        <tr key={item.id}>
+                                            <td
+                                                className="numslno"
+                                                style={{
+                                                    border: "2px solid #1F7FFF",
+                                                    position: "relative",
+                                                }}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    style={{ marginRight: "10px" }}
+                                                    checked={item.isSelected}
+                                                    onChange={() => handleItemSelect(index)}
+                                                />
+                                                {item.id}
+                                            </td>
+
+                                            {/* Items */}
+                                            <td
+                                                className="itemsno items-cell"
+                                                style={{ position: "relative" }}
+                                            >
+                                                <input
+                                                    type="text"
+                                                    className="form-control supplierinput shadow-none"
                                                     style={{
-                                                        border: "2px solid #1F7FFF",
-                                                        position: "relative",
+                                                        outline: "none !important",
+                                                        border: "none",
                                                     }}
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        style={{ marginRight: "10px" }}
-                                                        checked={item.isSelected}
-                                                        onChange={() => handleItemSelect(index)}
-                                                    />
-                                                    {item.id}
-                                                </td>
+                                                    value={item.name}
+                                                    readOnly
+                                                />
+                                            </td>
 
-                                                {/* Items */}
-                                                <td
-                                                    className="itemsno items-cell"
-                                                    style={{ position: "relative" }}
-                                                >
-                                                    <input
-                                                        type="text"
-                                                        className="form-control supplierinput shadow-none"
-                                                        style={{
-                                                            outline: "none !important",
-                                                            border: "none",
-                                                        }}
-                                                        value={item.name}
-                                                        readOnly
-                                                    />
-                                                </td>
+                                            {/* Qty - Show as "returned/original" format (0/2) */}
+                                            <td
+                                                className="items-cell"
+                                                style={{ width: "100px", position: "relative" }}
+                                            >
+                                                <input
+                                                    type="text"
+                                                    className="form-control center shadow-none"
+                                                    placeholder="0/0"
+                                                    style={{
+                                                        width: "100%",
+                                                        border: "1px solid #A2A8B8",
+                                                        backgroundColor: item.isSelected
+                                                            ? "white"
+                                                            : "#f8f9fa",
+                                                    }}
+                                                    value={`${item.quantity}/${item.originalQuantity}`}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value;
+                                                        const [returnQty] = value
+                                                            .split("/")
+                                                            .map((num) => parseFloat(num) || 0);
+                                                        handleItemChange(index, "quantity", returnQty);
+                                                    }}
+                                                    disabled={!item.isSelected}
+                                                />
+                                            </td>
 
-                                                {/* Qty - Show as "returned/original" format (0/2) */}
-                                                <td
-                                                    className="items-cell"
-                                                    style={{ width: "100px", position: "relative" }}
+                                            {/* Unit */}
+                                            <td
+                                                className="items-cell"
+                                                style={{ width: "100px", position: "relative" }}
+                                            >
+                                                <select
+                                                    className="form-select form-select-sm shadow-none"
+                                                    style={{
+                                                        width: "100%",
+                                                        border: "1px solid #A2A8B8",
+                                                        backgroundColor: item.isSelected
+                                                            ? "white"
+                                                            : "#f8f9fa",
+                                                    }}
+                                                    value={item.unit}
+                                                    onChange={(e) =>
+                                                        handleItemChange(index, "unit", e.target.value)
+                                                    }
+                                                    disabled={!item.isSelected}
                                                 >
-                                                    <input
-                                                        type="text"
-                                                        className="form-control center shadow-none"
-                                                        placeholder="0/0"
-                                                        style={{
-                                                            width: "100%",
-                                                            border: "1px solid #A2A8B8",
-                                                            backgroundColor: item.isSelected
-                                                                ? "white"
-                                                                : "#f8f9fa",
-                                                        }}
-                                                        value={`${item.quantity}/${item.originalQuantity}`}
-                                                        onChange={(e) => {
-                                                            const value = e.target.value;
-                                                            const [returnQty] = value
-                                                                .split("/")
-                                                                .map((num) => parseFloat(num) || 0);
-                                                            handleItemChange(index, "quantity", returnQty);
-                                                        }}
-                                                        disabled={!item.isSelected}
-                                                    />
-                                                </td>
+                                                    <option>Pcs</option>
+                                                    <option>Kg</option>
+                                                    <option>Gram</option>
+                                                    <option>Liter</option>
+                                                    <option>Meter</option>
+                                                </select>
+                                            </td>
 
-                                                {/* Unit */}
-                                                <td
-                                                    className="items-cell"
-                                                    style={{ width: "100px", position: "relative" }}
-                                                >
-                                                    <select
-                                                        className="form-select form-select-sm shadow-none"
-                                                        style={{
-                                                            width: "100%",
-                                                            border: "1px solid #A2A8B8",
-                                                            backgroundColor: item.isSelected
-                                                                ? "white"
-                                                                : "#f8f9fa",
-                                                        }}
-                                                        value={item.unit}
-                                                        onChange={(e) =>
-                                                            handleItemChange(index, "unit", e.target.value)
-                                                        }
-                                                        disabled={!item.isSelected}
-                                                    >
-                                                        <option>Pcs</option>
-                                                        <option>Kg</option>
-                                                        <option>Gram</option>
-                                                        <option>Liter</option>
-                                                        <option>Meter</option>
-                                                    </select>
-                                                </td>
+                                            {/* Unit Price */}
+                                            <td
+                                                className="items-cell"
+                                                style={{ width: "150px", position: "relative" }}
+                                            >
+                                                <input
+                                                    type="number"
+                                                    className="form-control shadow-none"
+                                                    placeholder="₹0.00"
+                                                    style={{
+                                                        border: "1px solid #A2A8B8",
+                                                        backgroundColor: item.isSelected
+                                                            ? "white"
+                                                            : "#f8f9fa",
+                                                    }}
+                                                    value={item.unitPrice}
+                                                    onChange={(e) =>
+                                                        handleItemChange(
+                                                            index,
+                                                            "unitPrice",
+                                                            e.target.value
+                                                        )
+                                                    }
+                                                    min="0"
+                                                    step="0.01"
+                                                    disabled={!item.isSelected}
+                                                />
+                                            </td>
 
-                                                {/* Unit Price */}
-                                                <td
-                                                    className="items-cell"
-                                                    style={{ width: "150px", position: "relative" }}
+                                            {/* Tax */}
+                                            <td
+                                                className="items-cell"
+                                                style={{ width: "150px", position: "relative" }}
+                                            >
+                                                <select
+                                                    className="form-select supplierselect shadow-none"
+                                                    style={{
+                                                        border: "1px solid #A2A8B8",
+                                                        backgroundColor: item.isSelected
+                                                            ? "white"
+                                                            : "#f8f9fa",
+                                                    }}
+                                                    value={item.tax}
+                                                    onChange={(e) => {
+                                                        const taxRate =
+                                                            parseFloat(
+                                                                e.target.value.match(/\d+/)?.[0]
+                                                            ) || 5;
+                                                        handleItemChange(index, "tax", e.target.value);
+                                                        handleItemChange(index, "taxRate", taxRate);
+                                                    }}
+                                                    disabled={!item.isSelected}
                                                 >
-                                                    <input
-                                                        type="number"
-                                                        className="form-control shadow-none"
-                                                        placeholder="₹0.00"
-                                                        style={{
-                                                            border: "1px solid #A2A8B8",
-                                                            backgroundColor: item.isSelected
-                                                                ? "white"
-                                                                : "#f8f9fa",
-                                                        }}
-                                                        value={item.unitPrice}
-                                                        onChange={(e) =>
-                                                            handleItemChange(
-                                                                index,
-                                                                "unitPrice",
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                        min="0"
-                                                        step="0.01"
-                                                        disabled={!item.isSelected}
-                                                    />
-                                                </td>
+                                                    <option>GST @ 5%</option>
+                                                    <option>GST @ 12%</option>
+                                                    <option>GST @ 18%</option>
+                                                    <option>GST @ 28%</option>
+                                                </select>
+                                            </td>
 
-                                                {/* Tax */}
-                                                <td
-                                                    className="items-cell"
-                                                    style={{ width: "150px", position: "relative" }}
-                                                >
-                                                    <select
-                                                        className="form-select supplierselect shadow-none"
-                                                        style={{
-                                                            border: "1px solid #A2A8B8",
-                                                            backgroundColor: item.isSelected
-                                                                ? "white"
-                                                                : "#f8f9fa",
-                                                        }}
-                                                        value={item.tax}
-                                                        onChange={(e) => {
-                                                            const taxRate =
-                                                                parseFloat(
-                                                                    e.target.value.match(/\d+/)?.[0]
-                                                                ) || 5;
-                                                            handleItemChange(index, "tax", e.target.value);
-                                                            handleItemChange(index, "taxRate", taxRate);
-                                                        }}
-                                                        disabled={!item.isSelected}
-                                                    >
-                                                        <option>GST @ 5%</option>
-                                                        <option>GST @ 12%</option>
-                                                        <option>GST @ 18%</option>
-                                                        <option>GST @ 28%</option>
-                                                    </select>
-                                                </td>
+                                            {/* Tax Amount */}
+                                            <td
+                                                className="items-cell"
+                                                style={{ width: "130px", position: "relative" }}
+                                            >
+                                                <input
+                                                    type="text"
+                                                    placeholder="₹0.00"
+                                                    className="form-control shadow-none"
+                                                    style={{
+                                                        border: "1px solid #A2A8B8",
+                                                        backgroundColor: "#f8f9fa",
+                                                    }}
+                                                    value={`₹${item.taxAmount.toFixed(2)}`}
+                                                    readOnly
+                                                />
+                                            </td>
 
-                                                {/* Tax Amount */}
-                                                <td
-                                                    className="items-cell"
-                                                    style={{ width: "130px", position: "relative" }}
+                                            {/* Discount */}
+                                            <td
+                                                className="items-cell"
+                                                style={{ width: "200px", position: "relative" }}
+                                            >
+                                                <div
+                                                    className="discount-box"
+                                                    style={{ display: "flex", gap: "10px" }}
                                                 >
-                                                    <input
-                                                        type="text"
-                                                        placeholder="₹0.00"
-                                                        className="form-control shadow-none"
-                                                        style={{
-                                                            border: "1px solid #A2A8B8",
-                                                            backgroundColor: "#f8f9fa",
-                                                        }}
-                                                        value={`₹${item.taxAmount.toFixed(2)}`}
-                                                        readOnly
-                                                    />
-                                                </td>
-
-                                                {/* Discount */}
-                                                <td
-                                                    className="items-cell"
-                                                    style={{ width: "200px", position: "relative" }}
-                                                >
-                                                    <div
-                                                        className="discount-box"
-                                                        style={{ display: "flex", gap: "10px" }}
-                                                    >
-                                                        <div style={{ position: "relative" }}>
-                                                            <input
-                                                                type="number"
-                                                                className="form-control small shadow-none"
-                                                                style={{
-                                                                    paddingRight: "30px",
-                                                                    width: "100%",
-                                                                    border: "1px solid #A2A8B8",
-                                                                    backgroundColor: item.isSelected
-                                                                        ? "white"
-                                                                        : "#f8f9fa",
-                                                                }}
-                                                                placeholder="00"
-                                                                value={item.discountPercent}
-                                                                onChange={(e) =>
-                                                                    handleItemChange(
-                                                                        index,
-                                                                        "discountPercent",
-                                                                        e.target.value
-                                                                    )
-                                                                }
-                                                                min="0"
-                                                                max="100"
-                                                                disabled={!item.isSelected}
-                                                            />
-                                                            <div
-                                                                className="symbol"
-                                                                style={{
-                                                                    position: "absolute",
-                                                                    right: "0px",
-                                                                    top: "50%",
-                                                                    transform: "translateY(-50%)",
-                                                                    pointerEvents: "none",
-                                                                    color: "#555",
-                                                                }}
-                                                            >
-                                                                %{" "}
-                                                            </div>
-                                                        </div>
-                                                        <div style={{ position: "relative" }}>
-                                                            <input
-                                                                type="number"
-                                                                className="form-control small shadow-none"
-                                                                style={{
-                                                                    width: "100%",
-                                                                    border: "1px solid #A2A8B8",
-                                                                    backgroundColor: item.isSelected
-                                                                        ? "white"
-                                                                        : "#f8f9fa",
-                                                                }}
-                                                                placeholder="00"
-                                                                value={item.discountAmount}
-                                                                onChange={(e) =>
-                                                                    handleItemChange(
-                                                                        index,
-                                                                        "discountAmount",
-                                                                        e.target.value
-                                                                    )
-                                                                }
-                                                                min="0"
-                                                                step="0.01"
-                                                                disabled={!item.isSelected}
-                                                            />
-                                                            <div
-                                                                style={{
-                                                                    position: "absolute",
-                                                                    right: "0px",
-                                                                    top: "50%",
-                                                                    transform: "translateY(-50%)",
-                                                                    pointerEvents: "none",
-                                                                    color: "#555",
-                                                                }}
-                                                                className="symbol"
-                                                            >
-                                                                ₹{" "}
-                                                            </div>
+                                                    <div style={{ position: "relative" }}>
+                                                        <input
+                                                            type="number"
+                                                            className="form-control small shadow-none"
+                                                            style={{
+                                                                paddingRight: "30px",
+                                                                width: "100%",
+                                                                border: "1px solid #A2A8B8",
+                                                                backgroundColor: item.isSelected
+                                                                    ? "white"
+                                                                    : "#f8f9fa",
+                                                            }}
+                                                            placeholder="00"
+                                                            value={item.discountPercent}
+                                                            onChange={(e) =>
+                                                                handleItemChange(
+                                                                    index,
+                                                                    "discountPercent",
+                                                                    e.target.value
+                                                                )
+                                                            }
+                                                            min="0"
+                                                            max="100"
+                                                            disabled={!item.isSelected}
+                                                        />
+                                                        <div
+                                                            className="symbol"
+                                                            style={{
+                                                                position: "absolute",
+                                                                right: "0px",
+                                                                top: "50%",
+                                                                transform: "translateY(-50%)",
+                                                                pointerEvents: "none",
+                                                                color: "#555",
+                                                            }}
+                                                        >
+                                                            %{" "}
                                                         </div>
                                                     </div>
-                                                </td>
-
-                                                {/* Amount */}
-                                                <td style={{ width: "150px" }}>
-                                                    <input
-                                                        type="text"
-                                                        className="form-control shadow-none"
-                                                        style={{
-                                                            width: "100%",
-                                                            border: "1px solid #A2A8B8",
-                                                            backgroundColor: "#f8f9fa",
-                                                        }}
-                                                        placeholder="₹0.00"
-                                                        value={`₹${item.amount.toFixed(2)}`}
-                                                        readOnly
-                                                    />
-                                                </td>
-                                            </tr>
-                                        ))
-                                        : /* Show 1 empty row by default (skeleton) */
-                                        [1].map((num) => (
-                                            <tr key={num}>
-                                                <td
-                                                    className="numslno"
-                                                    style={{
-                                                        border: "2px solid #1F7FFF",
-                                                        position: "relative",
-                                                    }}
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        style={{ marginRight: "10px" }}
-                                                    />
-                                                    {num}
-                                                </td>
-
-                                                {/* Items */}
-                                                <td
-                                                    className="itemsno items-cell"
-                                                    style={{ position: "relative" }}
-                                                >
-                                                    <input
-                                                        type="text"
-                                                        className="form-control supplierinput shadow-none"
-                                                        placeholder="Select invoice to load products"
-                                                        style={{
-                                                            outline: "none !important",
-                                                            border: "none",
-                                                        }}
-                                                        readOnly
-                                                    />
-                                                </td>
-
-                                                {/* Qty */}
-                                                <td
-                                                    className="items-cell"
-                                                    style={{ width: "100px", position: "relative" }}
-                                                >
-                                                    <input
-                                                        type="text"
-                                                        className="form-control center shadow-none"
-                                                        placeholder="0/0"
-                                                        style={{
-                                                            width: "100%",
-                                                            border: "1px solid #A2A8B8",
-                                                        }}
-                                                        readOnly
-                                                    />
-                                                </td>
-
-                                                {/* Unit */}
-                                                <td
-                                                    className="items-cell"
-                                                    style={{ width: "100px", position: "relative" }}
-                                                >
-                                                    <select
-                                                        className="form-select form-select-sm shadow-none"
-                                                        style={{
-                                                            width: "100%",
-                                                            border: "1px solid #A2A8B8",
-                                                        }}
-                                                        disabled
-                                                    >
-                                                        <option>Pcs</option>
-                                                        <option>Kg</option>
-                                                    </select>
-                                                </td>
-
-                                                {/* Unit Price */}
-                                                <td
-                                                    className="items-cell"
-                                                    style={{ width: "150px", position: "relative" }}
-                                                >
-                                                    <input
-                                                        type="number"
-                                                        className="form-control shadow-none"
-                                                        placeholder="₹0.00"
-                                                        style={{ border: "1px solid #A2A8B8" }}
-                                                        readOnly
-                                                    />
-                                                </td>
-
-                                                {/* Tax */}
-                                                <td
-                                                    className="items-cell"
-                                                    style={{ width: "150px", position: "relative" }}
-                                                >
-                                                    <select
-                                                        className="form-select supplierselect shadow-none"
-                                                        style={{ border: "1px solid #A2A8B8" }}
-                                                        disabled
-                                                    >
-                                                        <option>GST @ 5%</option>
-                                                        <option>GST @ 12%</option>
-                                                    </select>
-                                                </td>
-
-                                                {/* Tax Amount */}
-                                                <td
-                                                    className="items-cell"
-                                                    style={{ width: "130px", position: "relative" }}
-                                                >
-                                                    <input
-                                                        type="text"
-                                                        placeholder="₹0.00"
-                                                        className="form-control shadow-none"
-                                                        style={{ border: "1px solid #A2A8B8" }}
-                                                        readOnly
-                                                    />
-                                                </td>
-
-                                                {/* Discount */}
-                                                <td
-                                                    className="items-cell"
-                                                    style={{ width: "200px", position: "relative" }}
-                                                >
-                                                    <div
-                                                        className="discount-box"
-                                                        style={{ display: "flex", gap: "10px" }}
-                                                    >
-                                                        <div style={{ position: "relative" }}>
-                                                            <input
-                                                                type="number"
-                                                                className="form-control small shadow-none"
-                                                                style={{
-                                                                    paddingRight: "30px",
-                                                                    width: "100%",
-                                                                    border: "1px solid #A2A8B8",
-                                                                }}
-                                                                placeholder="00"
-                                                                readOnly
-                                                            />
-                                                            <div
-                                                                className="symbol"
-                                                                style={{
-                                                                    position: "absolute",
-                                                                    right: "0px",
-                                                                    top: "50%",
-                                                                    transform: "translateY(-50%)",
-                                                                    pointerEvents: "none",
-                                                                    color: "#555",
-                                                                }}
-                                                            >
-                                                                %{" "}
-                                                            </div>
-                                                        </div>
-                                                        <div style={{ position: "relative" }}>
-                                                            <input
-                                                                type="number"
-                                                                className="form-control small shadow-none"
-                                                                style={{
-                                                                    width: "100%",
-                                                                    border: "1px solid #A2A8B8",
-                                                                }}
-                                                                placeholder="00"
-                                                                readOnly
-                                                            />
-                                                            <div
-                                                                style={{
-                                                                    position: "absolute",
-                                                                    right: "0px",
-                                                                    top: "50%",
-                                                                    transform: "translateY(-50%)",
-                                                                    pointerEvents: "none",
-                                                                    color: "#555",
-                                                                }}
-                                                                className="symbol"
-                                                            >
-                                                                ₹{" "}
-                                                            </div>
+                                                    <div style={{ position: "relative" }}>
+                                                        <input
+                                                            type="number"
+                                                            className="form-control small shadow-none"
+                                                            style={{
+                                                                width: "100%",
+                                                                border: "1px solid #A2A8B8",
+                                                                backgroundColor: item.isSelected
+                                                                    ? "white"
+                                                                    : "#f8f9fa",
+                                                            }}
+                                                            placeholder="00"
+                                                            value={item.discountAmount}
+                                                            onChange={(e) =>
+                                                                handleItemChange(
+                                                                    index,
+                                                                    "discountAmount",
+                                                                    e.target.value
+                                                                )
+                                                            }
+                                                            min="0"
+                                                            step="0.01"
+                                                            disabled={!item.isSelected}
+                                                        />
+                                                        <div
+                                                            style={{
+                                                                position: "absolute",
+                                                                right: "0px",
+                                                                top: "50%",
+                                                                transform: "translateY(-50%)",
+                                                                pointerEvents: "none",
+                                                                color: "#555",
+                                                            }}
+                                                            className="symbol"
+                                                        >
+                                                            ₹{" "}
                                                         </div>
                                                     </div>
-                                                </td>
+                                                </div>
+                                            </td>
 
-                                                {/* Amount */}
-                                                <td style={{ width: "150px" }}>
-                                                    <input
-                                                        type="text"
-                                                        className="form-control shadow-none"
-                                                        style={{
-                                                            width: "100%",
-                                                            border: "1px solid #A2A8B8",
-                                                        }}
-                                                        placeholder="₹0.00"
-                                                        readOnly
-                                                    />
-                                                </td>
-                                            </tr>
-                                        ))}
-                                </tbody>
-                            </table>
+                                            {/* Amount */}
+                                            <td style={{ width: "150px" }}>
+                                                <input
+                                                    type="text"
+                                                    className="form-control shadow-none"
+                                                    style={{
+                                                        width: "100%",
+                                                        border: "1px solid #A2A8B8",
+                                                        backgroundColor: "#f8f9fa",
+                                                    }}
+                                                    placeholder="₹0.00"
+                                                    value={`₹${item.amount.toFixed(2)}`}
+                                                    readOnly
+                                                />
+                                            </td>
+                                        </tr>
+                                    ))
+                                    : /* Show 1 empty row by default (skeleton) */
+                                    [1].map((num) => (
+                                        <tr key={num}>
+                                            <td
+                                                className="numslno"
+                                                style={{
+                                                    border: "2px solid #1F7FFF",
+                                                    position: "relative",
+                                                }}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    style={{ marginRight: "10px" }}
+                                                />
+                                                {num}
+                                            </td>
+
+                                            {/* Items */}
+                                            <td
+                                                className="itemsno items-cell"
+                                                style={{ position: "relative" }}
+                                            >
+                                                <input
+                                                    type="text"
+                                                    className="form-control supplierinput shadow-none"
+                                                    placeholder="Select invoice to load products"
+                                                    style={{
+                                                        outline: "none !important",
+                                                        border: "none",
+                                                    }}
+                                                    readOnly
+                                                />
+                                            </td>
+
+                                            {/* Qty */}
+                                            <td
+                                                className="items-cell"
+                                                style={{ width: "100px", position: "relative" }}
+                                            >
+                                                <input
+                                                    type="text"
+                                                    className="form-control center shadow-none"
+                                                    placeholder="0/0"
+                                                    style={{
+                                                        width: "100%",
+                                                        border: "1px solid #A2A8B8",
+                                                    }}
+                                                    readOnly
+                                                />
+                                            </td>
+
+                                            {/* Unit */}
+                                            <td
+                                                className="items-cell"
+                                                style={{ width: "100px", position: "relative" }}
+                                            >
+                                                <select
+                                                    className="form-select form-select-sm shadow-none"
+                                                    style={{
+                                                        width: "100%",
+                                                        border: "1px solid #A2A8B8",
+                                                    }}
+                                                    disabled
+                                                >
+                                                    <option>Pcs</option>
+                                                    <option>Kg</option>
+                                                </select>
+                                            </td>
+
+                                            {/* Unit Price */}
+                                            <td
+                                                className="items-cell"
+                                                style={{ width: "150px", position: "relative" }}
+                                            >
+                                                <input
+                                                    type="number"
+                                                    className="form-control shadow-none"
+                                                    placeholder="₹0.00"
+                                                    style={{ border: "1px solid #A2A8B8" }}
+                                                    readOnly
+                                                />
+                                            </td>
+
+                                            {/* Tax */}
+                                            <td
+                                                className="items-cell"
+                                                style={{ width: "150px", position: "relative" }}
+                                            >
+                                                <select
+                                                    className="form-select supplierselect shadow-none"
+                                                    style={{ border: "1px solid #A2A8B8" }}
+                                                    disabled
+                                                >
+                                                    <option>GST @ 5%</option>
+                                                    <option>GST @ 12%</option>
+                                                </select>
+                                            </td>
+
+                                            {/* Tax Amount */}
+                                            <td
+                                                className="items-cell"
+                                                style={{ width: "130px", position: "relative" }}
+                                            >
+                                                <input
+                                                    type="text"
+                                                    placeholder="₹0.00"
+                                                    className="form-control shadow-none"
+                                                    style={{ border: "1px solid #A2A8B8" }}
+                                                    readOnly
+                                                />
+                                            </td>
+
+                                            {/* Discount */}
+                                            <td
+                                                className="items-cell"
+                                                style={{ width: "200px", position: "relative" }}
+                                            >
+                                                <div
+                                                    className="discount-box"
+                                                    style={{ display: "flex", gap: "10px" }}
+                                                >
+                                                    <div style={{ position: "relative" }}>
+                                                        <input
+                                                            type="number"
+                                                            className="form-control small shadow-none"
+                                                            style={{
+                                                                paddingRight: "30px",
+                                                                width: "100%",
+                                                                border: "1px solid #A2A8B8",
+                                                            }}
+                                                            placeholder="00"
+                                                            readOnly
+                                                        />
+                                                        <div
+                                                            className="symbol"
+                                                            style={{
+                                                                position: "absolute",
+                                                                right: "0px",
+                                                                top: "50%",
+                                                                transform: "translateY(-50%)",
+                                                                pointerEvents: "none",
+                                                                color: "#555",
+                                                            }}
+                                                        >
+                                                            %{" "}
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ position: "relative" }}>
+                                                        <input
+                                                            type="number"
+                                                            className="form-control small shadow-none"
+                                                            style={{
+                                                                width: "100%",
+                                                                border: "1px solid #A2A8B8",
+                                                            }}
+                                                            placeholder="00"
+                                                            readOnly
+                                                        />
+                                                        <div
+                                                            style={{
+                                                                position: "absolute",
+                                                                right: "0px",
+                                                                top: "50%",
+                                                                transform: "translateY(-50%)",
+                                                                pointerEvents: "none",
+                                                                color: "#555",
+                                                            }}
+                                                            className="symbol"
+                                                        >
+                                                            ₹{" "}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+
+                                            {/* Amount */}
+                                            <td style={{ width: "150px" }}>
+                                                <input
+                                                    type="text"
+                                                    className="form-control shadow-none"
+                                                    style={{
+                                                        width: "100%",
+                                                        border: "1px solid #A2A8B8",
+                                                    }}
+                                                    placeholder="₹0.00"
+                                                    readOnly
+                                                />
+                                            </td>
+                                        </tr>
+                                    ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Payment + Summary - EXACTLY SAME */}
+                    <div className="row">
+                        {/* Payment Left */}
+                        <div className="col-md-7">
+                            <div className="">
+                                <h6 className="section-title" style={{ color: "#0E101A" }}>
+                                    Payment Details
+                                </h6>
+                                <div className="mt-3">
+                                    <textarea
+                                        className="form-control"
+                                        rows="3"
+                                        placeholder="Add any notes or payment details..."
+                                        value={formData.notes}
+                                        onChange={(e) =>
+                                            setFormData((prev) => ({
+                                                ...prev,
+                                                notes: e.target.value,
+                                            }))
+                                        }
+                                    />
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Payment + Summary - EXACTLY SAME */}
-                        <div className="row">
-                            {/* Payment Left */}
-                            <div className="col-md-7">
-                                <div className="">
-                                    <h6 className="section-title" style={{ color: "#0E101A" }}>
-                                        Payment Details
-                                    </h6>
-                                    <div className="mt-3">
-                                        <textarea
-                                            className="form-control"
-                                            rows="3"
-                                            placeholder="Add any notes or payment details..."
-                                            value={formData.notes}
+                        {/* Summary Right */}
+                        <div className="col-md-5">
+                            <div className="p-4">
+                                <div className="summary-line">
+                                    <span
+                                        style={{
+                                            color: "#0E101A",
+                                            fontWeight: 400,
+                                            fontSize: "16px",
+                                            lineHeight: "120%",
+                                            fontFamily: 'Inter", sans-serif',
+                                        }}
+                                    >
+                                        Subtotal (with GST):
+                                    </span>
+                                    <span
+                                        style={{
+                                            color: "#0E101A",
+                                            fontWeight: 400,
+                                            fontSize: "16px",
+                                            lineHeight: "120%",
+                                            fontFamily: 'Inter", sans-serif',
+                                        }}
+                                    >
+                                        ₹{formData.subtotal.toFixed(2)}
+                                    </span>
+                                </div>
+                                <div className="summary-line">
+                                    <span
+                                        style={{
+                                            color: "#727681",
+                                            fontWeight: 400,
+                                            fontSize: "16px",
+                                            lineHeight: "120%",
+                                            fontFamily: 'Inter", sans-serif',
+                                        }}
+                                    >
+                                        Discount:
+                                    </span>
+                                    <span
+                                        style={{
+                                            color: "#727681",
+                                            fontWeight: 400,
+                                            fontSize: "16px",
+                                            lineHeight: "120%",
+                                            fontFamily: 'Inter", sans-serif',
+                                        }}
+                                    >
+                                        ₹{formData.discount.toFixed(2)}
+                                    </span>
+                                </div>
+                                <div className="summary-line">
+                                    <span
+                                        style={{
+                                            color: "#727681",
+                                            fontWeight: 400,
+                                            fontSize: "16px",
+                                            lineHeight: "120%",
+                                            fontFamily: 'Inter", sans-serif',
+                                        }}
+                                    >
+                                        Shipping Charges:
+                                    </span>
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "8px",
+                                        }}
+                                    >
+                                        <span>₹</span>
+                                        <input
+                                            type="number"
+                                            className="form-control form-control-sm"
+                                            style={{ width: "80px", padding: "2px 8px" }}
+                                            value={formData.shippingCharges}
                                             onChange={(e) =>
                                                 setFormData((prev) => ({
                                                     ...prev,
-                                                    notes: e.target.value,
+                                                    shippingCharges: parseFloat(e.target.value) || 0,
                                                 }))
                                             }
+                                            min="0"
+                                            step="0.01"
                                         />
                                     </div>
                                 </div>
-                            </div>
 
-                            {/* Summary Right */}
-                            <div className="col-md-5">
-                                <div className="p-4">
-                                    <div className="summary-line">
-                                        <span
-                                            style={{
-                                                color: "#0E101A",
-                                                fontWeight: 400,
-                                                fontSize: "16px",
-                                                lineHeight: "120%",
-                                                fontFamily: 'Inter", sans-serif',
-                                            }}
-                                        >
-                                            Subtotal (with GST):
-                                        </span>
-                                        <span
-                                            style={{
-                                                color: "#0E101A",
-                                                fontWeight: 400,
-                                                fontSize: "16px",
-                                                lineHeight: "120%",
-                                                fontFamily: 'Inter", sans-serif',
-                                            }}
-                                        >
-                                            ₹{formData.subtotal.toFixed(2)}
-                                        </span>
-                                    </div>
-                                    <div className="summary-line">
-                                        <span
-                                            style={{
-                                                color: "#727681",
-                                                fontWeight: 400,
-                                                fontSize: "16px",
-                                                lineHeight: "120%",
-                                                fontFamily: 'Inter", sans-serif',
-                                            }}
-                                        >
-                                            Discount:
-                                        </span>
-                                        <span
-                                            style={{
-                                                color: "#727681",
-                                                fontWeight: 400,
-                                                fontSize: "16px",
-                                                lineHeight: "120%",
-                                                fontFamily: 'Inter", sans-serif',
-                                            }}
-                                        >
-                                            ₹{formData.discount.toFixed(2)}
-                                        </span>
-                                    </div>
-                                    <div className="summary-line">
-                                        <span
-                                            style={{
-                                                color: "#727681",
-                                                fontWeight: 400,
-                                                fontSize: "16px",
-                                                lineHeight: "120%",
-                                                fontFamily: 'Inter", sans-serif',
-                                            }}
-                                        >
-                                            Shipping Charges:
-                                        </span>
-                                        <div
-                                            style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: "8px",
-                                            }}
-                                        >
-                                            <span>₹</span>
-                                            <input
-                                                type="number"
-                                                className="form-control form-control-sm"
-                                                style={{ width: "80px", padding: "2px 8px" }}
-                                                value={formData.shippingCharges}
-                                                onChange={(e) =>
-                                                    setFormData((prev) => ({
-                                                        ...prev,
-                                                        shippingCharges: parseFloat(e.target.value) || 0,
-                                                    }))
-                                                }
-                                                min="0"
-                                                step="0.01"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="summary-line">
-                                        <span>
-                                            <input
-                                                className="form-check-input"
-                                                type="checkbox"
-                                                checked={formData.autoRoundOff}
-                                                onChange={(e) =>
-                                                    setFormData((prev) => ({
-                                                        ...prev,
-                                                        autoRoundOff: e.target.checked,
-                                                    }))
-                                                }
-                                            />
-                                            <span
-                                                style={{
-                                                    color: "#0E101A",
-                                                    fontWeight: 400,
-                                                    fontSize: "16px",
-                                                    lineHeight: "120%",
-                                                    fontFamily: 'Inter", sans-serif',
-                                                    marginLeft: "10px",
-                                                }}
-                                            >
-                                                Auto Round-off
-                                            </span>
-                                        </span>
-                                        <span
-                                            style={{
-                                                color: "#0E101A",
-                                                fontWeight: 400,
-                                                fontSize: "16px",
-                                                lineHeight: "120%",
-                                                fontFamily: 'Inter", sans-serif',
-                                            }}
-                                        >
-                                            {formData.roundOff >= 0 ? "+" : "-"}₹
-                                            {Math.abs(formData.roundOff).toFixed(2)}
-                                        </span>
-                                    </div>
-                                    <hr style={{ color: "#727681" }} />
-                                    <div className="summary-line">
-                                        <h5
-                                            style={{
-                                                color: "#0E101A",
-                                                lineHeight: "120%",
-                                                fontFamily: 'Inter", sans-serif',
-                                            }}
-                                        >
-                                            Total Debit Amount :-
-                                        </h5>
-                                        <h4
-                                            style={{
-                                                color: "#0E101A",
-                                                fontWeight: 500,
-                                                fontSize: "16px",
-                                                lineHeight: "120%",
-                                                fontFamily: 'Inter", sans-serif',
-                                            }}
-                                        >
-                                            ₹{formData.totalAmount.toFixed(2)}
-                                        </h4>
-                                    </div>
-
-                                    <div className="form-check mb-2">
+                                <div className="summary-line">
+                                    <span>
                                         <input
                                             className="form-check-input"
                                             type="checkbox"
-                                            checked={formData.fullyReceived}
+                                            checked={formData.autoRoundOff}
                                             onChange={(e) =>
                                                 setFormData((prev) => ({
                                                     ...prev,
-                                                    fullyReceived: e.target.checked,
+                                                    autoRoundOff: e.target.checked,
                                                 }))
                                             }
                                         />
-                                        <label
-                                            className="form-check-label"
+                                        <span
                                             style={{
-                                                color: "#727681",
+                                                color: "#0E101A",
                                                 fontWeight: 400,
                                                 fontSize: "16px",
+                                                lineHeight: "120%",
+                                                fontFamily: 'Inter", sans-serif',
+                                                marginLeft: "10px",
                                             }}
                                         >
-                                            Fully Settled
-                                        </label>
-                                    </div>
+                                            Auto Round-off
+                                        </span>
+                                    </span>
+                                    <span
+                                        style={{
+                                            color: "#0E101A",
+                                            fontWeight: 400,
+                                            fontSize: "16px",
+                                            lineHeight: "120%",
+                                            fontFamily: 'Inter", sans-serif',
+                                        }}
+                                    >
+                                        {formData.roundOff >= 0 ? "+" : "-"}₹
+                                        {Math.abs(formData.roundOff).toFixed(2)}
+                                    </span>
+                                </div>
+                                <hr style={{ color: "#727681" }} />
+                                <div className="summary-line">
+                                    <h5
+                                        style={{
+                                            color: "#0E101A",
+                                            lineHeight: "120%",
+                                            fontFamily: 'Inter", sans-serif',
+                                        }}
+                                    >
+                                        Total Debit Amount :-
+                                    </h5>
+                                    <h4
+                                        style={{
+                                            color: "#0E101A",
+                                            fontWeight: 500,
+                                            fontSize: "16px",
+                                            lineHeight: "120%",
+                                            fontFamily: 'Inter", sans-serif',
+                                        }}
+                                    >
+                                        ₹{formData.totalAmount.toFixed(2)}
+                                    </h4>
+                                </div>
 
-                                    {/* Buttons */}
-                                    <div className="d-flex justify-content-end gap-2 mt-3">
-                                        <button
-                                            className="btn btn-outline-primary"
-                                            style={{
-                                                fontWeight: 500,
-                                                padding: "10px",
-                                                fontSize: "14px",
-                                                lineHeight: "120%",
-                                                fontFamily: '"Inter" sans-serif',
-                                                border: "1px solid #1F7FFF",
-                                                boxShadow: "rgba(0, 0, 0, 0.25)",
-                                            }}
-                                            onClick={() => handleSubmit("save")}
-                                            disabled={
-                                                loading ||
-                                                !formData.supplierId ||
-                                                !formData.invoiceId ||
-                                                formData.items.filter(
-                                                    (item) => item.isSelected && item.quantity > 0
-                                                ).length === 0
-                                            }
-                                        >
-                                            {loading ? "Saving..." : "Save"}
-                                        </button>
-                                        <button
-                                            className="btn btn-primary"
-                                            style={{
-                                                padding: "10px",
-                                                color: "#FFFFFF",
-                                                fontWeight: 500,
-                                                fontSize: "14px",
-                                                lineHeight: "120%",
-                                                fontFamily: '"Inter" sans-serif',
-                                                boxShadow: "rgba(0, 0, 0, 0.25)",
-                                            }}
-                                            onClick={() => handleSubmit("saveAndPrint")}
-                                            disabled={
-                                                loading ||
-                                                !formData.supplierId ||
-                                                !formData.invoiceId ||
-                                                formData.items.filter(
-                                                    (item) => item.isSelected && item.quantity > 0
-                                                ).length === 0
-                                            }
-                                        >
-                                            {loading ? "Saving..." : "Save & Print"}
-                                        </button>
-                                    </div>
+                                <div className="form-check mb-2">
+                                    <input
+                                        className="form-check-input"
+                                        type="checkbox"
+                                        checked={formData.fullyReceived}
+                                        onChange={(e) =>
+                                            setFormData((prev) => ({
+                                                ...prev,
+                                                fullyReceived: e.target.checked,
+                                            }))
+                                        }
+                                    />
+                                    <label
+                                        className="form-check-label"
+                                        style={{
+                                            color: "#727681",
+                                            fontWeight: 400,
+                                            fontSize: "16px",
+                                        }}
+                                    >
+                                        Fully Settled
+                                    </label>
+                                </div>
+
+                                {/* Buttons */}
+                                <div className="d-flex justify-content-end gap-2 mt-3">
+                                    <button
+                                        className="btn btn-outline-primary"
+                                        style={{
+                                            fontWeight: 500,
+                                            padding: "10px",
+                                            fontSize: "14px",
+                                            lineHeight: "120%",
+                                            fontFamily: '"Inter" sans-serif',
+                                            border: "1px solid #1F7FFF",
+                                            boxShadow: "rgba(0, 0, 0, 0.25)",
+                                        }}
+                                        onClick={() => handleSubmit("save")}
+                                        disabled={
+                                            loading ||
+                                            !formData.supplierId ||
+                                            !formData.invoiceId ||
+                                            formData.items.filter(
+                                                (item) => item.isSelected && item.quantity > 0
+                                            ).length === 0
+                                        }
+                                    >
+                                        {loading ? "Saving..." : "Save"}
+                                    </button>
+                                    <button
+                                        className="btn btn-primary"
+                                        style={{
+                                            padding: "10px",
+                                            color: "#FFFFFF",
+                                            fontWeight: 500,
+                                            fontSize: "14px",
+                                            lineHeight: "120%",
+                                            fontFamily: '"Inter" sans-serif',
+                                            boxShadow: "rgba(0, 0, 0, 0.25)",
+                                        }}
+                                        onClick={() => handleSubmit("saveAndPrint")}
+                                        disabled={
+                                            loading ||
+                                            !formData.supplierId ||
+                                            !formData.invoiceId ||
+                                            formData.items.filter(
+                                                (item) => item.isSelected && item.quantity > 0
+                                            ).length === 0
+                                        }
+                                    >
+                                        {loading ? "Saving..." : "Save & Print"}
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                {/* Add Supplier Modal */}
-                {openAddModal && (
-                    <div style={{
-                        position: "fixed",
-                        top: 0,
-                        left: 0,
-                        width: "100vw",
-                        height: "100vh",
-                        backgroundColor: "rgba(0,0,0,0.27)",
-                        backdropFilter: "blur(1px)",
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        zIndex: 99999999,
-                    }}
-                        onClick={() => setOpenAddModal(false)}
-                    >
-                        <div onClick={(e) => e.stopPropagation()} className="">
-                            <AddSuppliers
-                                onClose={() => {
-                                    setOpenAddModal(false);
-                                    fetchSuppliers();
-                                }}
-                                onSuccess={handleNewSupplierCreated}
-                            />
-                        </div>
-                    </div>
-                )}
             </div>
+            {/* Add Supplier Modal */}
+            {openAddModal && (
+                <div style={{
+                    position: "fixed",
+                    top: 0,
+                    left: 0,
+                    width: "100vw",
+                    height: "100vh",
+                    backgroundColor: "rgba(0,0,0,0.27)",
+                    backdropFilter: "blur(1px)",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    zIndex: 99999999,
+                }}
+                    onClick={() => setOpenAddModal(false)}
+                >
+                    <div onClick={(e) => e.stopPropagation()} className="">
+                        <AddSuppliers
+                            onClose={() => {
+                                setOpenAddModal(false);
+                                fetchSuppliers();
+                            }}
+                            onSuccess={(newSupplier) => {
+                                if (isFromNavbar) {
+                                    handleSupplierSelect(newSupplier)
+                                }
+                                toast.success('supplier created successfully!')
+                            }}
+                        />
+                    </div>
+                </div>
+            )}
+        </div>
         // </div>
     );
 };

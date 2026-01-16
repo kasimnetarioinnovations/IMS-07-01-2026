@@ -211,9 +211,11 @@ const CustomerCreditNote = () => {
       invoiceNumber: "",
       items: [],
     }));
-    setCustomerSearch(customer.name);
-    setShowCustomerDropdown(false);
-  };
+    if (isFromNavbar) {
+      setCustomerSearch(customer.name);
+      setShowCustomerDropdown(false);
+    };
+  }
 
   const handleClearCustomer = () => {
     setFormData((prev) => ({
@@ -225,8 +227,10 @@ const CustomerCreditNote = () => {
       invoiceNumber: "",
       items: [],
     }));
-    setCustomerSearch("");
-  };
+    if (isFromNavbar) {
+      setCustomerSearch("");
+    };
+  }
   const handleNewCustomerCreated = (newCustomer) => {
     fetchCustomers();
     // Auto select the newly created customer
@@ -521,7 +525,7 @@ const CustomerCreditNote = () => {
   }, []);
 
   return (
-    <div className="p-4" style={{overflowY:"auto", height:"100vh"}}>
+    <div className="p-4" style={{ overflowY: "auto", height: "100vh" }}>
       <div className="">
         <div className="">
           {/* Header */}
@@ -579,7 +583,7 @@ const CustomerCreditNote = () => {
           {/* Customer Section */}
           <div
             className="section-card"
-            style={{ padding: "20px", overflow:"auto", maxHeight:"calc(100vh - 160px)" }}
+            style={{ padding: "20px", overflow: "auto", maxHeight: "calc(100vh - 160px)" }}
           >
             <h6 className="section-title">Customer Details</h6>
 
@@ -589,26 +593,6 @@ const CustomerCreditNote = () => {
               <div
                 style={{ display: "flex", alignItems: "center", gap: "20px" }}
               >
-                {/* Customer Name */}
-                {/* <div className="col-md-7">
-                  <label className="form-label supplierlabel">
-                    Customer Name <span className="text-danger">*</span>
-                  </label>
-                  <div style={{ position: "relative" }}>
-                    <input
-                      type="text"
-                      className="form-control supplierinput shadow-none"
-                      placeholder="Select Customer"
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        border: "1px solid #A2A8B8",
-                      }}
-                      value={formData.customerName}
-                      readOnly
-                    />
-                  </div>
-                </div> */}
                 {/* Customer Name */}
                 <div className="col-md-7">
                   <label className="form-label supplierlabel">
@@ -627,78 +611,89 @@ const CustomerCreditNote = () => {
                     >
                       {/* Input field */}
                       <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "8px" }}>
-                        <FiSearch
-                          style={{
-                            color: "#666",
-                            cursor: "pointer",
-                            fontSize: "16px"
-                          }}
-                          onClick={() => setShowCustomerDropdown(true)}
-                        />
+                        {isFromNavbar && (
+                          <FiSearch
+                            style={{
+                              color: "#666",
+                              cursor: "pointer",
+                              fontSize: "16px"
+                            }}
+                            onClick={() => setShowCustomerDropdown(true)}
+                          />
+                        )}
                         <input
                           type="text"
-                          placeholder="Search or select customer..."
+                          placeholder={isFromNavbar ? "Search or select customer..." : "Enter Name"}
                           style={{
                             width: "100%",
                             border: "none",
                             outline: "none",
                             fontSize: "14px",
-                            cursor: "pointer",
+                            cursor: isFromNavbar ? "pointer" : "text",
                           }}
-                          value={customerSearch}
+                          value={isFromNavbar ? customerSearch : formData.customerName}  //vvi
                           onChange={(e) => {
-                            setCustomerSearch(e.target.value);
-                            setShowCustomerDropdown(true);
+                            if (isFromNavbar) {
+                              setCustomerSearch(e.target.value);
+                              setShowCustomerDropdown(true);
+                            } else {
+                              setFormData((prev) => ({
+                                ...prev,
+                                customerName: e.target.value
+                              }))
+                            }
                           }}
-                          onFocus={() => setShowCustomerDropdown(true)}
-                          readOnly={formData.customerId} // Read-only when customer is selected
+                          onFocus={() => isFromNavbar && setShowCustomerDropdown(true)}
+                          readOnly={isFromNavbar && formData.customerId} // Read-only when customer is selected
                         />
                       </div>
 
                       {/* Action buttons */}
-                      <div style={{ display: "flex", gap: "4px" }}>
-                        {formData.customerId ? (
-                          // When customer is selected - show clear button
-                          <button
-                            onClick={handleClearCustomer}
-                            style={{
-                              background: "transparent",
-                              border: "none",
-                              color: "#dc3545",
-                              cursor: "pointer",
-                              fontSize: "12px",
-                              padding: "2px 6px",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            Change
-                          </button>
-                        ) : (
-                          // When no customer - show add button
-                          <button
-                            onClick={() => setOpenAddModal(true)}
-                            style={{
-                              background: "#1F7FFF",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "4px",
-                              cursor: "pointer",
-                              fontSize: "12px",
-                              padding: "4px 8px",
-                              whiteSpace: "nowrap",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "4px",
-                            }}
-                          >
-                            + Add
-                          </button>
-                        )}
-                      </div>
+                      {isFromNavbar && (
+                        <div style={{ display: "flex", gap: "4px" }}>
+                          {formData.customerId ? (
+                            // When customer is selected - show clear button
+                            <button
+                              onClick={handleClearCustomer}
+                              style={{
+                                background: "transparent",
+                                border: "none",
+                                color: "#dc3545",
+                                cursor: "pointer",
+                                fontSize: "12px",
+                                padding: "2px 6px",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              Change
+                            </button>
+                          ) : (
+                            // When no customer - show add button
+                            <button
+                              onClick={() => setOpenAddModal(true)}
+                              style={{
+                                background: "#1F7FFF",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                                fontSize: "12px",
+                                padding: "4px 8px",
+                                whiteSpace: "nowrap",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "4px",
+                              }}
+                            >
+                              + Add
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Customer Dropdown */}
-                    {showCustomerDropdown && (
+                    {isFromNavbar && showCustomerDropdown && (
                       <div style={{
                         position: "absolute",
                         top: "100%",
@@ -801,26 +796,6 @@ const CustomerCreditNote = () => {
                             ))}
                           </>
                         )}
-                      </div>
-                    )}
-
-                    {/* Customer details when selected */}
-                    {formData.customerId && (
-                      <div style={{
-                        marginTop: "8px",
-                        padding: "8px 12px",
-                        backgroundColor: "#f0f8ff",
-                        borderRadius: "6px",
-                        border: "1px solid #d1e7ff",
-                        fontSize: "12px",
-                      }}>
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <div>
-                            <span style={{ fontWeight: "500", color: "#1F7FFF" }}>
-                              📱 {formData.phone}
-                            </span>
-                          </div>
-                        </div>
                       </div>
                     )}
                   </div>
@@ -1775,7 +1750,12 @@ const CustomerCreditNote = () => {
                     setOpenAddModal(false);
                     fetchCustomers();
                   }}
-                  onSuccess={handleNewCustomerCreated} //Auto selected new customer
+                  onSuccess={(newCustomer) => {
+                    if (isFromNavbar) {
+                      handleCustomerSelect(newCustomer)
+                    }
+                    toast.success('customer created successfully!')
+                  }} //Auto selected new customer
                 />
               </div>
             </div>

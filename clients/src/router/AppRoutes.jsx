@@ -321,6 +321,7 @@ const AppRoutes = () => {
         <Route path="/theme" element={<ThemeCustomizer />} />
         <Route path="/language" element={<LanguageSwitcher />} />
         <Route path="/debit-note" element={<DebitNote />} />
+        <Route path="/credit-note/:customerId" element={<CustomerCreditNote />} />
         <Route path="/credit-note" element={<CustomerCreditNote />} />
 
         <Route path="/activities" element={<Activities />} />
@@ -330,7 +331,7 @@ const AppRoutes = () => {
 
 
         {/* purchase */}
-        <Route path="/empty-purchase" element={<EmptyPurchase/>} />
+        <Route path="/empty-purchase" element={<EmptyPurchase />} />
         <Route path="/purchase-list" element={<Purchase />} />
         <Route path="/purchase-order" element={<PurchaseOrder />} />
         <Route path="/purchase-returns" element={<PurchaseReturn />} />
@@ -381,7 +382,7 @@ const AppRoutes = () => {
         <Route path="/customerdueadvance" element={<CustomerDuesAdvanceList />} />
         {/* credit Note, invoice, generate quotition */}
         <Route path="/createinvoice/:customerId" element={<CustomerCreateInvoice />} />
-         <Route path="/createinvoice/" element={<CustomerCreateInvoice />} />
+        <Route path="/createinvoice/" element={<CustomerCreateInvoice />} />
         <Route path="/showinvoice/:invoiceId" element={<ShowCustomerInvoice />} />
         <Route path="/showquotation/:quotationId" element={<ShowCustomerInvoiceQuotation />} />
         <Route path="skeleton" element={<Skeleton />} />
@@ -392,7 +393,7 @@ const AppRoutes = () => {
         <Route path="/supplier-details" element={<SupplierDetails />} />
         {/* invoice, quotation, credit note */}
         <Route path="/create-purchase-orders/:supplierId" element={<CreatePurchaseOrder />} />
-         <Route path="/create-purchase-orders" element={<CreatePurchaseOrder />} />
+        <Route path="/create-purchase-orders" element={<CreatePurchaseOrder />} />
         <Route path="/show-purchase-orders/:invoiceId" element={<ShowPurchaseOrderInvoice />} />
         <Route path="/create-supplier-debitnote/:supplierId" element={<SupplierDebitNote />} />
         <Route path="/create-supplier-debitnote" element={<SupplierDebitNote />} />
