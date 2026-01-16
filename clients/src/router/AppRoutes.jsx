@@ -180,6 +180,7 @@ import DebitNoteViewEdit from "../components/features/creditDebit/debitNote/Debi
 import EmptyDebitNote from "../components/features/creditDebit/debitNote/EmptyDebitNote.jsx";
 import CreditNoteList from "../components/features/creditDebit/creditNote/CreditNoteList.jsx";
 import SettingCompanyBank from "../components/componentSetting/companySettings/SettingCompanyBank.jsx";
+import EmptyPurchase from "../components/features/purchase/Purchases/EmptyPurchase.jsx"
 // import {Pos} from "../pages/pos/Pos.jsx";
 
 
@@ -329,6 +330,7 @@ const AppRoutes = () => {
 
 
         {/* purchase */}
+        <Route path="/empty-purchase" element={<EmptyPurchase/>} />
         <Route path="/purchase-list" element={<Purchase />} />
         <Route path="/purchase-order" element={<PurchaseOrder />} />
         <Route path="/purchase-returns" element={<PurchaseReturn />} />
