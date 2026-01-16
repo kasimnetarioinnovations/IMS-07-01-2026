@@ -255,7 +255,7 @@ export default function Customers() {
         });
         break;
       case "credit_note":
-        navigate("/credit-note", {
+        navigate(`/credit-note/${customer._id}`, {
           state: { customer },
         });
         break;

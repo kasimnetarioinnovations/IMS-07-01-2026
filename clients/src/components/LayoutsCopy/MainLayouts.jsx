@@ -28,7 +28,8 @@ const MainLayouts = () => {
     // for invoice, quotation, credit note
       matchPath("/createinvoice/:customerId", location.pathname) ||
        matchPath("/create-quotition/:customerId", location.pathname) ||         
-       location.pathname === "/credit-note" ||
+    location.pathname === "/credit-note" ||
+     matchPath("/credit-note/:customerId", location.pathname) || 
        // for purchaseorder, debit note
        matchPath("/create-purchase-orders/:supplierId", location.pathname) ||
         location.pathname === "/create-purchase-orders" ||
