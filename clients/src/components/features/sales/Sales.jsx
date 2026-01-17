@@ -360,7 +360,12 @@ endDate: dateRange.end ? format(dateRange.end, 'yyyy-MM-dd') + 'T23:59:59.999Z' 
           </h3>
         </div>
         <div className="d-flex align-items-center gap-3" style={{ cursor: "pointer" }}>
-          <DateFilterDropdown onChange={handleDateChange} />
+          {/* <DateFilterDropdown onChange={handleDateChange} /> */}
+           <DateFilterDropdown
+            onChange={handleDateChange}
+            selectedDateRange={dateRange}
+            setSelectedDateRange={ setDateRange}
+          />
         </div>
       </div>
 
